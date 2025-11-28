@@ -8,6 +8,7 @@
 - [_] Implement a proper API
 - [x] Move dist files to separate directories
 - [_] Turn this into issues
+- [_] Android app
 
 ## cbt module
 

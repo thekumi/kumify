@@ -9,7 +9,7 @@ from autosecretkey import AutoSecretKey
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-CONFIG_FILE = AutoSecretKey(BASE_DIR / "settings.ini")
+CONFIG_FILE = AutoSecretKey("settings.ini")
 
 SECRET_KEY = CONFIG_FILE.secret_key
 DEBUG = CONFIG_FILE.config.getboolean("KUMIFY", "Debug", fallback=False)
@@ -42,24 +42,20 @@ CORE_MODULES = [
     "profiles",
 ]
 
-INSTALLED_APPS = (
-    [
-        "django.contrib.admin",
-        "django.contrib.auth",
-        "django.contrib.contenttypes",
-        "django.contrib.sessions",
-        "django.contrib.messages",
-        "django.contrib.staticfiles",
-        "colorfield",
-        "multiselectfield",
-        "dbsettings",
-        "mozilla_django_oidc",
-        "crispy_forms",
-        "crispy_bootstrap4",
-    ]
-    + CORE_MODULES
-    + ENABLED_MODULES
-)
+INSTALLED_APPS = [
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    "colorfield",
+    "multiselectfield",
+    "dbsettings",
+    "mozilla_django_oidc",
+    "crispy_forms",
+    "crispy_bootstrap4",
+] + [f"kumify.{module}" for module in CORE_MODULES + ENABLED_MODULES]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",

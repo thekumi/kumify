@@ -16,17 +16,17 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 
-from msgio.views import TelegramWebhookView
+from kumify.msgio.views import TelegramWebhookView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', include('django.contrib.auth.urls')),
-    path('profile/', include('profiles.urls', 'profiles')),
-    path('', include("frontend.urls", "frontend")),
-    path('mood/', include("mood.urls", "mood")),
-    path('cron/', include("cronhandler.urls", "cron")),
+    path('profile/', include('kumify.profiles.urls', 'profiles')),
+    path('', include("kumify.frontend.urls", "frontend")),
+    path('mood/', include("kumify.mood.urls", "mood")),
+    path('cron/', include("kumify.cronhandler.urls", "cron")),
     path('webhooks/telegram/', TelegramWebhookView.as_view()),
-    path('dreams/', include("dreams.urls", "dreams")),
-    path('gpslog/', include("gpslog.urls")),
+    path('dreams/', include("kumify.dreams.urls", "dreams")),
+    path('gpslog/', include("kumify.gpslog.urls")),
     path('oidc/', include('mozilla_django_oidc.urls')),
 ]
