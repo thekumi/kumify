@@ -61,6 +61,11 @@ class DreamCreateView(LoginRequiredMixin, CreateView):
     form_class = DreamForm
     model = Dream
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["user"] = self.request.user
+        return kwargs
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["title"] = "Create Dream"
@@ -92,6 +97,11 @@ class DreamEditView(LoginRequiredMixin, UpdateView):
     template_name = "dreams/dream_edit.html"
     form_class = DreamForm
     model = Dream
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["user"] = self.request.user
+        return kwargs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
