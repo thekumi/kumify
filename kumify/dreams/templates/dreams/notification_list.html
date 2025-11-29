@@ -17,7 +17,7 @@
                     </thead>
                     <tbody>
                         {% for notification in object_list %}
-                            <tr onclick="window.location.href='{% url "mood:notification_edit" notification.id %}'">
+                            <tr onclick="window.location.href='{% url "dreams:notification_edit" notification.id %}'">
                                 <td>{{ notification.time }}</td>
                             </tr>
                         {% endfor %}
