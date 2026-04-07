@@ -1,0 +1,48 @@
+{% extends "frontend/base.html" %}
+{% load i18n %}
+{% block content %}
+<div class="card">
+  <div class="card-header">Health Log</div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0" id="dataTable">
+        <thead>
+          <tr>
+            <th>Date &amp; Time</th>
+            <th>Values</th>
+            <th>Notes</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for log in object_list %}
+            <tr>
+              <td class="text-nowrap">{{ log.recorded_at|date:"N j, Y H:i" }}</td>
+              <td>
+                {% for record in log.records.all %}
+                  <span class="badge bg-light text-dark border me-1">
+                    <i class="{{ record.parameter.icon }} me-1"></i>
+                    {{ record.parameter.name }}: <strong>{{ record.value }}{% if record.parameter.unit %} {{ record.parameter.unit }}{% endif %}</strong>
+                  </span>
+                {% empty %}
+                  <span class="text-muted">—</span>
+                {% endfor %}
+              </td>
+              <td class="text-muted">{{ log.notes|default:"—"|truncatechars:60 }}</td>
+              <td class="text-nowrap">
+                <a href="{% url 'health:log_edit' log.id %}" class="btn btn-sm btn-outline-secondary me-1">
+                  <i class="ph ph-pencil-simple"></i>
+                </a>
+                <a href="{% url 'health:log_delete' log.id %}" class="btn btn-sm btn-outline-danger">
+                  <i class="ph ph-trash"></i>
+                </a>
+              </td>
+            </tr>
+          {% empty %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock content %}

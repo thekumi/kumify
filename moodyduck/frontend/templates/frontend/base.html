@@ -1,0 +1,73 @@
+{% load i18n %}
+{% include "frontend/header.html" with title=title styles=styles %}
+<body>
+
+<div id="md-sidebar-overlay" class="md-sidebar-overlay"></div>
+<div class="md-wrapper">
+
+  {% include "frontend/sidebar.html" %}
+
+  <div class="md-main">
+    {% include "frontend/topbar.html" %}
+
+    <main class="md-content">
+      <!-- Page header -->
+      <div class="md-page-header">
+        <div>
+          <h1 class="md-page-title">{{ title }}</h1>
+          {% if subtitle %}<p class="md-page-subtitle">{{ subtitle }}</p>{% endif %}
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+          {% for button in buttons %}
+            <a href="{{ button.0 }}" class="btn btn-primary btn-sm">
+              <i class="ph ph-{{ button.2 }} me-1"></i> {{ button.1 }}
+            </a>
+          {% endfor %}
+        </div>
+      </div>
+
+      {% if messages %}
+        {% for message in messages %}
+          <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show mb-3" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+
+      {% block content %}{% endblock content %}
+    </main>
+
+    <footer class="md-footer">
+      {% blocktrans %}Brought to you by <a href="https://kumi.website">Kumi</a> &mdash;
+      Source code on <a href="https://git.private.coffee/kumi/moodyduck.git">Private.coffee Git</a>{% endblocktrans %}
+    </footer>
+  </div>
+
+</div>
+
+<!-- Scroll to top -->
+<a href="#" id="md-scroll-top" class="md-scroll-top" aria-label="Scroll to top">
+  <i class="ph ph-caret-up"></i>
+</a>
+
+<!-- Logout modal -->
+<div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content border-0 md-modal-content">
+      <div class="modal-body p-4">
+        <h5 class="fw-bold mb-1" id="logoutModalLabel">{% trans "Sign out?" %}</h5>
+        <p class="text-muted mb-4 md-modal-body-text">{% trans "You're about to end your session. See you soon! 🦆" %}</p>
+        <div class="d-flex gap-2 justify-content-end">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">{% trans "Stay" %}</button>
+          <form method="post" action="{% url 'logout' %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">{% trans "Sign out" %}</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% include "frontend/footer.html" with scripts=scripts %}

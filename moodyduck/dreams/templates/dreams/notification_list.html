@@ -1,0 +1,24 @@
+{% extends "frontend/base.html" %}
+{% load i18n %}
+{% block content %}
+<div class="card mb-4">
+  <div class="card-header">{% trans "Your Daily Notifications" %}</div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover table-clickable mb-0" id="dataTable">
+        <thead>
+          <tr><th>{% trans "Time" %}</th></tr>
+        </thead>
+        <tbody>
+          {% for notification in object_list %}
+          <tr onclick="window.location.href='{% url "dreams:notification_edit" notification.id %}'">
+            <td>{{ notification.time }}</td>
+          </tr>
+          {% empty %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock content %}

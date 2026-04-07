@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "kumify"
+name = "moodyduck"
 version = "0.1.0"
 authors = [{ name = "Kumi Mitterer", email = "kumify@kumi.email" }]
 description = "A Django-based application for managing your life."
@@ -20,7 +20,7 @@ dependencies = [
     "django-colorfield",
     "django-multiupload",
     "django-storages",
-    "django-polymorphic@git+https://github.com/jazzband/django-polymorphic.git@v4.0.0a",
+    "django-polymorphic@git+https://github.com/jazzband/django-polymorphic.git@v4.11.1",
     "django-multiselectfield@git+https://git.private.coffee/kumi/django-multiselectfield.git",
     "django-multiupload@git+https://github.com/Chive/django-multiupload.git",
     "dbsettings",
@@ -40,12 +40,18 @@ dependencies = [
     "mozilla-django-oidc",
     "python-gnupg",
     "django-crispy-forms",
-    "crispy-bootstrap4",
-    "django-annoying"
+    "crispy-bootstrap5",
+    "django-annoying",
+    "djangorestframework",
 ]
 
 [project.scripts]
-kumify = "kumify.manage:main"
+moodyduck = "moodyduck.manage:main"
+
+[project.entry-points."moodyduck.gateways"]
+telegram = "moodyduck.msgio.gateways.telegram:TelegramGateway"
+matrix = "moodyduck.msgio.gateways.matrix:MatrixGateway"
+ntfy = "moodyduck.msgio.gateways.ntfy:NtfyGateway"
 
 [tool.hatch.metadata]
 allow-direct-references = true

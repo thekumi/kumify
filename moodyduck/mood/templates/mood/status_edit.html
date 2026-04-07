@@ -1,0 +1,95 @@
+{% extends "frontend/base.html" %}
+{% load i18n %}
+{% load mood_categories %}
+{% block content %}
+{% if form.errors %}
+  {% for field in form %}
+    {% for error in field.errors %}
+      <div class="alert alert-danger py-2">{{ field.label }}: {{ error }}</div>
+    {% endfor %}
+  {% endfor %}
+{% endif %}
+<div class="card mb-4">
+  <div class="card-header">{% if object %}Edit Entry{% else %}New Entry{% endif %}</div>
+  <div class="card-body">
+    <form action="" method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="mb-3">
+        <label class="form-label" for="id_timestamp">Timestamp</label>
+        <input type="text" name="timestamp" class="form-control"
+               value="{% if object.timestamp %}{{ object.timestamp|date:"Y-m-d H:i" }}{% else %}{% now "Y-m-d H:i" %}{% endif %}"
+               required id="id_timestamp">
+        <input type="hidden" name="initial-timestamp" value="2020-12-26 19:24:14" id="initial-id_timestamp">
+      </div>
+      <div class="mb-3">
+        <label class="form-label" for="id_title">Title</label>
+        <input value="{% if object.title %}{{ object.title }}{% endif %}" type="text" name="title"
+               maxlength="64" id="id_title" class="form-control">
+      </div>
+      <div class="mb-3">
+        <label class="form-label" for="id_text">Text</label>
+        <textarea name="text" cols="40" rows="8" id="id_text" class="form-control">{{ object.text }}</textarea>
+      </div>
+      <div class="mb-3">
+        <label class="form-label" for="id_mood">Mood</label>
+        <select name="mood" class="form-select dtb" required id="id_mood">
+          <option value="" {% if not object.mood %}selected{% endif %}>---------</option>
+          {% for mood in request.user.mood_set.all|dictsort:"value" %}
+            <option data-color="{{ mood.color }}" data-icon="{{ mood.icon }}" value="{{ mood.id }}"
+                    {% if object.mood == mood %}selected{% endif %}>{{ mood }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Activities</label>
+        {% for activitycategory in request.user.activitycategory_set.all %}
+          <p class="fw-bold mb-1">{{ activitycategory.name }}</p>
+          {% for activity in activitycategory.activity_set.all|dictsort:"name" %}
+            <div class="form-check form-check-inline {% if activity.hidden %}d-none{% endif %}">
+              <input type="checkbox" class="form-check-input"
+                     {% if activity in object.activity_set %}checked{% endif %}
+                     value="{{ activity.id }}" name="activities" id="activity-{{ activity.id }}">
+              <label class="form-check-label" for="activity-{{ activity.id }}">
+                <i class="{{ activity.icon }}" style="color:{{ activity.color }};"></i> {{ activity }}
+              </label>
+            </div>
+          {% endfor %}
+        {% endfor %}
+        {% other_activities as activities %}
+        {% if activities %}
+          <p class="fw-bold mb-1 mt-2">Uncategorized activities</p>
+          {% for activity in activities|dictsort:"name" %}
+            {% if not activity.hidden %}
+            <div class="form-check form-check-inline">
+              <input type="checkbox" class="form-check-input"
+                     {% if activity in object.activity_set %}checked{% endif %}
+                     value="{{ activity.id }}" name="activities" id="activity-{{ activity.id }}">
+              <label class="form-check-label" for="activity-{{ activity.id }}">
+                <i class="{{ activity.icon }}" style="color:{{ activity.color }};"></i> {{ activity }}
+              </label>
+            </div>
+            {% endif %}
+          {% endfor %}
+        {% endif %}
+      </div>
+      <div class="mb-3">
+        <label class="form-label" for="id_uploads">Uploads</label>
+        <input type="file" name="uploads" id="id_uploads" multiple class="form-control">
+      </div>
+      {% if request.user.userprofile.pgp_key %}
+      <div class="mb-3">
+        <div class="form-check">
+          <input type="checkbox" name="encrypt" id="id_encrypt" class="form-check-input"
+                 {% if object.encrypt %}checked{% endif %}>
+          <label class="form-check-label" for="id_encrypt">Encrypt this entry</label>
+        </div>
+      </div>
+      {% endif %}
+      <button type="submit" class="btn btn-primary">
+        <i class="ph ph-floppy-disk me-1"></i> Save
+      </button>
+      <button type="button" onclick="history.back()" class="btn btn-light ms-2">Cancel</button>
+    </form>
+  </div>
+</div>
+{% endblock content %}

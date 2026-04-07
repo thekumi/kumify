@@ -1,0 +1,24 @@
+{% extends "frontend/base.html" %}
+{% load i18n %}
+{% block content %}
+<div class="card">
+  <div class="card-header">{% trans "CO₂ Offsets" %}</div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover table-clickable mb-0" id="dataTable">
+        <thead><tr><th>{% trans "Description" %}</th><th>{% trans "Amount (kg CO₂ offset)" %}</th><th>{% trans "Date" %}</th></tr></thead>
+        <tbody>
+          {% for offset in object_list %}
+            <tr onclick="window.location.href='{% url "environment:offset_edit" offset.id %}'">
+              <td>{{ offset.description }}</td>
+              <td><strong class="text-success">{{ offset.amount|floatformat:2 }}</strong></td>
+              <td class="text-muted">{{ offset.date }}</td>
+            </tr>
+          {% empty %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock content %}

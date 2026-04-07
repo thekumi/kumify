@@ -1,0 +1,72 @@
+{% extends "frontend/base.html" %}
+{% load i18n %}
+{% block content %}
+<div class="card mb-4">
+  <div class="card-header d-flex align-items-center justify-content-between">
+    <span>{{ object.title|default:"Thought Record" }}</span>
+    <div class="d-flex gap-2">
+      <a href="{% url 'cbt:record_edit' object.id %}" class="btn btn-sm btn-primary">
+        <i class="ph ph-pencil-simple me-1"></i> {% trans "Edit" %}
+      </a>
+      <a href="{% url 'cbt:record_delete' object.id %}" class="btn btn-sm btn-outline-danger">
+        <i class="ph ph-trash me-1"></i> {% trans "Delete" %}
+      </a>
+    </div>
+  </div>
+  <div class="card-body">
+    {% if object.situation %}
+    <div class="mb-4">
+      <h6 class="fw-bold text-muted text-uppercase md-section-label">{% trans "Situation" %}</h6>
+      <p>{{ object.situation }}</p>
+    </div>
+    {% endif %}
+
+    {% if object.automatic_thoughts %}
+    <div class="mb-4">
+      <h6 class="fw-bold text-muted text-uppercase md-section-label">{% trans "Automatic Thoughts" %}</h6>
+      <p>{{ object.automatic_thoughts }}</p>
+    </div>
+    {% endif %}
+
+    <div class="row mb-4">
+      {% if object.evidence_for %}
+      <div class="col-md-6">
+        <h6 class="fw-bold text-muted text-uppercase md-section-label">{% trans "Evidence For" %}</h6>
+        <p>{{ object.evidence_for }}</p>
+      </div>
+      {% endif %}
+      {% if object.evidence_against %}
+      <div class="col-md-6">
+        <h6 class="fw-bold text-muted text-uppercase md-section-label">{% trans "Evidence Against" %}</h6>
+        <p>{{ object.evidence_against }}</p>
+      </div>
+      {% endif %}
+    </div>
+
+    {% if object.balanced_thought %}
+    <div class="mb-4">
+      <h6 class="fw-bold text-muted text-uppercase md-section-label">{% trans "Balanced Thought" %}</h6>
+      <p>{{ object.balanced_thought }}</p>
+    </div>
+    {% endif %}
+
+    {% if object.outcome %}
+    <div class="mb-4">
+      <h6 class="fw-bold text-muted text-uppercase md-section-label">{% trans "Outcome" %}</h6>
+      <p>{{ object.outcome }}</p>
+    </div>
+    {% endif %}
+
+    <div class="pt-3 border-top d-flex align-items-center justify-content-between">
+      <div>
+        {% if object.complete %}
+          <span class="badge bg-success"><i class="ph ph-check me-1"></i> {% trans "Complete" %}</span>
+        {% else %}
+          <span class="badge bg-warning text-dark"><i class="ph ph-clock me-1"></i> {% trans "In progress" %}</span>
+        {% endif %}
+      </div>
+      <small class="text-muted">{% blocktrans with date=object.created_at|date:"N j, Y" %}Created {{ date }}{% endblocktrans %}</small>
+    </div>
+  </div>
+</div>
+{% endblock content %}

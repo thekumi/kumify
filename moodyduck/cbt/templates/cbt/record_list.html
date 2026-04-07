@@ -1,0 +1,38 @@
+{% extends "frontend/base.html" %}
+{% load i18n %}
+{% block content %}
+<div class="card">
+  <div class="card-header">{% trans "Thought Records" %}</div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover table-clickable mb-0" id="dataTable">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>{% trans "Title" %}</th>
+            <th>{% trans "Situation" %}</th>
+            <th>{% trans "Status" %}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for record in object_list %}
+            <tr onclick="window.location.href='{% url "cbt:record_view" record.id %}'">
+              <td class="text-muted td-id-col">{{ record.id }}</td>
+              <td>{{ record.title|default:"(untitled)" }}</td>
+              <td class="text-muted">{{ record.situation|truncatechars:80|default:"—" }}</td>
+              <td>
+                {% if record.complete %}
+                  <span class="badge bg-success">{% trans "Complete" %}</span>
+                {% else %}
+                  <span class="badge bg-warning text-dark">{% trans "In progress" %}</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock content %}

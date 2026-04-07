@@ -1,0 +1,39 @@
+.icon-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+  gap: 0.4rem;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.icon-option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  font-size: 1.4rem;
+  padding: 0;
+  border-radius: 0.5rem;
+  transition: background 0.1s, transform 0.1s;
+}
+
+.icon-option:hover {
+  transform: scale(1.15);
+  z-index: 1;
+}
+
+.phosphor-icon-picker-wrapper {
+  display: block;
+}
+
+.icon-picker-preview {
+  cursor: default;
+  background: var(--bs-body-bg);
+}
+
+.icon-picker-icon-preview {
+  font-size: 1.5rem;
+  min-width: 2rem;
+  text-align: center;
+}

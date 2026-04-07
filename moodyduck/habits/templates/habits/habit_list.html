@@ -1,0 +1,40 @@
+{% extends "frontend/base.html" %}
+{% load i18n %}
+{% block content %}
+<div class="card">
+  <div class="card-header">{% trans "Your Habits" %}</div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0" id="dataTable">
+        <thead>
+          <tr>
+            <th>{% trans "Habit" %}</th>
+            <th>{% trans "Description" %}</th>
+            <th>{% trans "Actions" %}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for habit in object_list %}
+            <tr>
+              <td>
+                <i style="color:{{ habit.color }}" class="{{ habit.icon }}"></i>
+                <strong class="ms-2">{{ habit.name }}</strong>
+              </td>
+              <td class="text-muted">{{ habit.description|truncatechars:60|default:"—" }}</td>
+              <td>
+                <a href="{% url 'habits:habit_edit' habit.id %}" class="btn btn-sm btn-outline-secondary me-1">
+                  <i class="ph ph-pencil-simple"></i>
+                </a>
+                <a href="{% url 'habits:log_create' habit.id %}" class="btn btn-sm btn-success">
+                  <i class="ph ph-check me-1"></i> {% trans "Log" %}
+                </a>
+              </td>
+            </tr>
+          {% empty %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock content %}

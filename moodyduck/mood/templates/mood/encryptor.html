@@ -1,0 +1,45 @@
+{% extends "frontend/base.html" %}
+{% load i18n %}
+{% block content %}
+<div class="card shadow mb-4">
+  <div class="card-header py-3">
+    <h6 class="m-0 fw-bold text-primary">
+      <i class="ph ph-lock-simple me-2"></i>Encrypt Existing Entries
+    </h6>
+  </div>
+  <div class="card-body">
+    {% if error %}
+      <div class="alert alert-danger">
+        <i class="ph ph-warning-circle me-2"></i>{{ error }}
+      </div>
+    {% endif %}
+
+    {% if unencrypted_count > 0 %}
+      <p>
+        You have <strong>{{ unencrypted_count }}</strong> unencrypted
+        entr{{ unencrypted_count|pluralize:"y,ies" }}. This will encrypt them
+        all using the PGP public key stored in your profile.
+      </p>
+      <p class="text-muted small">
+        <i class="ph ph-info me-1"></i>
+        This operation is irreversible unless you have the corresponding private key.
+        Make sure your PGP key in your profile is correct before proceeding.
+      </p>
+      <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-warning">
+          <i class="ph ph-lock-simple me-1"></i>
+          Encrypt {{ unencrypted_count }} entr{{ unencrypted_count|pluralize:"y,ies" }}
+        </button>
+        <a href="{% url 'mood:status_list' %}" class="btn btn-light ms-2">Cancel</a>
+      </form>
+    {% else %}
+      <div class="alert alert-success mb-3">
+        <i class="ph ph-check-circle me-2"></i>
+        All your entries are already encrypted.
+      </div>
+      <a href="{% url 'mood:status_list' %}" class="btn btn-light">Back to Diary</a>
+    {% endif %}
+  </div>
+</div>
+{% endblock content %}

@@ -22,5 +22,6 @@ django-autosecretkey
 mozilla-django-oidc
 python-gnupg
 django-crispy-forms
-crispy-bootstrap4
+crispy-bootstrap5
 django-annoying
+djangorestframework

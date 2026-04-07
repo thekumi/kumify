@@ -1,0 +1,43 @@
+{% extends "frontend/base.html" %}
+{% load i18n %}
+{% block content %}
+{% if form.errors %}
+  {% for field in form %}
+    {% for error in field.errors %}
+      <div class="alert alert-danger py-2">{{ field.label }}: {{ error }}</div>
+    {% endfor %}
+  {% endfor %}
+{% endif %}
+<div class="card mb-4">
+  <div class="card-header">{% if object %}Edit {{ object.name }}{% else %}New Activity{% endif %}</div>
+  <div class="card-body">
+    <form action="" method="post">
+      {% csrf_token %}
+      <div class="mb-3">
+        <label class="form-label" for="id_name">Name</label>
+        <input type="text" name="name" value="{{ object.name }}" maxlength="64" required id="id_name" class="form-control">
+      </div>
+      <div class="mb-3">
+        <label class="form-label" for="id_icon">Icon</label>
+        <input class="phosphor-icon-picker" type="text" name="icon" value="{{ object.icon }}" maxlength="64" required id="id_icon">
+      </div>
+      <div class="mb-3">
+        <label class="form-label" for="id_color">Color</label>
+        <input type="text" id="id_color" class="form-control colorfield_field jscolor" name="color"
+               value="{{ object.color }}" data-jscolor="{hash:true,width:225,height:150,required:true}" required>
+      </div>
+      <div class="mb-3">
+        <div class="form-check">
+          <input type="checkbox" name="hidden" id="id_hidden" class="form-check-input"
+                 {% if object.hidden %}checked{% endif %}>
+          <label class="form-check-label" for="id_hidden">Hidden</label>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary">
+        <i class="ph ph-floppy-disk me-1"></i> Save
+      </button>
+      <button type="button" onclick="history.back()" class="btn btn-light ms-2">Cancel</button>
+    </form>
+  </div>
+</div>
+{% endblock content %}

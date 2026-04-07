@@ -1,0 +1,25 @@
+{% extends "frontend/base.html" %}
+{% load i18n %}
+{% block content %}
+<div class="card">
+  <div class="card-header">{% trans "CO₂ Entries" %}</div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover table-clickable mb-0" id="dataTable">
+        <thead><tr><th>{% trans "Category" %}</th><th>{% trans "Activity" %}</th><th>{% trans "Amount (kg CO₂)" %}</th><th>{% trans "Date" %}</th></tr></thead>
+        <tbody>
+          {% for entry in object_list %}
+            <tr onclick="window.location.href='{% url "environment:entry_edit" entry.id %}'">
+              <td><span class="badge bg-secondary">{{ entry.category.name }}</span></td>
+              <td>{{ entry.activity }}</td>
+              <td><strong>{{ entry.amount|floatformat:2 }}</strong></td>
+              <td class="text-muted">{{ entry.date }}</td>
+            </tr>
+          {% empty %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock content %}

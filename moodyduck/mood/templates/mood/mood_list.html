@@ -1,0 +1,29 @@
+{% extends "frontend/base.html" %}
+{% load i18n %}
+{% block content %}
+<div class="card mb-4">
+  <div class="card-header">Your Moods</div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover table-clickable mb-0" id="dataTable">
+        <thead>
+          <tr>
+            <th>Name <i>(Value)</i></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for mood in object_list %}
+          <tr onclick="window.location.href='{% url "mood:mood_edit" mood.id %}'">
+            <td>
+              <i data-order="{{ mood.value }}" style="color:{{ mood.color }}" class="{{ mood.icon }}"></i>
+              {{ mood }} <i>({{ mood.value }})</i>
+            </td>
+          </tr>
+          {% empty %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock content %}

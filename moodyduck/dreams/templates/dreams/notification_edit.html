@@ -1,0 +1,29 @@
+{% extends "frontend/base.html" %}
+{% load i18n %}
+{% block content %}
+{% if form.errors %}
+  {% for field in form %}
+    {% for error in field.errors %}
+      <div class="alert alert-danger py-2">{{ field.label }}: {{ error }}</div>
+    {% endfor %}
+  {% endfor %}
+{% endif %}
+<div class="card mb-4">
+  <div class="card-header">{% if object %}{% trans "Edit Notification" %}{% else %}{% trans "New Notification" %}{% endif %}</div>
+  <div class="card-body">
+    <form action="" method="post">
+      {% csrf_token %}
+      <div class="mb-3">
+        <label class="form-label" for="id_time">{% trans "Time" %}</label>
+        <input type="time" name="time" class="form-control"
+               value="{% if object.time %}{{ object.time|date:"H:i" }}{% else %}12:00{% endif %}"
+               required id="id_time">
+      </div>
+      <button type="submit" class="btn btn-primary">
+        <i class="ph ph-floppy-disk me-1"></i> Save
+      </button>
+      <button type="button" onclick="history.back()" class="btn btn-light ms-2">{% trans "Cancel" %}</button>
+    </form>
+  </div>
+</div>
+{% endblock content %}

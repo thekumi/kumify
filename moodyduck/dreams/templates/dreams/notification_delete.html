@@ -1,0 +1,20 @@
+{% extends "frontend/base.html" %}
+{% load i18n %}
+{% block content %}
+<div class="card mb-4">
+  <div class="card-header text-danger">{% trans "Confirm deletion" %}</div>
+  <div class="card-body">
+    <div class="md-delete-zone mb-4">
+      <i class="ph ph-warning me-2"></i>
+      {% blocktrans with time=object.time %}Are you sure you want to delete the <strong>{{ time }}</strong> notification? This cannot be undone.{% endblocktrans %}
+    </div>
+    <form action="" method="post">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-danger">
+        <i class="ph ph-trash me-1"></i> {% trans "Delete Notification" %}
+      </button>
+      <button type="button" onclick="history.back()" class="btn btn-light ms-2">{% trans "Cancel" %}</button>
+    </form>
+  </div>
+</div>
+{% endblock content %}

@@ -1,0 +1,60 @@
+{% extends "frontend/base.html" %}
+{% load i18n %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+    <div class="card shadow-sm">
+      <div class="card-header d-flex align-items-center gap-2">
+        <i class="ph ph-chat-circle-dots fs-5"></i>
+        <span class="fw-semibold">Matrix Integration</span>
+        {% if connected %}
+          <span class="badge bg-success ms-auto">Connected</span>
+        {% else %}
+          <span class="badge bg-secondary ms-auto">Not connected</span>
+        {% endif %}
+      </div>
+      <div class="card-body">
+
+        {% if connected %}
+          <p class="mb-3">MoodyDuck will send notifications to your Matrix room.</p>
+          <form method="post" class="mb-3">
+            {% csrf_token %}
+            <label class="form-label fw-semibold">Room ID</label>
+            <input type="text" class="form-control font-monospace mb-3" name="room_id" value="{{ room_id }}">
+            <div class="d-flex gap-2">
+              <button type="submit" name="action" value="save" class="btn btn-primary btn-sm">
+                <i class="ph ph-check me-1"></i>Save
+              </button>
+              <button type="submit" name="action" value="unlink" class="btn btn-outline-danger btn-sm">
+                <i class="ph ph-x-circle me-1"></i>Unlink
+              </button>
+            </div>
+          </form>
+        {% else %}
+          <p class="mb-3">Enter your Matrix room ID to receive MoodyDuck notifications.</p>
+          <p class="text-muted small mb-3">
+            Room IDs look like <code>!abc123:matrix.org</code>. You can find it in your Matrix client's room settings.
+            Make sure the MoodyDuck bot (<code>{{ bot_username }}</code>) has been invited to the room.
+          </p>
+          <form method="post">
+            {% csrf_token %}
+            <label class="form-label fw-semibold">Room ID</label>
+            <input type="text" class="form-control font-monospace mb-3" name="room_id" placeholder="!yourroom:matrix.org" required>
+            <button type="submit" name="action" value="save" class="btn btn-primary btn-sm">
+              <i class="ph ph-link me-1"></i>Connect
+            </button>
+          </form>
+        {% endif %}
+
+        <div class="mt-3">
+          <a href="{% url 'profiles:integrations' %}" class="btn btn-sm btn-link ps-0">
+            <i class="ph ph-arrow-left me-1"></i>Back to Integrations
+          </a>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

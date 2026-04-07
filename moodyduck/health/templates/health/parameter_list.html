@@ -1,0 +1,31 @@
+{% extends "frontend/base.html" %}
+{% load i18n %}
+{% block content %}
+<div class="card">
+  <div class="card-header">Health Parameters</div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0" id="dataTable">
+        <thead><tr><th>Name</th><th>Unit</th><th>Actions</th></tr></thead>
+        <tbody>
+          {% for param in object_list %}
+            <tr>
+              <td><i class="{{ param.icon }} me-2 text-muted"></i><strong>{{ param.name }}</strong></td>
+              <td class="text-muted">{{ param.unit|default:"—" }}</td>
+              <td>
+                <a href="{% url 'health:parameter_edit' param.id %}" class="btn btn-sm btn-outline-secondary me-1">
+                  <i class="ph ph-pencil-simple"></i>
+                </a>
+                <a href="{% url 'health:parameter_delete' param.id %}" class="btn btn-sm btn-outline-danger">
+                  <i class="ph ph-trash"></i>
+                </a>
+              </td>
+            </tr>
+          {% empty %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock content %}

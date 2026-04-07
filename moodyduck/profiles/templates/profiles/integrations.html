@@ -1,0 +1,30 @@
+{% extends "frontend/base.html" %}
+{% load i18n %}
+
+{% block content %}
+<div class="row g-4">
+  {% for gw in gateways %}
+  <div class="col-md-6">
+    <div class="card h-100 shadow-sm">
+      <div class="card-header d-flex align-items-center gap-2">
+        <i class="bi {{ gw.icon }} fs-5"></i>
+        <span class="fw-semibold">{{ gw.name }}</span>
+        {% if gw.connected %}
+          <span class="badge bg-success ms-auto">Connected</span>
+        {% else %}
+          <span class="badge bg-secondary ms-auto">Not connected</span>
+        {% endif %}
+      </div>
+      <div class="card-body d-flex flex-column">
+        <p class="text-muted small mb-3">{{ gw.description }}</p>
+        <div class="mt-auto">
+          <a href="{% url gw.settings_url %}" class="btn btn-sm btn-outline-primary">
+            <i class="ph ph-gear me-1"></i>Configure
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

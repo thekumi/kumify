@@ -1,0 +1,89 @@
+{% extends "frontend/base.html" %}
+{% load i18n %}
+{% block content %}
+{% if form.errors %}
+  {% for field in form %}
+    {% for error in field.errors %}
+      <div class="alert alert-danger py-2">{{ field.label }}: {{ error }}</div>
+    {% endfor %}
+  {% endfor %}
+{% endif %}
+<div class="card mb-4">
+  <div class="card-header">{% if object %}{% trans "Edit Dream" %}{% else %}{% trans "New Dream" %}{% endif %}</div>
+  <div class="card-body">
+    <form action="" method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="mb-3">
+        <label class="form-label" for="id_timestamp">{% trans "Timestamp" %}</label>
+        <input type="text" name="timestamp" class="form-control"
+               value="{% if object.timestamp %}{{ object.timestamp|date:"Y-m-d H:i" }}{% else %}{% now "Y-m-d H:i" %}{% endif %}"
+               required id="id_timestamp">
+        <input type="hidden" name="initial-timestamp" value="2020-12-26 19:24:14" id="initial-id_timestamp">
+      </div>
+      <div class="mb-3">
+        <label class="form-label" for="id_type">{% trans "Type" %}</label>
+        <select name="type" required class="form-select" id="id_type">
+          {% for value, text in form.type.field.choices %}
+            <option value="{{ value }}" {% if object.type == value %}selected{% endif %}>{{ text }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="mb-3">
+        <label class="form-label" for="id_title">{% trans "Title" %}</label>
+        <input value="{{ object.title }}" type="text" name="title" maxlength="64" id="id_title" class="form-control">
+      </div>
+      <div class="mb-3">
+        <label class="form-label" for="id_content">{% trans "Text" %}</label>
+        <textarea name="content" cols="40" rows="8" id="id_content" class="form-control">{{ object.content }}</textarea>
+      </div>
+      <div class="mb-3">
+        <label class="form-label" for="id_mood">{% trans "Mood" %}</label>
+        <select name="mood" class="form-select dtb" required id="id_mood">
+          <option value="" {% if not object.mood %}selected{% endif %}>---------</option>
+          {% for mood in request.user.mood_set.all|dictsort:"value" %}
+            <option data-icon="{{ mood.icon }}" value="{{ mood.id }}"
+                    {% if object.mood == mood %}selected{% endif %}>{{ mood }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="mb-3">
+        <div class="form-check form-check-inline">
+          <input type="checkbox" {% if object.lucid %}checked{% endif %} name="lucid" id="id_lucid" class="form-check-input">
+          <label class="form-check-label" for="id_lucid">
+            <i class="ph ph-warning-circle me-1"></i> {% trans "Lucid Dream?" %}
+          </label>
+        </div>
+        <div class="form-check form-check-inline">
+          <input type="checkbox" {% if object.wet %}checked{% endif %} name="wet" id="id_wet" class="form-check-input">
+          <label class="form-check-label" for="id_wet">
+            <i class="ph ph-drop me-1"></i> {% trans "Wet Dream?" %}
+          </label>
+        </div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">{% trans "Themes" %}</label>
+        <div>
+          {% for theme in request.user.theme_set.all %}
+          <div class="form-check form-check-inline">
+            <input type="checkbox" class="form-check-input"
+                   {% if theme in object.theme_set %}checked{% endif %}
+                   value="{{ theme.id }}" name="themes" id="theme-{{ theme.id }}">
+            <label class="form-check-label" for="theme-{{ theme.id }}">
+              <i class="{{ theme.icon }}" style="color:{{ theme.color }};"></i> {{ theme }}
+            </label>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label" for="id_uploads">{% trans "Uploads" %}</label>
+        <input type="file" name="uploads" id="id_uploads" multiple class="form-control">
+      </div>
+      <button type="submit" class="btn btn-primary">
+        <i class="ph ph-floppy-disk me-1"></i> Save
+      </button>
+      <button type="button" onclick="history.back()" class="btn btn-light ms-2">{% trans "Cancel" %}</button>
+    </form>
+  </div>
+</div>
+{% endblock content %}

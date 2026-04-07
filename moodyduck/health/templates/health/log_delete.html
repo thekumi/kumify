@@ -1,0 +1,18 @@
+{% extends "frontend/base.html" %}
+{% load i18n %}
+{% block content %}
+<div class="card">
+  <div class="card-header text-danger">Delete Health Check-in</div>
+  <div class="card-body">
+    <p>Are you sure you want to delete the health check-in from <strong>{{ object.recorded_at|date:"N j, Y H:i" }}</strong>?
+    This will also remove all recorded values within it.</p>
+    <form method="post">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-danger me-2">
+        <i class="ph ph-trash me-1"></i> Delete
+      </button>
+      <a href="{% url 'health:log_list' %}" class="btn btn-light">Cancel</a>
+    </form>
+  </div>
+</div>
+{% endblock content %}

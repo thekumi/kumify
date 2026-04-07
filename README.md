@@ -1,6 +1,6 @@
-# Kumify
+# MoodyDuck
 
-Kumify is a personal management tool designed to track and manage various aspects of your life, including habits, moods, dreams, activities, and more. Built with Django, it offers a modular design, allowing users to manage different modules according to their needs.
+MoodyDuck is a personal management tool designed to track and manage various aspects of your life, including habits, moods, dreams, activities, and more. Built with Django, it offers a modular design, allowing users to manage different modules according to their needs.
 
 ## Features
 
@@ -26,8 +26,8 @@ Kumify is a personal management tool designed to track and manage various aspect
 1. **Clone the repository**:
 
    ```bash
-   git clone https://git.private.coffee/kumi/kumify.git
-   cd kumify
+   git clone https://git.private.coffee/kumi/moodyduck.git
+   cd moodyduck
    ```
 
 2. **Create a virtual environment and activate it**:
@@ -74,7 +74,7 @@ The application uses `settings.ini` to manage configuration parameters like data
 
 ## Modules
 
-Enable or disable different modules in `kumify/settings.py` by modifying the `ENABLED_MODULES` list.
+Enable or disable different modules in `moodyduck/settings.py` by modifying the `ENABLED_MODULES` list.
 
 ### Available Modules
 
@@ -88,7 +88,7 @@ Enable or disable different modules in `kumify/settings.py` by modifying the `EN
 
 ## Notifications
 
-Kumify supports sending notifications via Telegram and Matrix. Setup requires API keys and configuration details for each platform in the database settings.
+MoodyDuck supports sending notifications via Telegram and Matrix. Setup requires API keys and configuration details for each platform in the database settings.
 
 ## Development
 
@@ -113,7 +113,7 @@ Contributions are welcome. Feel free to open issues or submit pull requests for 
 
 ## License
 
-Kumify is licensed under the MIT License. See the `LICENSE` file for more details.
+MoodyDuck is licensed under the MIT License. See the `LICENSE` file for more details.
 
 ## Acknowledgments
 

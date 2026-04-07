@@ -1,0 +1,66 @@
+{% extends "frontend/base.html" %}
+{% load i18n %}
+{% block content %}
+<div class="row">
+  <div class="col-xl-8 col-lg-7">
+    <div class="card mb-4">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>{% trans "Dream Entry" %}</span>
+        <span class="text-muted small">{{ object.timestamp }}</span>
+      </div>
+      <div class="card-body">
+        {% if object.title %}<h5 class="mb-3">{{ object.title }}</h5>{% endif %}
+        <blockquote class="blockquote">
+          {{ object.content|linebreaks }}
+        </blockquote>
+        <div class="mt-4">
+          <a href="{% url "dreams:dream_edit" object.id %}" class="btn btn-primary">
+            <i class="ph ph-pencil-simple me-1"></i> {% trans "Edit" %}
+          </a>
+          <a href="{% url "dreams:dream_delete" object.id %}" class="btn btn-danger ms-2">
+            <i class="ph ph-trash me-1"></i> {% trans "Delete" %}
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-xl-4 col-lg-5">
+    <div class="card mb-4">
+      <div class="card-header">{% trans "Mood" %}</div>
+      <div class="card-body text-center">
+        <i title="{{ object.mood }}" style="color: {{ object.mood.color }}; font-size: 120px"
+           class="{{ object.mood.icon }}"></i>
+        <p class="mt-2 fw-bold">{{ object.mood }}</p>
+      </div>
+    </div>
+    {% if object.dreamtheme_set.all %}
+    <div class="card mb-4">
+      <div class="card-header">{% trans "Themes" %}</div>
+      <div class="card-body">
+        <div class="d-flex flex-wrap gap-3">
+          {% for theme in object.dreamtheme_set.all %}
+          <div class="text-center">
+            <i title="{{ theme.theme }}" style="color: {{ theme.theme.color }}; font-size: 40px"
+               class="{{ theme.theme.icon }}"></i>
+            <div class="small mt-1">{{ theme.theme }}</div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+    {% if object.dreammedia_set.all %}
+    <div class="card mb-4">
+      <div class="card-header">{% trans "Attachments" %}</div>
+      <div class="card-body">
+        <ul class="list-unstyled mb-0">
+          {% for attachment in object.dreammedia_set.all %}
+          <li><a href="{{ attachment.media.url }}"><i class="ph ph-paperclip me-1"></i>{{ attachment.basename }}</a></li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock content %}

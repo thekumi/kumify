@@ -1,0 +1,23 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <title>{% if title %}{{ title }} – {% endif %}MoodyDuck</title>
+    <!-- Fonts -->
+    <link href="https://poodledonts.private.coffee/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- Icons: Phosphor -->
+    <link rel="stylesheet" href="https://nobsdelivr.private.coffee/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <!-- Bootstrap 5 -->
+    <link href="https://nobsdelivr.private.coffee/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- DataTables Bootstrap 5 -->
+    <link href="https://nobsdelivr.private.coffee/npm/datatables.net-bs5@1.13.8/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <!-- Icon picker -->
+    <link href="{% static 'frontend/css/phosphor-iconpicker.css' %}" rel="stylesheet">
+    <!-- MoodyDuck theme -->
+    <link href="{% static 'frontend/css/moodyduck.css' %}" rel="stylesheet">
+    {% for style in styles %}<link href="{{ style }}" rel="stylesheet">{% endfor %}
+  </head>

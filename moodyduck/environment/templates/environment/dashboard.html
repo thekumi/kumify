@@ -1,0 +1,90 @@
+{% extends "frontend/base.html" %}
+{% load i18n %}
+{% block content %}
+<!-- Stat cards -->
+<div class="row">
+  <div class="col-sm-4">
+    <div class="md-stat-card">
+      <div class="md-stat-icon danger"><i class="ph ph-cloud"></i></div>
+      <div>
+        <div class="md-stat-label">{% trans "Total emissions" %}</div>
+        <div class="md-stat-value">{{ total_emissions|floatformat:1 }} <small class="text-muted fw-normal md-stat-unit">kg</small></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-4">
+    <div class="md-stat-card">
+      <div class="md-stat-icon success"><i class="ph ph-leaf"></i></div>
+      <div>
+        <div class="md-stat-label">{% trans "Total offsets" %}</div>
+        <div class="md-stat-value">{{ total_offsets|floatformat:1 }} <small class="text-muted fw-normal md-stat-unit">kg</small></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-4">
+    <div class="md-stat-card">
+      <div class="md-stat-icon {% if net_balance > 0 %}danger{% else %}success{% endif %}">
+        <i class="ph ph-scales"></i>
+      </div>
+      <div>
+        <div class="md-stat-label">{% trans "Net balance" %}</div>
+        <div class="md-stat-value {% if net_balance > 0 %}text-danger{% else %}text-success{% endif %}">
+          {{ net_balance|floatformat:1 }} <small class="fw-normal md-stat-unit">kg</small>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Recent entries -->
+<div class="row">
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        {% trans "Recent Emissions" %}
+        <a href="{% url 'environment:entry_list' %}" class="btn btn-sm btn-outline-secondary">{% trans "View all" %}</a>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-hover table-clickable mb-0">
+          <thead><tr><th>{% trans "Activity" %}</th><th>{% trans "Category" %}</th><th>kg CO₂</th></tr></thead>
+          <tbody>
+            {% for entry in recent_entries %}
+              <tr onclick="window.location.href='{% url "environment:entry_edit" entry.id %}'" >
+                <td>{{ entry.activity|truncatechars:40 }}</td>
+                <td><span class="badge bg-secondary">{{ entry.category.name }}</span></td>
+                <td><strong>{{ entry.amount|floatformat:2 }}</strong></td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="3" class="text-center text-muted py-3">{% trans "No entries yet." %}</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        {% trans "Recent Offsets" %}
+        <a href="{% url 'environment:offset_list' %}" class="btn btn-sm btn-outline-secondary">{% trans "View all" %}</a>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-hover table-clickable mb-0">
+          <thead><tr><th>{% trans "Description" %}</th><th>{% trans "kg CO₂ offset" %}</th></tr></thead>
+          <tbody>
+            {% for offset in recent_offsets %}
+              <tr onclick="window.location.href='{% url "environment:offset_edit" offset.id %}'" >
+                <td>{{ offset.description|truncatechars:50 }}</td>
+                <td><strong class="text-success">{{ offset.amount|floatformat:2 }}</strong></td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="2" class="text-center text-muted py-3">{% trans "No offsets yet." %}</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

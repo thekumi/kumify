@@ -1,0 +1,17 @@
+{% load static %}
+<!-- jQuery (needed for DataTables) -->
+<script src="{% static 'frontend/vendor/jquery/jquery.min.js' %}"></script>
+<!-- Bootstrap 5 -->
+<script src="https://nobsdelivr.private.coffee/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<!-- DataTables Bootstrap 5 -->
+<script src="https://nobsdelivr.private.coffee/npm/datatables.net@1.13.8/js/jquery.dataTables.min.js"></script>
+<script src="https://nobsdelivr.private.coffee/npm/datatables.net-bs5@1.13.8/js/dataTables.bootstrap5.min.js"></script>
+<!-- Icon picker -->
+<script src="{% static 'frontend/js/phosphor-iconpicker.js' %}"></script>
+<!-- MoodyDuck JS -->
+<script src="{% static 'frontend/js/moodyduck.js' %}"></script>
+<!-- DataTables init -->
+<script src="{% static 'frontend/js/datatables-demo.js' %}"></script>
+{% for script in scripts %}<script src="{{ script }}"></script>{% endfor %}
+</body>
+</html>

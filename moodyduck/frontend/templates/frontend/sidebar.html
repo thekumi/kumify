@@ -1,0 +1,19 @@
+{% load i18n %}
+{% load navigation %}
+<aside class="md-sidebar" id="md-sidebar">
+  <a class="md-sidebar-brand" href="/">
+    <div class="md-sidebar-brand-icon">
+      <i class="ph ph-feather"></i>
+    </div>
+    <span class="md-sidebar-brand-text">MoodyDuck</span>
+  </a>
+
+  <nav class="md-nav">
+    <a class="md-nav-item" href="{% url 'frontend:dashboard' %}">
+      <i class="ph ph-house"></i>
+      <span>{% trans "Dashboard" %}</span>
+    </a>
+    <div class="md-nav-divider"></div>
+    {% autoescape off %}{% sidebar_nav %}{% endautoescape %}
+  </nav>
+</aside>

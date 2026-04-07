@@ -1,0 +1,1227 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-04-03 07:53+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: moodyduck/cbt/forms.py:13
+msgid "Supporting Evidence"
+msgstr ""
+
+#: moodyduck/cbt/forms.py:14
+msgid "Contradicting Evidence"
+msgstr ""
+
+#: moodyduck/cbt/forms.py:15 moodyduck/cbt/templates/cbt/record_view.html:48
+msgid "Balanced Thought"
+msgstr ""
+
+#: moodyduck/cbt/templates/cbt/record_delete.html:9
+#: moodyduck/dreams/templates/dreams/theme_delete.html:9
+#: moodyduck/environment/templates/environment/category_delete.html:9
+#: moodyduck/environment/templates/environment/entry_delete.html:9
+#: moodyduck/environment/templates/environment/offset_delete.html:9
+#: moodyduck/friends/templates/friends/person_delete.html:9
+#: moodyduck/habits/templates/habits/habit_delete.html:9
+#, python-format
+msgid ""
+"Are you sure you want to delete <strong>%(obj)s</strong>? This cannot be "
+"undone."
+msgstr ""
+
+#: moodyduck/cbt/templates/cbt/record_delete.html:14
+#: moodyduck/cbt/templates/cbt/record_view.html:12 moodyduck/cbt/views.py:80
+#: moodyduck/dreams/templates/dreams/dream_view.html:21
+#: moodyduck/environment/templates/environment/category_delete.html:14
+#: moodyduck/environment/templates/environment/entry_delete.html:14
+#: moodyduck/environment/templates/environment/offset_delete.html:14
+#: moodyduck/environment/views.py:88 moodyduck/environment/views.py:155
+#: moodyduck/friends/templates/friends/person_delete.html:14
+#: moodyduck/friends/templates/friends/person_view.html:12
+#: moodyduck/friends/views.py:72
+#: moodyduck/habits/templates/habits/habit_delete.html:14
+#: moodyduck/habits/templates/habits/log_delete.html:11
+#: moodyduck/habits/views.py:55 moodyduck/health/views.py:236
+msgid "Delete"
+msgstr ""
+
+#: moodyduck/cbt/templates/cbt/record_edit.html:10
+#: moodyduck/friends/templates/friends/person_edit.html:10
+#: moodyduck/habits/templates/habits/habit_edit.html:10
+#: moodyduck/habits/templates/habits/log_edit.html:10
+#, python-format
+msgid "Edit %(obj)s"
+msgstr ""
+
+#: moodyduck/cbt/templates/cbt/record_edit.html:10 moodyduck/cbt/views.py:56
+msgid "New Thought Record"
+msgstr ""
+
+#: moodyduck/cbt/templates/cbt/record_edit.html:23
+#: moodyduck/environment/templates/environment/category_edit.html:25
+#: moodyduck/environment/templates/environment/entry_edit.html:25
+#: moodyduck/environment/templates/environment/offset_edit.html:25
+#: moodyduck/friends/templates/friends/person_edit.html:23
+#: moodyduck/habits/templates/habits/habit_edit.html:23
+#: moodyduck/habits/templates/habits/log_edit.html:23
+msgid "Save"
+msgstr ""
+
+#: moodyduck/cbt/templates/cbt/record_list.html:5 moodyduck/cbt/views.py:17
+msgid "Thought Records"
+msgstr ""
+
+#: moodyduck/cbt/templates/cbt/record_list.html:12
+#: moodyduck/dreams/templates/dreams/dream_edit.html:32
+#: moodyduck/dreams/templates/dreams/dream_list.html:14
+msgid "Title"
+msgstr ""
+
+#: moodyduck/cbt/templates/cbt/record_list.html:13
+#: moodyduck/cbt/templates/cbt/record_view.html:19
+msgid "Situation"
+msgstr ""
+
+#: moodyduck/cbt/templates/cbt/record_list.html:14
+msgid "Status"
+msgstr ""
+
+#: moodyduck/cbt/templates/cbt/record_list.html:25
+#: moodyduck/cbt/templates/cbt/record_view.html:63
+msgid "Complete"
+msgstr ""
+
+#: moodyduck/cbt/templates/cbt/record_list.html:27
+#: moodyduck/cbt/templates/cbt/record_view.html:65
+msgid "In progress"
+msgstr ""
+
+#: moodyduck/cbt/templates/cbt/record_view.html:9 moodyduck/cbt/views.py:39
+#: moodyduck/dreams/templates/dreams/dream_view.html:18
+#: moodyduck/friends/templates/friends/person_view.html:9
+#: moodyduck/friends/views.py:35
+msgid "Edit"
+msgstr ""
+
+#: moodyduck/cbt/templates/cbt/record_view.html:26
+msgid "Automatic Thoughts"
+msgstr ""
+
+#: moodyduck/cbt/templates/cbt/record_view.html:34
+msgid "Evidence For"
+msgstr ""
+
+#: moodyduck/cbt/templates/cbt/record_view.html:40
+msgid "Evidence Against"
+msgstr ""
+
+#: moodyduck/cbt/templates/cbt/record_view.html:55
+msgid "Outcome"
+msgstr ""
+
+#: moodyduck/cbt/templates/cbt/record_view.html:68
+#, python-format
+msgid "Created %(date)s"
+msgstr ""
+
+#: moodyduck/cbt/views.py:18
+msgid "Your CBT thought records."
+msgstr ""
+
+#: moodyduck/cbt/views.py:20
+msgid "New Record"
+msgstr ""
+
+#: moodyduck/cbt/views.py:34 moodyduck/cbt/views.py:35
+#: moodyduck/cbt/views.py:76
+msgid "Thought Record"
+msgstr ""
+
+#: moodyduck/cbt/views.py:57
+msgid "Document a thought and examine the evidence."
+msgstr ""
+
+#: moodyduck/cbt/views.py:75
+msgid "Edit Thought Record"
+msgstr ""
+
+#: moodyduck/common/fields.py:8
+msgid "Monday"
+msgstr ""
+
+#: moodyduck/common/fields.py:9
+msgid "Tuesday"
+msgstr ""
+
+#: moodyduck/common/fields.py:10
+msgid "Wednesday"
+msgstr ""
+
+#: moodyduck/common/fields.py:11
+msgid "Thursday"
+msgstr ""
+
+#: moodyduck/common/fields.py:12
+msgid "Friday"
+msgstr ""
+
+#: moodyduck/common/fields.py:13
+msgid "Saturday"
+msgstr ""
+
+#: moodyduck/common/fields.py:14
+msgid "Sunday"
+msgstr ""
+
+#: moodyduck/dreams/models.py:27
+msgid "Night (main) sleep"
+msgstr ""
+
+#: moodyduck/dreams/models.py:28
+msgid "Daydream"
+msgstr ""
+
+#: moodyduck/dreams/models.py:29
+msgid "Napping"
+msgstr ""
+
+#: moodyduck/dreams/templates/dreams/dream_delete.html:5
+#: moodyduck/dreams/templates/dreams/notification_delete.html:5
+#: moodyduck/dreams/templates/dreams/theme_delete.html:5
+#: moodyduck/environment/templates/environment/category_delete.html:5
+#: moodyduck/environment/templates/environment/entry_delete.html:5
+#: moodyduck/environment/templates/environment/offset_delete.html:5
+#: moodyduck/friends/templates/friends/person_delete.html:5
+#: moodyduck/habits/templates/habits/habit_delete.html:5
+msgid "Confirm deletion"
+msgstr ""
+
+#: moodyduck/dreams/templates/dreams/dream_delete.html:9
+msgid "Are you sure you want to delete this dream? This cannot be undone."
+msgstr ""
+
+#: moodyduck/dreams/templates/dreams/dream_delete.html:14
+#: moodyduck/dreams/views.py:115
+msgid "Delete Dream"
+msgstr ""
+
+#: moodyduck/dreams/templates/dreams/dream_delete.html:16
+#: moodyduck/dreams/templates/dreams/dream_edit.html:85
+#: moodyduck/dreams/templates/dreams/notification_delete.html:16
+#: moodyduck/dreams/templates/dreams/notification_edit.html:25
+#: moodyduck/dreams/templates/dreams/theme_delete.html:17
+#: moodyduck/dreams/templates/dreams/theme_edit.html:33
+#: moodyduck/environment/templates/environment/category_delete.html:16
+#: moodyduck/environment/templates/environment/category_edit.html:27
+#: moodyduck/environment/templates/environment/entry_delete.html:16
+#: moodyduck/environment/templates/environment/entry_edit.html:27
+#: moodyduck/environment/templates/environment/offset_delete.html:16
+#: moodyduck/environment/templates/environment/offset_edit.html:27
+#: moodyduck/friends/templates/friends/person_delete.html:15
+#: moodyduck/friends/templates/friends/person_edit.html:24
+#: moodyduck/habits/templates/habits/habit_delete.html:15
+#: moodyduck/habits/templates/habits/habit_edit.html:24
+#: moodyduck/habits/templates/habits/log_delete.html:13
+#: moodyduck/habits/templates/habits/log_edit.html:24
+msgid "Cancel"
+msgstr ""
+
+#: moodyduck/dreams/templates/dreams/dream_edit.html:12
+#: moodyduck/dreams/views.py:50
+msgid "Edit Dream"
+msgstr ""
+
+#: moodyduck/dreams/templates/dreams/dream_edit.html:12
+#: moodyduck/dreams/views.py:31
+msgid "New Dream"
+msgstr ""
+
+#: moodyduck/dreams/templates/dreams/dream_edit.html:17
+#: moodyduck/dreams/templates/dreams/dream_list.html:11
+msgid "Timestamp"
+msgstr ""
+
+#: moodyduck/dreams/templates/dreams/dream_edit.html:24
+msgid "Type"
+msgstr ""
+
+#: moodyduck/dreams/templates/dreams/dream_edit.html:36
+msgid "Text"
+msgstr ""
+
+#: moodyduck/dreams/templates/dreams/dream_edit.html:40
+#: moodyduck/dreams/templates/dreams/dream_list.html:12
+#: moodyduck/dreams/templates/dreams/dream_view.html:29
+msgid "Mood"
+msgstr ""
+
+#: moodyduck/dreams/templates/dreams/dream_edit.html:53
+msgid "Lucid Dream?"
+msgstr ""
+
+#: moodyduck/dreams/templates/dreams/dream_edit.html:59
+msgid "Wet Dream?"
+msgstr ""
+
+#: moodyduck/dreams/templates/dreams/dream_edit.html:64
+#: moodyduck/dreams/templates/dreams/dream_list.html:13
+#: moodyduck/dreams/templates/dreams/dream_view.html:38
+#: moodyduck/dreams/views.py:162
+msgid "Themes"
+msgstr ""
+
+#: moodyduck/dreams/templates/dreams/dream_edit.html:79
+msgid "Uploads"
+msgstr ""
+
+#: moodyduck/dreams/templates/dreams/dream_list.html:5
+msgid "Your Dreams"
+msgstr ""
+
+#: moodyduck/dreams/templates/dreams/dream_view.html:8
+msgid "Dream Entry"
+msgstr ""
+
+#: moodyduck/dreams/templates/dreams/dream_view.html:54
+msgid "Attachments"
+msgstr ""
+
+#: moodyduck/dreams/templates/dreams/notification_delete.html:9
+#, python-format
+msgid ""
+"Are you sure you want to delete the <strong>%(time)s</strong> notification? "
+"This cannot be undone."
+msgstr ""
+
+#: moodyduck/dreams/templates/dreams/notification_delete.html:14
+#: moodyduck/dreams/views.py:300 moodyduck/mood/views.py:433
+msgid "Delete Notification"
+msgstr ""
+
+#: moodyduck/dreams/templates/dreams/notification_edit.html:12
+#: moodyduck/dreams/views.py:295 moodyduck/mood/views.py:428
+msgid "Edit Notification"
+msgstr ""
+
+#: moodyduck/dreams/templates/dreams/notification_edit.html:12
+#: moodyduck/dreams/views.py:253 moodyduck/mood/views.py:386
+msgid "New Notification"
+msgstr ""
+
+#: moodyduck/dreams/templates/dreams/notification_edit.html:17
+#: moodyduck/dreams/templates/dreams/notification_list.html:10
+msgid "Time"
+msgstr ""
+
+#: moodyduck/dreams/templates/dreams/notification_list.html:5
+msgid "Your Daily Notifications"
+msgstr ""
+
+#: moodyduck/dreams/templates/dreams/theme_delete.html:10
+msgid "Dream entries associated with this theme will not be deleted."
+msgstr ""
+
+#: moodyduck/dreams/templates/dreams/theme_delete.html:15
+#: moodyduck/dreams/views.py:192
+msgid "Delete Theme"
+msgstr ""
+
+#: moodyduck/dreams/templates/dreams/theme_edit.html:12
+#, python-format
+msgid "Edit %(name)s"
+msgstr ""
+
+#: moodyduck/dreams/templates/dreams/theme_edit.html:12
+msgid "New Theme"
+msgstr ""
+
+#: moodyduck/dreams/templates/dreams/theme_edit.html:17
+#: moodyduck/dreams/templates/dreams/theme_list.html:10
+#: moodyduck/environment/templates/environment/category_list.html:9
+#: moodyduck/friends/templates/friends/person_list.html:11
+#: moodyduck/friends/templates/friends/person_view.html:18
+msgid "Name"
+msgstr ""
+
+#: moodyduck/dreams/templates/dreams/theme_edit.html:21
+msgid "Icon"
+msgstr ""
+
+#: moodyduck/dreams/templates/dreams/theme_edit.html:26
+msgid "Color"
+msgstr ""
+
+#: moodyduck/dreams/templates/dreams/theme_list.html:5
+msgid "Your Themes"
+msgstr ""
+
+#: moodyduck/dreams/views.py:28
+msgid "Dream List"
+msgstr ""
+
+#: moodyduck/dreams/views.py:29
+msgid "A list of the dreams you have entered so far."
+msgstr ""
+
+#: moodyduck/dreams/views.py:45
+msgid "View Dream"
+msgstr ""
+
+#: moodyduck/dreams/views.py:46
+msgid "View the details of your dream."
+msgstr ""
+
+#: moodyduck/dreams/views.py:72
+msgid "Create Dream"
+msgstr ""
+
+#: moodyduck/dreams/views.py:73
+msgid "What did you dream?"
+msgstr ""
+
+#: moodyduck/dreams/views.py:109
+msgid "Update Dream"
+msgstr ""
+
+#: moodyduck/dreams/views.py:110
+msgid "Change details of a dream you entered before."
+msgstr ""
+
+#: moodyduck/dreams/views.py:163
+msgid "The themes you have defined for your dreams."
+msgstr ""
+
+#: moodyduck/dreams/views.py:165 moodyduck/dreams/views.py:212
+msgid "Create Theme"
+msgstr ""
+
+#: moodyduck/dreams/views.py:180
+msgid "Edit Theme"
+msgstr ""
+
+#: moodyduck/dreams/views.py:181
+msgid "Make changes to the theme."
+msgstr ""
+
+#: moodyduck/dreams/views.py:213
+msgid "Add a new theme for your dreams."
+msgstr ""
+
+#: moodyduck/dreams/views.py:250 moodyduck/mood/views.py:383
+msgid "Notifications"
+msgstr ""
+
+#: moodyduck/dreams/views.py:251 moodyduck/mood/views.py:384
+msgid "The daily reminders you have set up."
+msgstr ""
+
+#: moodyduck/dreams/views.py:270 moodyduck/mood/views.py:403
+msgid "Create Notification"
+msgstr ""
+
+#: moodyduck/dreams/views.py:271 moodyduck/mood/views.py:404
+msgid "Add a new daily notification."
+msgstr ""
+
+#: moodyduck/dreams/views.py:296 moodyduck/mood/views.py:429
+msgid "Change the time of a daily notification."
+msgstr ""
+
+#: moodyduck/environment/models.py:10
+msgid "CO2 Category"
+msgstr ""
+
+#: moodyduck/environment/models.py:11 moodyduck/environment/views.py:183
+msgid "CO2 Categories"
+msgstr ""
+
+#: moodyduck/environment/models.py:24
+msgid "CO2 Entry"
+msgstr ""
+
+#: moodyduck/environment/models.py:25 moodyduck/environment/views.py:39
+msgid "CO2 Entries"
+msgstr ""
+
+#: moodyduck/environment/models.py:33
+msgid "CO2 equivalent in kg"
+msgstr ""
+
+#: moodyduck/environment/models.py:44
+msgid "CO2 Offset"
+msgstr ""
+
+#: moodyduck/environment/models.py:45 moodyduck/environment/views.py:116
+msgid "CO2 Offsets"
+msgstr ""
+
+#: moodyduck/environment/models.py:52
+msgid "CO2 offset in kg"
+msgstr ""
+
+#: moodyduck/environment/templates/environment/category_list.html:5
+msgid "CO₂ Categories"
+msgstr ""
+
+#: moodyduck/environment/templates/environment/category_list.html:9
+#: moodyduck/environment/templates/environment/dashboard.html:74
+#: moodyduck/environment/templates/environment/offset_list.html:9
+#: moodyduck/habits/templates/habits/habit_list.html:12
+msgid "Description"
+msgstr ""
+
+#: moodyduck/environment/templates/environment/dashboard.html:10
+msgid "Total emissions"
+msgstr ""
+
+#: moodyduck/environment/templates/environment/dashboard.html:19
+msgid "Total offsets"
+msgstr ""
+
+#: moodyduck/environment/templates/environment/dashboard.html:30
+msgid "Net balance"
+msgstr ""
+
+#: moodyduck/environment/templates/environment/dashboard.html:44
+msgid "Recent Emissions"
+msgstr ""
+
+#: moodyduck/environment/templates/environment/dashboard.html:45
+#: moodyduck/environment/templates/environment/dashboard.html:70
+msgid "View all"
+msgstr ""
+
+#: moodyduck/environment/templates/environment/dashboard.html:49
+#: moodyduck/environment/templates/environment/entry_list.html:9
+msgid "Activity"
+msgstr ""
+
+#: moodyduck/environment/templates/environment/dashboard.html:49
+#: moodyduck/environment/templates/environment/entry_list.html:9
+msgid "Category"
+msgstr ""
+
+#: moodyduck/environment/templates/environment/dashboard.html:58
+msgid "No entries yet."
+msgstr ""
+
+#: moodyduck/environment/templates/environment/dashboard.html:69
+msgid "Recent Offsets"
+msgstr ""
+
+#: moodyduck/environment/templates/environment/dashboard.html:74
+msgid "kg CO₂ offset"
+msgstr ""
+
+#: moodyduck/environment/templates/environment/dashboard.html:82
+msgid "No offsets yet."
+msgstr ""
+
+#: moodyduck/environment/templates/environment/entry_list.html:5
+msgid "CO₂ Entries"
+msgstr ""
+
+#: moodyduck/environment/templates/environment/entry_list.html:9
+msgid "Amount (kg CO₂)"
+msgstr ""
+
+#: moodyduck/environment/templates/environment/entry_list.html:9
+#: moodyduck/environment/templates/environment/offset_list.html:9
+#: moodyduck/habits/templates/habits/log_list.html:12
+msgid "Date"
+msgstr ""
+
+#: moodyduck/environment/templates/environment/offset_list.html:5
+msgid "CO₂ Offsets"
+msgstr ""
+
+#: moodyduck/environment/templates/environment/offset_list.html:9
+msgid "Amount (kg CO₂ offset)"
+msgstr ""
+
+#: moodyduck/environment/views.py:17
+msgid "Environment"
+msgstr ""
+
+#: moodyduck/environment/views.py:18
+msgid "Your CO2 footprint overview."
+msgstr ""
+
+#: moodyduck/environment/views.py:40
+msgid "Your recorded CO2 emissions."
+msgstr ""
+
+#: moodyduck/environment/views.py:41
+msgid "New Entry"
+msgstr ""
+
+#: moodyduck/environment/views.py:61
+msgid "New CO2 Entry"
+msgstr ""
+
+#: moodyduck/environment/views.py:62
+msgid "Record a CO2 emission."
+msgstr ""
+
+#: moodyduck/environment/views.py:85
+msgid "Edit CO2 Entry"
+msgstr ""
+
+#: moodyduck/environment/views.py:117
+msgid "Your recorded CO2 offsets."
+msgstr ""
+
+#: moodyduck/environment/views.py:118
+msgid "New Offset"
+msgstr ""
+
+#: moodyduck/environment/views.py:133
+msgid "New CO2 Offset"
+msgstr ""
+
+#: moodyduck/environment/views.py:134
+msgid "Record a CO2 offset."
+msgstr ""
+
+#: moodyduck/environment/views.py:152
+msgid "Edit CO2 Offset"
+msgstr ""
+
+#: moodyduck/environment/views.py:184
+msgid "Categories for your emissions."
+msgstr ""
+
+#: moodyduck/environment/views.py:185 moodyduck/environment/views.py:199
+msgid "New Category"
+msgstr ""
+
+#: moodyduck/environment/views.py:200
+msgid "Add an emission category."
+msgstr ""
+
+#: moodyduck/environment/views.py:218
+msgid "Edit Category"
+msgstr ""
+
+#: moodyduck/friends/templates/friends/person_edit.html:10
+msgid "New Person"
+msgstr ""
+
+#: moodyduck/friends/templates/friends/person_list.html:5
+msgid "People"
+msgstr ""
+
+#: moodyduck/friends/templates/friends/person_list.html:12
+#: moodyduck/friends/templates/friends/person_view.html:27
+msgid "Birthday"
+msgstr ""
+
+#: moodyduck/friends/templates/friends/person_list.html:13
+#: moodyduck/friends/templates/friends/person_view.html:54
+msgid "Last contact"
+msgstr ""
+
+#: moodyduck/friends/templates/friends/person_view.html:22
+msgid "Nickname"
+msgstr ""
+
+#: moodyduck/friends/templates/friends/person_view.html:32
+#, python-format
+msgid "Birthday in %(days)s day%(days|pluralize)s!"
+msgstr ""
+
+#: moodyduck/friends/templates/friends/person_view.html:39
+msgid "Email"
+msgstr ""
+
+#: moodyduck/friends/templates/friends/person_view.html:44
+msgid "Phone"
+msgstr ""
+
+#: moodyduck/friends/templates/friends/person_view.html:49
+msgid "Address"
+msgstr ""
+
+#: moodyduck/friends/templates/friends/person_view.html:58
+#, python-format
+msgid "(%(days)s day%(days|pluralize)s ago)"
+msgstr ""
+
+#: moodyduck/friends/templates/friends/person_view.html:64
+#: moodyduck/habits/templates/habits/log_list.html:13
+msgid "Notes"
+msgstr ""
+
+#: moodyduck/friends/views.py:17
+msgid "Friends"
+msgstr ""
+
+#: moodyduck/friends/views.py:18
+msgid "People you care about."
+msgstr ""
+
+#: moodyduck/friends/views.py:19 moodyduck/friends/views.py:50
+msgid "Add Person"
+msgstr ""
+
+#: moodyduck/friends/views.py:33
+msgid "Contact details"
+msgstr ""
+
+#: moodyduck/friends/views.py:51
+msgid "Add someone to your contacts."
+msgstr ""
+
+#: moodyduck/friends/views.py:69
+msgid "Edit Person"
+msgstr ""
+
+#: moodyduck/frontend/templates/frontend/base.html:42
+msgid ""
+"Brought to you by <a href=\"https://kumi.website\">Kumi</a> &mdash;\n"
+"      Source code on <a href=\"https://git.private.coffee/kumi/"
+"moodyduck.git\">Private.coffee Git</a>"
+msgstr ""
+
+#: moodyduck/frontend/templates/frontend/base.html:59
+msgid "Sign out?"
+msgstr ""
+
+#: moodyduck/frontend/templates/frontend/base.html:60
+msgid "You're about to end your session. See you soon! 🦆"
+msgstr ""
+
+#: moodyduck/frontend/templates/frontend/base.html:62
+msgid "Stay"
+msgstr ""
+
+#: moodyduck/frontend/templates/frontend/base.html:65
+#: moodyduck/frontend/templates/frontend/topbar.html:51
+msgid "Sign out"
+msgstr ""
+
+#: moodyduck/frontend/templates/frontend/sidebar.html:14
+msgid "Dashboard"
+msgstr ""
+
+#: moodyduck/frontend/templates/frontend/topbar.html:37
+msgid "Profile"
+msgstr ""
+
+#: moodyduck/frontend/templates/frontend/topbar.html:42
+#: moodyduck/profiles/views.py:110
+msgid "Integrations"
+msgstr ""
+
+#: moodyduck/frontend/templates/registration/login.html:6
+msgid "Welcome back!"
+msgstr ""
+
+#: moodyduck/frontend/templates/registration/login.html:11
+msgid "Invalid username or password. Please try again."
+msgstr ""
+
+#: moodyduck/frontend/templates/registration/login.html:19
+#: moodyduck/frontend/templates/registration/registration_form.html:18
+msgid "Username"
+msgstr ""
+
+#: moodyduck/frontend/templates/registration/login.html:25
+#: moodyduck/frontend/templates/registration/registration_form.html:28
+msgid "Password"
+msgstr ""
+
+#: moodyduck/frontend/templates/registration/login.html:31
+msgid "Sign in"
+msgstr ""
+
+#: moodyduck/frontend/templates/registration/login.html:36
+msgid "or"
+msgstr ""
+
+#: moodyduck/frontend/templates/registration/login.html:45
+msgid "Create an account →"
+msgstr ""
+
+#: moodyduck/frontend/templates/registration/registration_closed.html:5
+msgid "Registration closed"
+msgstr ""
+
+#: moodyduck/frontend/templates/registration/registration_closed.html:8
+msgid "New registrations are currently disabled."
+msgstr ""
+
+#: moodyduck/frontend/templates/registration/registration_closed.html:11
+msgid "← Back to sign in"
+msgstr ""
+
+#: moodyduck/frontend/templates/registration/registration_form.html:5
+msgid "Create your account"
+msgstr ""
+
+#: moodyduck/frontend/templates/registration/registration_form.html:10
+msgid "Please fix the errors below."
+msgstr ""
+
+#: moodyduck/frontend/templates/registration/registration_form.html:38
+msgid "Confirm password"
+msgstr ""
+
+#: moodyduck/frontend/templates/registration/registration_form.html:48
+msgid "Create account"
+msgstr ""
+
+#: moodyduck/frontend/templates/registration/registration_form.html:53
+msgid "Already have an account?"
+msgstr ""
+
+#: moodyduck/frontend/templates/registration/registration_form.html:54
+msgid "Sign in →"
+msgstr ""
+
+#: moodyduck/habits/templates/habits/habit_edit.html:10
+#: moodyduck/habits/views.py:19 moodyduck/habits/views.py:33
+msgid "New Habit"
+msgstr ""
+
+#: moodyduck/habits/templates/habits/habit_list.html:5
+msgid "Your Habits"
+msgstr ""
+
+#: moodyduck/habits/templates/habits/habit_list.html:11
+#: moodyduck/habits/templates/habits/log_list.html:11
+msgid "Habit"
+msgstr ""
+
+#: moodyduck/habits/templates/habits/habit_list.html:13
+#: moodyduck/habits/templates/habits/log_list.html:14
+msgid "Actions"
+msgstr ""
+
+#: moodyduck/habits/templates/habits/habit_list.html:29
+msgid "Log"
+msgstr ""
+
+#: moodyduck/habits/templates/habits/log_delete.html:5
+#: moodyduck/habits/views.py:144
+msgid "Delete Log Entry"
+msgstr ""
+
+#: moodyduck/habits/templates/habits/log_delete.html:7
+#, python-format
+msgid ""
+"Are you sure you want to delete the log entry for <strong>%(name)s</strong> "
+"on <strong>%(date)s</strong>?"
+msgstr ""
+
+#: moodyduck/habits/templates/habits/log_edit.html:10
+msgid "New Log Entry"
+msgstr ""
+
+#: moodyduck/habits/templates/habits/log_list.html:5
+msgid "Habit Logs"
+msgstr ""
+
+#: moodyduck/habits/views.py:17
+msgid "Habits"
+msgstr ""
+
+#: moodyduck/habits/views.py:18
+msgid "Your habits and their schedules."
+msgstr ""
+
+#: moodyduck/habits/views.py:34
+msgid "Define a new habit to track."
+msgstr ""
+
+#: moodyduck/habits/views.py:52
+msgid "Edit Habit"
+msgstr ""
+
+#: moodyduck/habits/views.py:56
+msgid "Log Now"
+msgstr ""
+
+#: moodyduck/habits/views.py:84
+msgid "Habit Log"
+msgstr ""
+
+#: moodyduck/habits/views.py:85
+msgid "A record of your completed habits."
+msgstr ""
+
+#: moodyduck/habits/views.py:103
+msgid "Log Habit"
+msgstr ""
+
+#: moodyduck/habits/views.py:126
+msgid "Edit Log Entry"
+msgstr ""
+
+#: moodyduck/health/models.py:41
+msgid "As needed (pro re nata)"
+msgstr ""
+
+#: moodyduck/health/models.py:49
+msgid "Days"
+msgstr ""
+
+#: moodyduck/health/models.py:50
+msgid "Weeks"
+msgstr ""
+
+#: moodyduck/health/models.py:51
+msgid "Months"
+msgstr ""
+
+#: moodyduck/health/models.py:89
+msgid "Morning"
+msgstr ""
+
+#: moodyduck/health/models.py:90
+msgid "Noon"
+msgstr ""
+
+#: moodyduck/health/models.py:91
+msgid "Evening"
+msgstr ""
+
+#: moodyduck/health/models.py:92
+msgid "Night"
+msgstr ""
+
+#: moodyduck/health/views.py:20
+msgid "Medications"
+msgstr ""
+
+#: moodyduck/health/views.py:21
+msgid "Your medications and supply."
+msgstr ""
+
+#: moodyduck/health/views.py:23
+msgid "New Medication"
+msgstr ""
+
+#: moodyduck/health/views.py:24
+msgid "Settings"
+msgstr ""
+
+#: moodyduck/health/views.py:40
+msgid "Add Medication"
+msgstr ""
+
+#: moodyduck/health/views.py:41 moodyduck/health/views.py:63
+#: moodyduck/health/views.py:93 moodyduck/health/views.py:125
+#: moodyduck/health/views.py:147 moodyduck/health/views.py:223
+#: moodyduck/health/views.py:235
+msgid "Back"
+msgstr ""
+
+#: moodyduck/health/views.py:62
+msgid "Edit Medication"
+msgstr ""
+
+#: moodyduck/health/views.py:92
+msgid "Medication Settings"
+msgstr ""
+
+#: moodyduck/health/views.py:109
+msgid "Health Parameters"
+msgstr ""
+
+#: moodyduck/health/views.py:110
+msgid "Define the metrics you want to track."
+msgstr ""
+
+#: moodyduck/health/views.py:112
+msgid "New Parameter"
+msgstr ""
+
+#: moodyduck/health/views.py:124
+msgid "Add Parameter"
+msgstr ""
+
+#: moodyduck/health/views.py:146
+msgid "Edit Parameter"
+msgstr ""
+
+#: moodyduck/health/views.py:174
+msgid "Health Log"
+msgstr ""
+
+#: moodyduck/health/views.py:175
+msgid "Your check-ins over time."
+msgstr ""
+
+#: moodyduck/health/views.py:177
+msgid "New Check-in"
+msgstr ""
+
+#: moodyduck/health/views.py:178
+msgid "Parameters"
+msgstr ""
+
+#: moodyduck/health/views.py:221
+msgid "New Health Check-in"
+msgstr ""
+
+#: moodyduck/health/views.py:222
+msgid "Record today's health measurements."
+msgstr ""
+
+#: moodyduck/health/views.py:233
+msgid "Edit Health Check-in"
+msgstr ""
+
+#: moodyduck/mood/views.py:46
+msgid "Status List"
+msgstr ""
+
+#: moodyduck/mood/views.py:47
+msgid "Just a list of your mood entries."
+msgstr ""
+
+#: moodyduck/mood/views.py:49
+msgid "New Status"
+msgstr ""
+
+#: moodyduck/mood/views.py:76
+msgid "View Status"
+msgstr ""
+
+#: moodyduck/mood/views.py:77
+msgid "View the details of your mood entry."
+msgstr ""
+
+#: moodyduck/mood/views.py:81
+msgid "Edit Status"
+msgstr ""
+
+#: moodyduck/mood/views.py:103
+msgid "Create Status"
+msgstr ""
+
+#: moodyduck/mood/views.py:104
+msgid "How are you feeling today?"
+msgstr ""
+
+#: moodyduck/mood/views.py:173
+msgid "Update Status"
+msgstr ""
+
+#: moodyduck/mood/views.py:174
+msgid "Change a status you created before."
+msgstr ""
+
+#: moodyduck/mood/views.py:179
+msgid "Delete Status"
+msgstr ""
+
+#: moodyduck/mood/views.py:228
+msgid "Activities"
+msgstr ""
+
+#: moodyduck/mood/views.py:229
+msgid "The activities you have defined."
+msgstr ""
+
+#: moodyduck/mood/views.py:231 moodyduck/mood/views.py:278
+#: moodyduck/mood/views.py:356
+msgid "Create Activity"
+msgstr ""
+
+#: moodyduck/mood/views.py:246
+msgid "Edit Activity"
+msgstr ""
+
+#: moodyduck/mood/views.py:247
+msgid "Make changes to the activity."
+msgstr ""
+
+#: moodyduck/mood/views.py:258
+msgid "Delete Activity"
+msgstr ""
+
+#: moodyduck/mood/views.py:279 moodyduck/mood/views.py:357
+msgid "Add a new activity."
+msgstr ""
+
+#: moodyduck/mood/views.py:315
+msgid "Moods"
+msgstr ""
+
+#: moodyduck/mood/views.py:316
+msgid "The different moods you have defined."
+msgstr ""
+
+#: moodyduck/mood/views.py:317
+msgid "Create Mood"
+msgstr ""
+
+#: moodyduck/mood/views.py:331
+msgid "Edit Mood"
+msgstr ""
+
+#: moodyduck/mood/views.py:332
+msgid "Make changes to the mood."
+msgstr ""
+
+#: moodyduck/mood/views.py:489
+msgid "Statistics"
+msgstr ""
+
+#: moodyduck/mood/views.py:564
+#, python-format
+msgid "Activity Statistics for %s"
+msgstr ""
+
+#: moodyduck/msgio/views.py:45
+msgid "Hi! Send /start <pairing_token> to link your MoodyDuck account."
+msgstr ""
+
+#: moodyduck/msgio/views.py:51
+msgid ""
+"❌ Invalid or expired token. Generate a new one in your MoodyDuck profile."
+msgstr ""
+
+#: moodyduck/msgio/views.py:60
+#, python-format
+msgid ""
+"✅ Linked to MoodyDuck as %(username)s! Use /help to see available commands."
+msgstr ""
+
+#: moodyduck/msgio/views.py:68 moodyduck/msgio/views.py:105
+msgid ""
+"Not linked. Generate a pairing token in your MoodyDuck profile and send /"
+"start <token>."
+msgstr ""
+
+#: moodyduck/msgio/views.py:75
+#, python-format
+msgid ""
+"Usage: /mood <name_or_value> [text]\n"
+"\n"
+"Your moods:\n"
+"%(listing)s"
+msgstr ""
+
+#: moodyduck/msgio/views.py:89
+#, python-format
+msgid ""
+"❌ Mood '%(query)s' not found.\n"
+"Your moods: %(listing)s"
+msgstr ""
+
+#: moodyduck/msgio/views.py:93
+#, python-format
+msgid "✅ Logged mood: %(name)s"
+msgstr ""
+
+#: moodyduck/msgio/views.py:95
+#, python-format
+msgid ""
+"\n"
+"📝 %(text)s"
+msgstr ""
+
+#: moodyduck/msgio/views.py:112
+#, python-format
+msgid ""
+"Usage: /habit <name>\n"
+"\n"
+"Your habits:\n"
+"%(listing)s"
+msgstr ""
+
+#: moodyduck/msgio/views.py:119
+#, python-format
+msgid ""
+"❌ Habit '%(habit_name)s' not found.\n"
+"Your habits: %(listing)s"
+msgstr ""
+
+#: moodyduck/msgio/views.py:123
+#, python-format
+msgid "✅ Logged habit: %(name)s"
+msgstr ""
+
+#: moodyduck/msgio/views.py:129
+msgid ""
+"📋 MoodyDuck Bot Commands\n"
+"\n"
+"/mood <name_or_value> [text] — Log a mood entry\n"
+"/habit <name> — Mark a habit as completed today\n"
+"/help — Show this help message\n"
+"\n"
+"Tip: send /mood or /habit without arguments to list your options."
+msgstr ""
+
+#: moodyduck/profiles/views.py:17
+msgid "Your Profile"
+msgstr ""
+
+#: moodyduck/profiles/views.py:18
+msgid "View your user profile information."
+msgstr ""
+
+#: moodyduck/profiles/views.py:32
+msgid "Edit Profile"
+msgstr ""
+
+#: moodyduck/profiles/views.py:33
+msgid "Update your profile information."
+msgstr ""
+
+#: moodyduck/profiles/views.py:58
+msgid "Telegram"
+msgstr ""
+
+#: moodyduck/profiles/views.py:59
+msgid "Link your Telegram account to MoodyDuck."
+msgstr ""
+
+#: moodyduck/profiles/views.py:89
+msgid "Log mood entries and habits via the MoodyDuck Telegram bot."
+msgstr ""
+
+#: moodyduck/profiles/views.py:97
+msgid "Receive notifications in any Matrix room."
+msgstr ""
+
+#: moodyduck/profiles/views.py:105
+msgid "Push notifications via ntfy.sh or a self-hosted ntfy server."
+msgstr ""
+
+#: moodyduck/profiles/views.py:111
+msgid "Connect MoodyDuck to external services."
+msgstr ""
+
+#: moodyduck/profiles/views.py:138
+msgid "Matrix Settings"
+msgstr ""
+
+#: moodyduck/profiles/views.py:139
+msgid "Connect your Matrix account to MoodyDuck."
+msgstr ""
+
+#: moodyduck/profiles/views.py:176
+msgid "ntfy Settings"
+msgstr ""
+
+#: moodyduck/profiles/views.py:177
+msgid "Push notifications via ntfy."
+msgstr ""

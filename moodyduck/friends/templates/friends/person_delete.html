@@ -1,0 +1,20 @@
+{% extends "frontend/base.html" %}
+{% load i18n %}
+{% block content %}
+<div class="card">
+  <div class="card-header text-danger"><i class="ph ph-trash me-2"></i>{% trans "Confirm deletion" %}</div>
+  <div class="card-body">
+    <div class="md-delete-zone mb-4">
+      <i class="ph ph-warning me-2"></i>
+      {% blocktrans with obj=object %}Are you sure you want to delete <strong>{{ obj }}</strong>? This cannot be undone.{% endblocktrans %}
+    </div>
+    <form action="" method="post">
+      {% csrf_token %}
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-danger"><i class="ph ph-trash me-1"></i> {% trans "Delete" %}</button>
+        <button type="button" onclick="history.back()" class="btn btn-light">{% trans "Cancel" %}</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock content %}

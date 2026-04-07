@@ -1,0 +1,39 @@
+{% extends "frontend/base.html" %}
+{% load i18n %}
+{% block content %}
+<div class="card">
+  <div class="card-header">{% trans "Habit Logs" %}</div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0" id="dataTable">
+        <thead>
+          <tr>
+            <th>{% trans "Habit" %}</th>
+            <th>{% trans "Date" %}</th>
+            <th>{% trans "Notes" %}</th>
+            <th>{% trans "Actions" %}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for log in object_list %}
+            <tr>
+              <td>{{ log.habit.name }}</td>
+              <td>{{ log.date }}</td>
+              <td class="text-muted">{{ log.note|default:"—"|truncatechars:60 }}</td>
+              <td>
+                <a href="{% url 'habits:log_edit' log.id %}" class="btn btn-sm btn-outline-secondary me-1">
+                  <i class="ph ph-pencil-simple"></i>
+                </a>
+                <a href="{% url 'habits:log_delete' log.id %}" class="btn btn-sm btn-outline-danger">
+                  <i class="ph ph-trash"></i>
+                </a>
+              </td>
+            </tr>
+          {% empty %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock content %}

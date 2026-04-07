@@ -1,0 +1,13 @@
+{% extends "registration/base.html" %}
+{% load i18n %}
+
+{% block content %}
+<p class="md-auth-title">{% trans "Registration closed" %}</p>
+<div class="alert alert-warning text-center">
+  <i class="ph ph-lock-simple me-2"></i>
+  {% trans "New registrations are currently disabled." %}
+</div>
+<div class="text-center md-auth-link-text">
+  <a href="{% url 'login' %}" class="text-primary text-decoration-none">{% trans "← Back to sign in" %}</a>
+</div>
+{% endblock %}

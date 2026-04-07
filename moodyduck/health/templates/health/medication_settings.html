@@ -1,0 +1,69 @@
+{% extends "frontend/base.html" %}
+{% load i18n %}
+{% block content %}
+<div class="card mb-4">
+  <div class="card-header">Medication Time Settings</div>
+  <div class="card-body">
+    <form action="" method="post">
+      {% csrf_token %}
+      <h5 class="mb-3">Morning</h5>
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label class="form-label" for="{{ form.morning_from.id_for_label }}">{{ form.morning_from.label }}</label>
+          {{ form.morning_from }}
+        </div>
+        <div class="col-md-6 mb-3">
+          <label class="form-label" for="{{ form.morning_till.id_for_label }}">{{ form.morning_till.label }}</label>
+          {{ form.morning_till }}
+        </div>
+      </div>
+      <h5 class="mb-3">Noon</h5>
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label class="form-label" for="{{ form.noon_from.id_for_label }}">{{ form.noon_from.label }}</label>
+          {{ form.noon_from }}
+        </div>
+        <div class="col-md-6 mb-3">
+          <label class="form-label" for="{{ form.noon_till.id_for_label }}">{{ form.noon_till.label }}</label>
+          {{ form.noon_till }}
+        </div>
+      </div>
+      <h5 class="mb-3">Evening</h5>
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label class="form-label" for="{{ form.evening_from.id_for_label }}">{{ form.evening_from.label }}</label>
+          {{ form.evening_from }}
+        </div>
+        <div class="col-md-6 mb-3">
+          <label class="form-label" for="{{ form.evening_till.id_for_label }}">{{ form.evening_till.label }}</label>
+          {{ form.evening_till }}
+        </div>
+      </div>
+      <h5 class="mb-3">Night</h5>
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label class="form-label" for="{{ form.night_from.id_for_label }}">{{ form.night_from.label }}</label>
+          {{ form.night_from }}
+        </div>
+        <div class="col-md-6 mb-3">
+          <label class="form-label" for="{{ form.night_till.id_for_label }}">{{ form.night_till.label }}</label>
+          {{ form.night_till }}
+        </div>
+      </div>
+      <h5 class="mb-3">Other</h5>
+      <div class="mb-3">
+        <label class="form-label" for="{{ form.notifications.id_for_label }}">{{ form.notifications.label }}</label>
+        {{ form.notifications }}
+      </div>
+      <div class="mb-3">
+        <label class="form-label" for="{{ form.refill_reminder.id_for_label }}">{{ form.refill_reminder.label }}</label>
+        {{ form.refill_reminder }}
+      </div>
+      <button type="submit" class="btn btn-primary">
+        <i class="ph ph-floppy-disk me-1"></i> Save
+      </button>
+      <button type="button" onclick="history.back()" class="btn btn-light ms-2">Cancel</button>
+    </form>
+  </div>
+</div>
+{% endblock content %}
