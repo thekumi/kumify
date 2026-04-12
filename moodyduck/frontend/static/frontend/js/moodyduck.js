@@ -1,47 +1,66 @@
-document.addEventListener("DOMContentLoaded", () => {
-  const body = document.body;
-  const sidebar = document.getElementById("md-sidebar");
-  const overlay = document.getElementById("md-sidebar-overlay");
-  const sidebarToggle = document.querySelector("[data-sidebar-toggle]");
-  const scrollTop = document.getElementById("md-scroll-top");
+/* MoodyDuck UI – custom interactions */
+(function () {
+  'use strict';
 
-  const closeSidebar = () => body.classList.remove("md-sidebar-open");
-  const openSidebar = () => body.classList.add("md-sidebar-open");
+  document.addEventListener('DOMContentLoaded', function () {
+    // ── Sidebar toggle (mobile) ─────────────────────────────
+    const sidebar  = document.getElementById('md-sidebar');
+    const overlay  = document.getElementById('md-sidebar-overlay');
+    const toggles  = document.querySelectorAll('[data-sidebar-toggle]');
 
-  if (sidebar && overlay && sidebarToggle) {
-    sidebarToggle.addEventListener("click", () => {
-      if (body.classList.contains("md-sidebar-open")) {
-        closeSidebar();
-      } else {
-        openSidebar();
-      }
+    function openSidebar() {
+      sidebar && sidebar.classList.add('open');
+      overlay && overlay.classList.add('open');
+    }
+
+    function closeSidebar() {
+      sidebar && sidebar.classList.remove('open');
+      overlay && overlay.classList.remove('open');
+    }
+
+    toggles.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        sidebar && sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
+      });
     });
 
-    overlay.addEventListener("click", closeSidebar);
+    overlay && overlay.addEventListener('click', closeSidebar);
 
-    document.addEventListener("keydown", (event) => {
-      if (event.key === "Escape") {
-        closeSidebar();
-      }
+    // ── Collapsible nav groups ──────────────────────────────
+    document.querySelectorAll('.md-nav-collapse-toggle').forEach(function (toggle) {
+      toggle.addEventListener('click', function () {
+        const targetId = this.getAttribute('data-target');
+        const target   = document.getElementById(targetId);
+        if (!target) return;
+
+        const isOpen = target.classList.contains('show');
+
+        // Close all
+        document.querySelectorAll('.md-nav-collapse-inner.show').forEach(function (el) {
+          el.classList.remove('show');
+        });
+        document.querySelectorAll('.md-nav-collapse-toggle[aria-expanded="true"]').forEach(function (el) {
+          el.setAttribute('aria-expanded', 'false');
+        });
+
+        if (!isOpen) {
+          target.classList.add('show');
+          this.setAttribute('aria-expanded', 'true');
+        }
+      });
     });
 
-    window.addEventListener("resize", () => {
-      if (window.innerWidth >= 992) {
-        closeSidebar();
-      }
-    });
-  }
+    // ── Scroll-to-top button ────────────────────────────────
+    const scrollBtn = document.getElementById('md-scroll-top');
+    if (scrollBtn) {
+      window.addEventListener('scroll', function () {
+        scrollBtn.classList.toggle('visible', window.scrollY > 300);
+      });
 
-  if (scrollTop) {
-    const syncScrollTopVisibility = () => {
-      scrollTop.classList.toggle("is-visible", window.scrollY > 320);
-    };
-
-    syncScrollTopVisibility();
-    window.addEventListener("scroll", syncScrollTopVisibility, { passive: true });
-    scrollTop.addEventListener("click", (event) => {
-      event.preventDefault();
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    });
-  }
-});
+      scrollBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    }
+  });
+}());
