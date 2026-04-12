@@ -1,24 +1,40 @@
+import logging
+from importlib import import_module
+
 from django import template
 from django.conf import settings
 
-from importlib import import_module
-
 register = template.Library()
+logger = logging.getLogger(__name__)
 
 
-@register.simple_tag(takes_context=True)
-def dashboard(context):
+def _dashboard_sections():
     sections = []
 
     for module in settings.CORE_MODULES + settings.ENABLED_MODULES:
         try:
-            features = import_module(f"{module}.features")
-            try:
-                sections += features.DASHBOARD_SECTIONS
-            except Exception:
-                pass
+            features = import_module(f"moodyduck.{module}.features")
+        except ImportError:
+            continue
         except Exception:
-            pass
+            logger.exception("Error importing moodyduck.%s.features", module)
+            continue
+
+        try:
+            sections.extend(features.DASHBOARD_SECTIONS)
+        except AttributeError:
+            continue
+        except Exception:
+            logger.exception(
+                "Error loading DASHBOARD_SECTIONS from moodyduck.%s.features", module
+            )
+
+    return sections
+
+
+@register.simple_tag(takes_context=True)
+def dashboard(context):
+    sections = _dashboard_sections()
 
     dashboard_html = ""
 
@@ -37,14 +53,8 @@ def dashboard(context):
 def dashboard_styles():
     styles = []
 
-    for module in settings.CORE_MODULES + settings.ENABLED_MODULES:
-        try:
-            features = import_module(f"{module}.features")
-            for section in features.DASHBOARD_SECTIONS:
-                for style in section.styles:
-                    styles.append(style)
-        except Exception:
-            pass
+    for section in _dashboard_sections():
+        styles.extend(section.styles)
 
     return styles
 
@@ -53,13 +63,7 @@ def dashboard_styles():
 def dashboard_scripts():
     scripts = []
 
-    for module in settings.CORE_MODULES + settings.ENABLED_MODULES:
-        try:
-            features = import_module(f"{module}.features")
-            for section in features.DASHBOARD_SECTIONS:
-                for script in section.scripts:
-                    scripts.append(script)
-        except Exception:
-            pass
+    for section in _dashboard_sections():
+        scripts.extend(section.scripts)
 
     return scripts
