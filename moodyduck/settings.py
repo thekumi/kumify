@@ -178,7 +178,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 STATIC_URL = "/static/"
 
 STATIC_ROOT = CONFIG_FILE.config.get(
-    "MOODYDUCK", "StaticRoot", fallback=BASE_DIR / "static"
+    "MOODYDUCK", "StaticRoot", fallback="static"
 )
 
 LOGIN_REDIRECT_URL = "/"
