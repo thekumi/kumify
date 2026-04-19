@@ -29,6 +29,13 @@ health_section.add_item(
 health_section.add_item(
     NavItem("Health Log", reverse_lazy("health:log_list"), icon="ph ph-heartbeat")
 )
+health_section.add_item(
+    NavItem(
+        "Vaccinations",
+        reverse_lazy("health:vaccination_list"),
+        icon="ph ph-syringe",
+    )
+)
 health_section.add_item(health_settings_collapse)
 
 NAV_SECTIONS = [health_section]

@@ -11,6 +11,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
 from django.http import HttpResponseRedirect, HttpResponse
+from django.http import Http404
 from django.utils import timezone
 from django.views.decorators.clickjacking import xframe_options_sameorigin
 from django.utils.decorators import method_decorator
@@ -85,6 +86,19 @@ class StatusViewView(LoginRequiredMixin, DetailView):
 
     def get_object(self):
         return get_object_or_404(Status, user=self.request.user, id=self.kwargs["id"])
+
+
+class StatusEncryptedDownloadView(LoginRequiredMixin, View):
+    def get(self, request, id):
+        status = get_object_or_404(Status, user=request.user, id=id)
+        if not status.is_encrypted or not status.text:
+            raise Http404(_("This status is not encrypted."))
+
+        response = HttpResponse(status.text, content_type="text/plain; charset=utf-8")
+        response["Content-Disposition"] = (
+            f'attachment; filename="moodyduck-status-{status.id}.asc"'
+        )
+        return response
 
 
 class StatusCreateView(LoginRequiredMixin, CreateView):

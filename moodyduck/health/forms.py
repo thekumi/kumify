@@ -8,6 +8,7 @@ from .models import (
     HealthParameter,
     HealthLog,
     HealthRecord,
+    Vaccination,
 )
 
 
@@ -103,3 +104,21 @@ class HealthLogForm(BootstrapMixin, forms.ModelForm):
             else:
                 # Remove a previously-set value if the field was cleared
                 HealthRecord.objects.filter(log=self.instance, parameter=param).delete()
+
+
+class VaccinationForm(BootstrapMixin, forms.ModelForm):
+    class Meta:
+        model = Vaccination
+        fields = [
+            "name",
+            "target_disease",
+            "administered_on",
+            "provider",
+            "batch_number",
+            "next_due",
+            "notes",
+        ]
+        widgets = {
+            "administered_on": forms.DateInput(attrs={"type": "date"}),
+            "next_due": forms.DateInput(attrs={"type": "date"}),
+        }

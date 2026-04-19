@@ -2,7 +2,12 @@ from rest_framework import serializers
 
 from moodyduck.mood.models import Mood, Status
 from moodyduck.habits.models import Habit, HabitLog
-from moodyduck.health.models import HealthParameter, HealthLog, HealthRecord
+from moodyduck.health.models import (
+    HealthParameter,
+    HealthLog,
+    HealthRecord,
+    Vaccination,
+)
 from moodyduck.cbt.models import ThoughtRecord
 from moodyduck.dreams.models import Dream
 
@@ -75,6 +80,22 @@ class HealthLogSerializer(serializers.ModelSerializer):
     class Meta:
         model = HealthLog
         fields = ["id", "recorded_at", "notes", "records"]
+        read_only_fields = ["id"]
+
+
+class VaccinationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Vaccination
+        fields = [
+            "id",
+            "name",
+            "target_disease",
+            "administered_on",
+            "provider",
+            "batch_number",
+            "next_due",
+            "notes",
+        ]
         read_only_fields = ["id"]
 
 

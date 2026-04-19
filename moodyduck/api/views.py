@@ -7,7 +7,7 @@ from rest_framework.viewsets import GenericViewSet
 
 from moodyduck.mood.models import Mood, Status
 from moodyduck.habits.models import Habit, HabitLog
-from moodyduck.health.models import HealthLog, HealthParameter
+from moodyduck.health.models import HealthLog, HealthParameter, Vaccination
 from moodyduck.cbt.models import ThoughtRecord
 from moodyduck.dreams.models import Dream
 
@@ -20,6 +20,7 @@ from .serializers import (
     HealthParameterSerializer,
     MoodSerializer,
     StatusSerializer,
+    VaccinationSerializer,
 )
 
 
@@ -77,6 +78,17 @@ class HealthLogViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         return HealthLog.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+
+class VaccinationViewSet(viewsets.ModelViewSet):
+    serializer_class = VaccinationSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Vaccination.objects.filter(user=self.request.user)
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)

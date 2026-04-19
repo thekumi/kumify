@@ -11,6 +11,7 @@ from .views import (
     MoodViewSet,
     StatusCheckView,
     StatusViewSet,
+    VaccinationViewSet,
 )
 
 router = DefaultRouter()
@@ -22,6 +23,9 @@ router.register(
     "health/parameters", HealthParameterViewSet, basename="health-parameter"
 )
 router.register("health/logs", HealthLogViewSet, basename="health-log")
+router.register(
+    "health/vaccinations", VaccinationViewSet, basename="health-vaccination"
+)
 router.register("cbt/records", CBTRecordViewSet, basename="cbt-record")
 router.register("dreams", DreamViewSet, basename="dream")
 

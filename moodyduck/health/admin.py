@@ -8,6 +8,7 @@ from .models import (
     MedicationCalendar,
     MedicationSchedule,
     MedicationSettings,
+    Vaccination,
 )
 
 
@@ -82,3 +83,19 @@ class HealthRecordAdmin(admin.ModelAdmin):
     list_display = ("log", "parameter", "value", "comment")
     search_fields = ("parameter__name", "comment")
     raw_id_fields = ("log", "parameter")
+
+
+@admin.register(Vaccination)
+class VaccinationAdmin(admin.ModelAdmin):
+    list_display = (
+        "name",
+        "target_disease",
+        "user",
+        "administered_on",
+        "next_due",
+        "provider",
+    )
+    list_filter = ("user", "administered_on", "next_due")
+    search_fields = ("name", "target_disease", "provider", "batch_number", "notes")
+    date_hierarchy = "administered_on"
+    raw_id_fields = ("user",)

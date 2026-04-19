@@ -25,6 +25,7 @@ from .views import (
     MoodCountHeatmapJSONView,
     MoodHeatmapValuesJSONView,
     EncryptorView,
+    StatusEncryptedDownloadView,
 )
 
 from django.urls import path
@@ -34,6 +35,11 @@ app_name = "mood"
 urlpatterns = [
     path("", StatusListView.as_view(), name="status_list"),
     path("status/<int:id>/view/", StatusViewView.as_view(), name="status_view"),
+    path(
+        "status/<int:id>/encrypted/",
+        StatusEncryptedDownloadView.as_view(),
+        name="status_encrypted_download",
+    ),
     path("status/<int:id>/edit/", StatusEditView.as_view(), name="status_edit"),
     path("status/<int:id>/delete/", StatusDeleteView.as_view(), name="status_delete"),
     path("status/encryptor/", EncryptorView.as_view(), name="encryptor"),

@@ -9,12 +9,14 @@ from .models import (
     MedicationSettings,
     HealthParameter,
     HealthLog,
+    Vaccination,
 )
 from .forms import (
     MedicationForm,
     MedicationSettingsForm,
     HealthParameterForm,
     HealthLogForm,
+    VaccinationForm,
 )
 
 
@@ -285,3 +287,83 @@ class HealthLogDeleteView(LoginRequiredMixin, DeleteView):
 
     def get_success_url(self):
         return reverse_lazy("health:log_list")
+
+
+class VaccinationListView(LoginRequiredMixin, ListView):
+    template_name = "health/vaccination_list.html"
+    model = Vaccination
+
+    def get_queryset(self):
+        return Vaccination.objects.filter(user=self.request.user)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["title"] = _("Vaccinations")
+        context["subtitle"] = _("Keep a record of your immunizations and boosters.")
+        context["buttons"] = [
+            (reverse_lazy("health:vaccination_create"), _("Add Vaccination"), "plus"),
+        ]
+        return context
+
+
+class VaccinationCreateView(LoginRequiredMixin, CreateView):
+    template_name = "health/vaccination_edit.html"
+    model = Vaccination
+    form_class = VaccinationForm
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["title"] = _("Add Vaccination")
+        context["buttons"] = [
+            (reverse_lazy("health:vaccination_list"), _("Back"), "arrow-left")
+        ]
+        return context
+
+    def form_valid(self, form):
+        form.instance.user = self.request.user
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse_lazy("health:vaccination_list")
+
+
+class VaccinationEditView(LoginRequiredMixin, UpdateView):
+    template_name = "health/vaccination_edit.html"
+    model = Vaccination
+    form_class = VaccinationForm
+
+    def get_object(self, queryset=None):
+        return get_object_or_404(
+            Vaccination, user=self.request.user, id=self.kwargs["id"]
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["title"] = _("Edit Vaccination")
+        context["buttons"] = [
+            (reverse_lazy("health:vaccination_list"), _("Back"), "arrow-left"),
+            (
+                reverse_lazy(
+                    "health:vaccination_delete", kwargs={"id": self.kwargs["id"]}
+                ),
+                _("Delete"),
+                "trash",
+            ),
+        ]
+        return context
+
+    def get_success_url(self):
+        return reverse_lazy("health:vaccination_list")
+
+
+class VaccinationDeleteView(LoginRequiredMixin, DeleteView):
+    template_name = "health/vaccination_delete.html"
+    model = Vaccination
+
+    def get_object(self, queryset=None):
+        return get_object_or_404(
+            Vaccination, user=self.request.user, id=self.kwargs["id"]
+        )
+
+    def get_success_url(self):
+        return reverse_lazy("health:vaccination_list")

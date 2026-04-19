@@ -1,0 +1,57 @@
+{% extends "frontend/base.html" %}
+{% load i18n %}
+{% block content %}
+<div class="card">
+  <div class="card-header">{% trans "Vaccinations" %}</div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0" id="dataTable">
+        <thead>
+          <tr>
+            <th>{% trans "Vaccine" %}</th>
+            <th>{% trans "Date" %}</th>
+            <th>{% trans "Provider" %}</th>
+            <th>{% trans "Next dose" %}</th>
+            <th>{% trans "Actions" %}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for vaccination in object_list %}
+            <tr>
+              <td>
+                <div class="fw-semibold"><i class="ph ph-syringe me-2 text-muted"></i>{{ vaccination.name }}</div>
+                {% if vaccination.target_disease %}
+                  <div class="text-muted small">{% trans "For" %} {{ vaccination.target_disease }}</div>
+                {% endif %}
+              </td>
+              <td class="text-nowrap">{{ vaccination.administered_on|date:"N j, Y" }}</td>
+              <td class="text-muted">
+                {{ vaccination.provider|default:"—" }}
+                {% if vaccination.batch_number %}
+                  <div class="small">{% trans "Batch" %}: {{ vaccination.batch_number }}</div>
+                {% endif %}
+              </td>
+              <td class="text-nowrap">
+                {% if vaccination.next_due %}
+                  {{ vaccination.next_due|date:"N j, Y" }}
+                {% else %}
+                  <span class="text-muted">—</span>
+                {% endif %}
+              </td>
+              <td class="text-nowrap">
+                <a href="{% url 'health:vaccination_edit' vaccination.id %}" class="btn btn-sm btn-outline-secondary me-1">
+                  <i class="ph ph-pencil-simple"></i>
+                </a>
+                <a href="{% url 'health:vaccination_delete' vaccination.id %}" class="btn btn-sm btn-outline-danger">
+                  <i class="ph ph-trash"></i>
+                </a>
+              </td>
+            </tr>
+          {% empty %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock content %}

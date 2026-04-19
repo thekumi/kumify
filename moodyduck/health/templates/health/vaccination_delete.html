@@ -1,0 +1,21 @@
+{% extends "frontend/base.html" %}
+{% load i18n %}
+{% block content %}
+<div class="card">
+  <div class="card-header text-danger">{% trans "Delete Vaccination" %}</div>
+  <div class="card-body">
+    <p>
+      {% blocktrans with name=object.name date=object.administered_on|date:"N j, Y" %}
+        Are you sure you want to delete the vaccination record for <strong>{{ name }}</strong> from <strong>{{ date }}</strong>?
+      {% endblocktrans %}
+    </p>
+    <form method="post">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-danger me-2">
+        <i class="ph ph-trash me-1"></i> {% trans "Delete" %}
+      </button>
+      <a href="{% url 'health:vaccination_list' %}" class="btn btn-light">{% trans "Cancel" %}</a>
+    </form>
+  </div>
+</div>
+{% endblock content %}

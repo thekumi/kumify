@@ -147,3 +147,20 @@ class HealthRecord(models.Model):
 
     def __str__(self):
         return f"{self.parameter.name}: {self.value}"
+
+
+class Vaccination(models.Model):
+    class Meta:
+        ordering = ["-administered_on", "name"]
+
+    user = models.ForeignKey(get_user_model(), models.CASCADE)
+    name = models.CharField(max_length=128)
+    target_disease = models.CharField(max_length=128, null=True, blank=True)
+    administered_on = models.DateField(default=date.today)
+    provider = models.CharField(max_length=128, null=True, blank=True)
+    batch_number = models.CharField(max_length=64, null=True, blank=True)
+    next_due = models.DateField(null=True, blank=True)
+    notes = models.TextField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.name} on {self.administered_on:%Y-%m-%d}"

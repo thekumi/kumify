@@ -13,8 +13,9 @@
         <blockquote class="blockquote">
           {% if object.is_encrypted %}
             <p class="text-muted fst-italic">
-              <i class="ph ph-lock-simple me-2"></i>This entry is encrypted. Use a PGP client (e.g. Mailvelope) to read it.
+              <i class="ph ph-lock-simple me-2"></i>This entry is encrypted. If Mailvelope is installed, it should detect the armored message below.
             </p>
+            <pre class="border rounded bg-light p-3 small" style="white-space: pre-wrap;">{{ object.text }}</pre>
           {% elif object.text %}
             {{ object.text|linebreaks }}
           {% endif %}

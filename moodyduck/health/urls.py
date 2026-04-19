@@ -43,4 +43,24 @@ urlpatterns = [
     path(
         "log/<int:id>/delete/", views.HealthLogDeleteView.as_view(), name="log_delete"
     ),
+    path(
+        "vaccination/",
+        views.VaccinationListView.as_view(),
+        name="vaccination_list",
+    ),
+    path(
+        "vaccination/new/",
+        views.VaccinationCreateView.as_view(),
+        name="vaccination_create",
+    ),
+    path(
+        "vaccination/<int:id>/edit/",
+        views.VaccinationEditView.as_view(),
+        name="vaccination_edit",
+    ),
+    path(
+        "vaccination/<int:id>/delete/",
+        views.VaccinationDeleteView.as_view(),
+        name="vaccination_delete",
+    ),
 ]
