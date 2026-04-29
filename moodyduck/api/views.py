@@ -17,6 +17,7 @@ from .serializers import (
     HabitLogSerializer,
     HabitSerializer,
     HealthLogSerializer,
+    HealthLogWriteSerializer,
     HealthParameterSerializer,
     MoodSerializer,
     StatusSerializer,
@@ -78,6 +79,11 @@ class HealthLogViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         return HealthLog.objects.filter(user=self.request.user)
+
+    def get_serializer_class(self):
+        if self.action in ["create", "update", "partial_update"]:
+            return HealthLogWriteSerializer
+        return HealthLogSerializer
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
