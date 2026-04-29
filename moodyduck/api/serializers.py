@@ -1,6 +1,3 @@
-from functools import lru_cache
-
-from django.db import connection
 from rest_framework import serializers
 
 from moodyduck.mood.models import Activity, Mood, Status, StatusActivity
@@ -14,36 +11,12 @@ from moodyduck.health.models import (
 from moodyduck.cbt.models import ThoughtRecord
 from moodyduck.dreams.models import Dream
 
-
-@lru_cache(maxsize=None)
-def _table_has_column(table_name, column_name):
-    with connection.cursor() as cursor:
-        columns = connection.introspection.get_table_description(cursor, table_name)
-    return any(column.name == column_name for column in columns)
-
-
 def habit_queryset_for_request(request):
-    queryset = Habit.objects.all()
-    if (
-        request
-        and hasattr(request, "user")
-        and request.user.is_authenticated
-        and _table_has_column("habits_habit", "user_id")
-    ):
-        return queryset.filter(user=request.user)
-    return queryset
+    return Habit.objects.filter(user=request.user)
 
 
 def habit_log_queryset_for_request(request):
-    queryset = HabitLog.objects.select_related("habit")
-    if (
-        request
-        and hasattr(request, "user")
-        and request.user.is_authenticated
-        and _table_has_column("habits_habit", "user_id")
-    ):
-        return queryset.filter(habit__user=request.user)
-    return queryset
+    return HabitLog.objects.select_related("habit").filter(habit__user=request.user)
 
 
 class MoodSerializer(serializers.ModelSerializer):
