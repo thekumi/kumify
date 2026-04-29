@@ -6,6 +6,7 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
+from moodyduck.mood.models import Activity, Mood, Status
 from moodyduck.health.models import HealthLog, HealthParameter, HealthRecord
 
 
@@ -85,3 +86,43 @@ class HealthLogApiTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(HealthLog.objects.filter(user=self.user).count(), 0)
+
+
+class StatusApiTests(APITestCase):
+    def setUp(self):
+        self.host = settings.ALLOWED_HOSTS[0]
+        self.user = get_user_model().objects.create_user(
+            username="status-user",
+            password="secret",
+        )
+        self.client.force_authenticate(user=self.user)
+        self.url = reverse("status-list")
+
+    def test_create_status_with_activities(self):
+        mood = Mood.objects.create(user=self.user, name="Okay", value=3)
+        walk = Activity.objects.create(user=self.user, name="Walk")
+        reading = Activity.objects.create(user=self.user, name="Reading")
+
+        response = self.client.post(
+            self.url,
+            {
+                "mood": mood.pk,
+                "title": "Afternoon reset",
+                "text": "Got outside for a bit.",
+                "activity_ids": [walk.pk, reading.pk],
+            },
+            format="json",
+            HTTP_HOST=self.host,
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        status_obj = Status.objects.get(user=self.user)
+        self.assertEqual(status_obj.mood, mood)
+        self.assertCountEqual(
+            [activity.name for activity in status_obj.activity_set],
+            ["Walk", "Reading"],
+        )
+        self.assertCountEqual(
+            [activity["name"] for activity in response.data["activities"]],
+            ["Walk", "Reading"],
+        )

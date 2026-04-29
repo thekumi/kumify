@@ -5,7 +5,7 @@ from rest_framework import permissions, viewsets
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.viewsets import GenericViewSet
 
-from moodyduck.mood.models import Mood, Status
+from moodyduck.mood.models import Activity, Mood, Status
 from moodyduck.habits.models import Habit, HabitLog
 from moodyduck.health.models import HealthLog, HealthParameter, Vaccination
 from moodyduck.cbt.models import ThoughtRecord
@@ -14,6 +14,9 @@ from moodyduck.dreams.models import Dream
 from .serializers import (
     CBTRecordSerializer,
     DreamSerializer,
+    ActivitySerializer,
+    habit_log_queryset_for_request,
+    habit_queryset_for_request,
     HabitLogSerializer,
     HabitSerializer,
     HealthLogSerializer,
@@ -38,6 +41,14 @@ class MoodViewSet(RetrieveModelMixin, ListModelMixin, GenericViewSet):
         return Mood.objects.filter(user=self.request.user)
 
 
+class ActivityViewSet(RetrieveModelMixin, ListModelMixin, GenericViewSet):
+    serializer_class = ActivitySerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Activity.objects.filter(user=self.request.user)
+
+
 class StatusViewSet(viewsets.ModelViewSet):
     serializer_class = StatusSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -54,7 +65,7 @@ class HabitViewSet(RetrieveModelMixin, ListModelMixin, GenericViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return Habit.objects.filter(user=self.request.user)
+        return habit_queryset_for_request(self.request)
 
 
 class HabitLogViewSet(viewsets.ModelViewSet):
@@ -62,7 +73,7 @@ class HabitLogViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return HabitLog.objects.filter(habit__user=self.request.user)
+        return habit_log_queryset_for_request(self.request)
 
 
 class HealthParameterViewSet(RetrieveModelMixin, ListModelMixin, GenericViewSet):

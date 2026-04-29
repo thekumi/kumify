@@ -2,6 +2,7 @@ from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
 from .views import (
+    ActivityViewSet,
     CBTRecordViewSet,
     DreamViewSet,
     HabitLogViewSet,
@@ -16,6 +17,7 @@ from .views import (
 
 router = DefaultRouter()
 router.register("moods", MoodViewSet, basename="mood")
+router.register("activities", ActivityViewSet, basename="activity")
 router.register("statuses", StatusViewSet, basename="status")
 router.register("habits", HabitViewSet, basename="habit")
 router.register("habit-logs", HabitLogViewSet, basename="habit-log")

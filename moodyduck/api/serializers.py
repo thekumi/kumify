@@ -1,6 +1,9 @@
+from functools import lru_cache
+
+from django.db import connection
 from rest_framework import serializers
 
-from moodyduck.mood.models import Mood, Status
+from moodyduck.mood.models import Activity, Mood, Status, StatusActivity
 from moodyduck.habits.models import Habit, HabitLog
 from moodyduck.health.models import (
     HealthParameter,
@@ -10,6 +13,37 @@ from moodyduck.health.models import (
 )
 from moodyduck.cbt.models import ThoughtRecord
 from moodyduck.dreams.models import Dream
+
+
+@lru_cache(maxsize=None)
+def _table_has_column(table_name, column_name):
+    with connection.cursor() as cursor:
+        columns = connection.introspection.get_table_description(cursor, table_name)
+    return any(column.name == column_name for column in columns)
+
+
+def habit_queryset_for_request(request):
+    queryset = Habit.objects.all()
+    if (
+        request
+        and hasattr(request, "user")
+        and request.user.is_authenticated
+        and _table_has_column("habits_habit", "user_id")
+    ):
+        return queryset.filter(user=request.user)
+    return queryset
+
+
+def habit_log_queryset_for_request(request):
+    queryset = HabitLog.objects.select_related("habit")
+    if (
+        request
+        and hasattr(request, "user")
+        and request.user.is_authenticated
+        and _table_has_column("habits_habit", "user_id")
+    ):
+        return queryset.filter(habit__user=request.user)
+    return queryset
 
 
 class MoodSerializer(serializers.ModelSerializer):
@@ -23,10 +57,25 @@ class StatusSerializer(serializers.ModelSerializer):
     mood = serializers.PrimaryKeyRelatedField(
         queryset=Mood.objects.none(), allow_null=True
     )
+    activities = serializers.SerializerMethodField(read_only=True)
+    activity_ids = serializers.PrimaryKeyRelatedField(
+        queryset=Activity.objects.none(),
+        many=True,
+        required=False,
+        write_only=True,
+    )
 
     class Meta:
         model = Status
-        fields = ["id", "mood", "title", "text", "timestamp"]
+        fields = [
+            "id",
+            "mood",
+            "title",
+            "text",
+            "timestamp",
+            "activities",
+            "activity_ids",
+        ]
         read_only_fields = ["id"]
 
     def __init__(self, *args, **kwargs):
@@ -34,6 +83,45 @@ class StatusSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         if request and hasattr(request, "user") and request.user.is_authenticated:
             self.fields["mood"].queryset = Mood.objects.filter(user=request.user)
+            self.fields["activity_ids"].child_relation.queryset = Activity.objects.filter(
+                user=request.user
+            )
+
+    def get_activities(self, obj):
+        return ActivitySerializer(obj.activity_set, many=True).data
+
+    def create(self, validated_data):
+        activity_ids = validated_data.pop("activity_ids", [])
+        status = Status.objects.create(**validated_data)
+        self._sync_activities(status, activity_ids)
+        return status
+
+    def update(self, instance, validated_data):
+        activity_ids = validated_data.pop("activity_ids", None)
+        for field, value in validated_data.items():
+            setattr(instance, field, value)
+        instance.save()
+        if activity_ids is not None:
+            self._sync_activities(instance, activity_ids)
+        return instance
+
+    def _sync_activities(self, status, activities):
+        StatusActivity.objects.filter(status=status).exclude(activity__in=activities).delete()
+        existing_ids = set(
+            StatusActivity.objects.filter(status=status, activity__in=activities).values_list(
+                "activity_id", flat=True
+            )
+        )
+        for activity in activities:
+            if activity.pk not in existing_ids:
+                StatusActivity.objects.create(status=status, activity=activity)
+
+
+class ActivitySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Activity
+        fields = ["id", "name", "icon", "color"]
+        read_only_fields = ["id"]
 
 
 class HabitSerializer(serializers.ModelSerializer):
@@ -55,7 +143,7 @@ class HabitLogSerializer(serializers.ModelSerializer):
         super().__init__(*args, **kwargs)
         request = self.context.get("request")
         if request and hasattr(request, "user") and request.user.is_authenticated:
-            self.fields["habit"].queryset = Habit.objects.filter(user=request.user)
+            self.fields["habit"].queryset = habit_queryset_for_request(request)
 
 
 class HealthParameterSerializer(serializers.ModelSerializer):
