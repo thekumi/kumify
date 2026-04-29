@@ -4,6 +4,7 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     ActivityViewSet,
     CBTRecordViewSet,
+    CurrentProfileView,
     DreamViewSet,
     HabitLogViewSet,
     HabitViewSet,
@@ -33,6 +34,7 @@ router.register("dreams", DreamViewSet, basename="dream")
 
 urlpatterns = [
     path("", include(router.urls)),
+    path("profile/", CurrentProfileView.as_view(), name="profile"),
     path("status/", StatusCheckView.as_view(), name="status"),
     path("auth/", include("rest_framework.urls")),
 ]

@@ -126,3 +126,65 @@ class StatusApiTests(APITestCase):
             [activity["name"] for activity in response.data["activities"]],
             ["Walk", "Reading"],
         )
+
+
+class ReferenceDataApiTests(APITestCase):
+    def setUp(self):
+        self.host = settings.ALLOWED_HOSTS[0]
+        self.user = get_user_model().objects.create_user(
+            username="reference-user",
+            password="secret",
+        )
+        self.client.force_authenticate(user=self.user)
+
+    def test_create_mood_activity_habit_and_parameter(self):
+        mood_response = self.client.post(
+            reverse("mood-list"),
+            {
+                "name": "Focused",
+                "value": 4,
+                "icon": "ph ph-brain",
+                "color": "#123456",
+            },
+            format="json",
+            HTTP_HOST=self.host,
+        )
+        activity_response = self.client.post(
+            reverse("activity-list"),
+            {
+                "name": "Reading",
+                "icon": "ph ph-book-open",
+                "color": "#654321",
+            },
+            format="json",
+            HTTP_HOST=self.host,
+        )
+        habit_response = self.client.post(
+            reverse("habit-list"),
+            {
+                "name": "Stretch",
+                "icon": "ph ph-heart",
+                "color": "#abcdef",
+                "description": "Five minutes",
+            },
+            format="json",
+            HTTP_HOST=self.host,
+        )
+        parameter_response = self.client.post(
+            reverse("health-parameter-list"),
+            {
+                "name": "Pulse",
+                "unit": "bpm",
+                "icon": "ph ph-heartbeat",
+            },
+            format="json",
+            HTTP_HOST=self.host,
+        )
+
+        self.assertEqual(mood_response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(activity_response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(habit_response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(parameter_response.status_code, status.HTTP_201_CREATED)
+
+        self.assertEqual(Mood.objects.filter(user=self.user, name="Focused").count(), 1)
+        self.assertEqual(Activity.objects.filter(user=self.user, name="Reading").count(), 1)

@@ -3,6 +3,8 @@ from django.views import View
 
 from rest_framework import permissions, viewsets
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
+from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework.viewsets import GenericViewSet
 
 from moodyduck.mood.models import Activity, Mood, Status
@@ -24,6 +26,7 @@ from .serializers import (
     HealthParameterSerializer,
     MoodSerializer,
     StatusSerializer,
+    UserProfileSerializer,
     VaccinationSerializer,
 )
 
@@ -33,20 +36,43 @@ class StatusCheckView(View):
         return JsonResponse({"status": "OK"})
 
 
-class MoodViewSet(RetrieveModelMixin, ListModelMixin, GenericViewSet):
+class CurrentProfileView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        return Response(UserProfileSerializer(request.user.userprofile).data)
+
+    def patch(self, request):
+        serializer = UserProfileSerializer(
+            request.user.userprofile,
+            data=request.data,
+            partial=True,
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+
+class MoodViewSet(viewsets.ModelViewSet):
     serializer_class = MoodSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         return Mood.objects.filter(user=self.request.user)
 
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
 
-class ActivityViewSet(RetrieveModelMixin, ListModelMixin, GenericViewSet):
+
+class ActivityViewSet(viewsets.ModelViewSet):
     serializer_class = ActivitySerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         return Activity.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
 
 
 class StatusViewSet(viewsets.ModelViewSet):
@@ -60,12 +86,15 @@ class StatusViewSet(viewsets.ModelViewSet):
         serializer.save(user=self.request.user)
 
 
-class HabitViewSet(RetrieveModelMixin, ListModelMixin, GenericViewSet):
+class HabitViewSet(viewsets.ModelViewSet):
     serializer_class = HabitSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         return habit_queryset_for_request(self.request)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
 
 
 class HabitLogViewSet(viewsets.ModelViewSet):
@@ -76,12 +105,15 @@ class HabitLogViewSet(viewsets.ModelViewSet):
         return habit_log_queryset_for_request(self.request)
 
 
-class HealthParameterViewSet(RetrieveModelMixin, ListModelMixin, GenericViewSet):
+class HealthParameterViewSet(viewsets.ModelViewSet):
     serializer_class = HealthParameterSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         return HealthParameter.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
 
 
 class HealthLogViewSet(viewsets.ModelViewSet):

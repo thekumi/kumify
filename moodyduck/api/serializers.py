@@ -1,3 +1,7 @@
+import logging
+import tempfile
+
+import gnupg
 from rest_framework import serializers
 
 from moodyduck.mood.models import Activity, Mood, Status, StatusActivity
@@ -10,6 +14,7 @@ from moodyduck.health.models import (
 )
 from moodyduck.cbt.models import ThoughtRecord
 from moodyduck.dreams.models import Dream
+from moodyduck.profiles.models import UserProfile
 
 def habit_queryset_for_request(request):
     return Habit.objects.filter(user=request.user)
@@ -37,6 +42,7 @@ class StatusSerializer(serializers.ModelSerializer):
         required=False,
         write_only=True,
     )
+    encrypt = serializers.BooleanField(required=False, write_only=True, default=False)
 
     class Meta:
         model = Status
@@ -48,6 +54,7 @@ class StatusSerializer(serializers.ModelSerializer):
             "timestamp",
             "activities",
             "activity_ids",
+            "encrypt",
         ]
         read_only_fields = ["id"]
 
@@ -64,18 +71,22 @@ class StatusSerializer(serializers.ModelSerializer):
         return ActivitySerializer(obj.activity_set, many=True).data
 
     def create(self, validated_data):
+        encrypt = validated_data.pop("encrypt", False)
         activity_ids = validated_data.pop("activity_ids", [])
         status = Status.objects.create(**validated_data)
         self._sync_activities(status, activity_ids)
+        self._maybe_encrypt(status, encrypt)
         return status
 
     def update(self, instance, validated_data):
+        encrypt = validated_data.pop("encrypt", False)
         activity_ids = validated_data.pop("activity_ids", None)
         for field, value in validated_data.items():
             setattr(instance, field, value)
         instance.save()
         if activity_ids is not None:
             self._sync_activities(instance, activity_ids)
+        self._maybe_encrypt(instance, encrypt)
         return instance
 
     def _sync_activities(self, status, activities):
@@ -89,6 +100,40 @@ class StatusSerializer(serializers.ModelSerializer):
             if activity.pk not in existing_ids:
                 StatusActivity.objects.create(status=status, activity=activity)
 
+    def _maybe_encrypt(self, status, encrypt):
+        if not encrypt or not status.text or status.is_encrypted:
+            return
+
+        pgp_key = getattr(status.user.userprofile, "pgp_key", "").strip()
+        if not pgp_key:
+            raise serializers.ValidationError(
+                {"encrypt": "Add a PGP public key to your profile before encrypting."}
+            )
+
+        with tempfile.TemporaryDirectory() as gnupghome:
+            gpg = gnupg.GPG(gnupghome=gnupghome)
+            gpg.encoding = "utf-8"
+            imported = gpg.import_keys(pgp_key)
+            if imported.count == 0:
+                logging.error("No public keys imported for user %s", status.user_id)
+                raise serializers.ValidationError(
+                    {"encrypt": "Your saved PGP key could not be imported."}
+                )
+
+            encrypted = gpg.encrypt(
+                status.text,
+                recipients=[imported.fingerprints[0]],
+                always_trust=True,
+            )
+            if not encrypted.ok:
+                logging.error("Error encrypting status %s: %s", status.pk, encrypted.status)
+                raise serializers.ValidationError(
+                    {"encrypt": f"Error encrypting note: {encrypted.status}"}
+                )
+
+            status.text = str(encrypted)
+            status.save(update_fields=["text"])
+
 
 class ActivitySerializer(serializers.ModelSerializer):
     class Meta:
@@ -100,7 +145,7 @@ class ActivitySerializer(serializers.ModelSerializer):
 class HabitSerializer(serializers.ModelSerializer):
     class Meta:
         model = Habit
-        fields = ["id", "name", "icon", "description"]
+        fields = ["id", "name", "icon", "color", "description"]
         read_only_fields = ["id"]
 
 
@@ -241,3 +286,9 @@ class DreamSerializer(serializers.ModelSerializer):
         model = Dream
         fields = "__all__"
         read_only_fields = ["id", "user"]
+
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserProfile
+        fields = ["display_name", "timezone", "pgp_key"]
