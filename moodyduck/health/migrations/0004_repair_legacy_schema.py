@@ -17,6 +17,8 @@ def repair_health_schema(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
+    atomic = False
+
     dependencies = [
         ("health", "0003_alter_healthparameter_icon_alter_medication_icon_and_more"),
     ]

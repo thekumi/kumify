@@ -54,6 +54,8 @@ def repair_habits_schema(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
+    atomic = False
+
     dependencies = [
         ("habits", "0003_alter_dailyhabitschedule_options_and_more"),
     ]
