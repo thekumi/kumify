@@ -9,7 +9,7 @@ from rest_framework.test import APITestCase
 
 from moodyduck.dreams.models import Dream, DreamMedia
 from moodyduck.friends.models import Person
-from moodyduck.health.models import BasicMedicalInfo
+from moodyduck.health.models import BasicMedicalInfo, Vaccination
 from moodyduck.mood.models import Activity, Mood, Status, StatusMedia
 from moodyduck.health.models import HealthLog, HealthParameter, HealthRecord
 from moodyduck.profiles.models import EmergencyAccessLog
@@ -315,6 +315,24 @@ class EmergencyApiTests(APITestCase):
             relationship="Sibling",
             emergency_contact=True,
         )
+        Vaccination.objects.create(
+            user=self.user,
+            name="Flu shot 2024",
+            target_disease="Influenza",
+            administered_on="2024-10-01",
+        )
+        Vaccination.objects.create(
+            user=self.user,
+            name="Flu shot 2025",
+            target_disease="Influenza",
+            administered_on="2025-10-01",
+        )
+        Vaccination.objects.create(
+            user=self.user,
+            name="COVID booster",
+            target_disease="COVID-19",
+            administered_on="2025-03-05",
+        )
 
         profile_response = self.client.get(
             reverse("emergency-profile"),
@@ -323,6 +341,9 @@ class EmergencyApiTests(APITestCase):
         self.assertEqual(profile_response.status_code, status.HTTP_200_OK)
         self.assertEqual(profile_response.data["blood_type"], "O+")
         self.assertEqual(profile_response.data["contacts"][0]["relationship"], "Sibling")
+        self.assertEqual(len(profile_response.data["vaccinations"]), 2)
+        self.assertEqual(profile_response.data["vaccinations"][0]["target_disease"], "COVID-19")
+        self.assertEqual(profile_response.data["vaccinations"][1]["name"], "Flu shot 2025")
 
         log_response = self.client.post(
             reverse("emergency-access-log-list"),

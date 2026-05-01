@@ -28,6 +28,7 @@ from .serializers import (
     EmergencyAccessLogSerializer,
     EmergencyContactSerializer,
     EmergencyProfileSerializer,
+    EmergencyVaccinationSerializer,
     habit_log_queryset_for_request,
     habit_queryset_for_request,
     HabitLogSerializer,
@@ -72,6 +73,17 @@ class CurrentEmergencyProfileView(APIView):
     def get(self, request):
         profile = request.user.userprofile
         medical_info, _ = BasicMedicalInfo.objects.get_or_create(user=request.user)
+        latest_vaccinations = []
+        seen_targets = set()
+        for vaccination in Vaccination.objects.filter(user=request.user).order_by(
+            "target_disease", "-administered_on", "name"
+        ):
+            target = (vaccination.target_disease or vaccination.name).strip()
+            if target in seen_targets:
+                continue
+            seen_targets.add(target)
+            latest_vaccinations.append(vaccination)
+
         payload = {
             "display_name": profile.display_name,
             "legal_name": profile.legal_name,
@@ -83,6 +95,10 @@ class CurrentEmergencyProfileView(APIView):
             "medical_notes": medical_info.medical_notes,
             "contacts": EmergencyContactSerializer(
                 request.user.person_set.filter(emergency_contact=True),
+                many=True,
+            ).data,
+            "vaccinations": EmergencyVaccinationSerializer(
+                latest_vaccinations,
                 many=True,
             ).data,
         }

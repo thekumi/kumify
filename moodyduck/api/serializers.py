@@ -406,6 +406,17 @@ class PersonSerializer(serializers.ModelSerializer):
         read_only_fields = ["id"]
 
 
+class EmergencyVaccinationSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    name = serializers.CharField()
+    target_disease = serializers.CharField(allow_blank=True, allow_null=True, required=False)
+    administered_on = serializers.DateField()
+    provider = serializers.CharField(allow_blank=True, allow_null=True, required=False)
+    next_due = serializers.DateField(allow_null=True, required=False)
+    batch_number = serializers.CharField(allow_blank=True, allow_null=True, required=False)
+    notes = serializers.CharField(allow_blank=True, allow_null=True, required=False)
+
+
 class EmergencyProfileSerializer(serializers.Serializer):
     display_name = serializers.CharField(allow_blank=True, allow_null=True, required=False)
     legal_name = serializers.CharField(allow_blank=True, allow_null=True, required=False)
@@ -416,6 +427,7 @@ class EmergencyProfileSerializer(serializers.Serializer):
     allergies = serializers.CharField(allow_blank=True, allow_null=True, required=False)
     medical_notes = serializers.CharField(allow_blank=True, allow_null=True, required=False)
     contacts = EmergencyContactSerializer(many=True, read_only=True)
+    vaccinations = EmergencyVaccinationSerializer(many=True, read_only=True)
 
 
 class EmergencyAccessLogSerializer(serializers.ModelSerializer):
