@@ -15,8 +15,10 @@ class UserProfileView(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        profile, created = UserProfile.objects.get_or_create(user=self.request.user)
-        medical_info, _ = BasicMedicalInfo.objects.get_or_create(user=self.request.user)
+        profile, _profile_created = UserProfile.objects.get_or_create(user=self.request.user)
+        medical_info, _medical_created = BasicMedicalInfo.objects.get_or_create(
+            user=self.request.user
+        )
         context["profile"] = profile
         context["medical_info"] = medical_info
         context["recent_emergency_access_logs"] = EmergencyAccessLog.objects.filter(
@@ -33,7 +35,7 @@ class UserProfileEditView(LoginRequiredMixin, UpdateView):
     success_url = reverse_lazy("profiles:profile_view")
 
     def get_object(self):
-        profile, created = UserProfile.objects.get_or_create(user=self.request.user)
+        profile, _profile_created = UserProfile.objects.get_or_create(user=self.request.user)
         return profile
 
     def get_context_data(self, **kwargs):
