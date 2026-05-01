@@ -7,6 +7,7 @@ from rest_framework import serializers
 from moodyduck.mood.models import Activity, Mood, Status, StatusActivity
 from moodyduck.habits.models import Habit, HabitLog
 from moodyduck.health.models import (
+    BasicMedicalInfo,
     HealthParameter,
     HealthLog,
     HealthRecord,
@@ -14,7 +15,8 @@ from moodyduck.health.models import (
 )
 from moodyduck.cbt.models import ThoughtRecord
 from moodyduck.dreams.models import Dream
-from moodyduck.profiles.models import UserProfile
+from moodyduck.friends.models import Person
+from moodyduck.profiles.models import EmergencyAccessLog, UserProfile
 
 def habit_queryset_for_request(request):
     return Habit.objects.filter(user=request.user)
@@ -291,4 +293,52 @@ class DreamSerializer(serializers.ModelSerializer):
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
-        fields = ["display_name", "timezone", "pgp_key"]
+        fields = [
+            "display_name",
+            "timezone",
+            "pgp_key",
+            "legal_name",
+            "phone",
+            "address",
+            "date_of_birth",
+        ]
+
+
+class BasicMedicalInfoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BasicMedicalInfo
+        fields = ["blood_type", "allergies", "medical_notes"]
+
+
+class EmergencyContactSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Person
+        fields = [
+            "id",
+            "name",
+            "nickname",
+            "phone",
+            "email",
+            "relationship",
+            "notes",
+        ]
+        read_only_fields = ["id"]
+
+
+class EmergencyProfileSerializer(serializers.Serializer):
+    display_name = serializers.CharField(allow_blank=True, allow_null=True, required=False)
+    legal_name = serializers.CharField(allow_blank=True, allow_null=True, required=False)
+    phone = serializers.CharField(allow_blank=True, allow_null=True, required=False)
+    address = serializers.CharField(allow_blank=True, allow_null=True, required=False)
+    date_of_birth = serializers.DateField(allow_null=True, required=False)
+    blood_type = serializers.CharField(allow_blank=True, allow_null=True, required=False)
+    allergies = serializers.CharField(allow_blank=True, allow_null=True, required=False)
+    medical_notes = serializers.CharField(allow_blank=True, allow_null=True, required=False)
+    contacts = EmergencyContactSerializer(many=True, read_only=True)
+
+
+class EmergencyAccessLogSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EmergencyAccessLog
+        fields = ["id", "accessed_at", "source", "method", "details"]
+        read_only_fields = ["id", "accessed_at"]

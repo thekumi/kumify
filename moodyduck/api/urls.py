@@ -4,8 +4,10 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     ActivityViewSet,
     CBTRecordViewSet,
+    CurrentEmergencyProfileView,
     CurrentProfileView,
     DreamViewSet,
+    EmergencyAccessLogViewSet,
     HabitLogViewSet,
     HabitViewSet,
     HealthLogViewSet,
@@ -31,10 +33,12 @@ router.register(
 )
 router.register("cbt/records", CBTRecordViewSet, basename="cbt-record")
 router.register("dreams", DreamViewSet, basename="dream")
+router.register("emergency-access-logs", EmergencyAccessLogViewSet, basename="emergency-access-log")
 
 urlpatterns = [
     path("", include(router.urls)),
     path("profile/", CurrentProfileView.as_view(), name="profile"),
+    path("emergency-profile/", CurrentEmergencyProfileView.as_view(), name="emergency-profile"),
     path("status/", StatusCheckView.as_view(), name="status"),
     path("auth/", include("rest_framework.urls")),
 ]

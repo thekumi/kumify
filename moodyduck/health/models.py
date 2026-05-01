@@ -123,6 +123,16 @@ class HealthParameter(models.Model):
         return self.name
 
 
+class BasicMedicalInfo(models.Model):
+    user = models.OneToOneField(get_user_model(), models.CASCADE)
+    blood_type = models.CharField(max_length=8, blank=True, null=True)
+    allergies = models.TextField(blank=True, null=True)
+    medical_notes = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return f"Basic medical info for {self.user}"
+
+
 class HealthLog(models.Model):
     """A single health check-in containing values for multiple parameters."""
 

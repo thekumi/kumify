@@ -14,8 +14,10 @@ class Person(models.Model):
     birthday = models.DateField(null=True, blank=True)
     email = models.EmailField(null=True, blank=True)
     phone = models.CharField(max_length=32, null=True, blank=True)
+    relationship = models.CharField(max_length=64, null=True, blank=True)
     address = models.TextField(null=True, blank=True)
     notes = models.TextField(null=True, blank=True)
+    emergency_contact = models.BooleanField(default=False)
     last_contact = models.DateField(null=True, blank=True)
     created_at = models.DateTimeField(default=timezone.now)
 

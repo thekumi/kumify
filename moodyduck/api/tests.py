@@ -6,8 +6,11 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
+from moodyduck.friends.models import Person
+from moodyduck.health.models import BasicMedicalInfo
 from moodyduck.mood.models import Activity, Mood, Status
 from moodyduck.health.models import HealthLog, HealthParameter, HealthRecord
+from moodyduck.profiles.models import EmergencyAccessLog
 
 
 class HealthLogApiTests(APITestCase):
@@ -188,3 +191,49 @@ class ReferenceDataApiTests(APITestCase):
 
         self.assertEqual(Mood.objects.filter(user=self.user, name="Focused").count(), 1)
         self.assertEqual(Activity.objects.filter(user=self.user, name="Reading").count(), 1)
+
+
+class EmergencyApiTests(APITestCase):
+    def setUp(self):
+        self.host = settings.ALLOWED_HOSTS[0]
+        self.user = get_user_model().objects.create_user(
+            username="emergency-user",
+            password="secret",
+        )
+        self.client.force_authenticate(user=self.user)
+
+    def test_emergency_profile_and_access_logs(self):
+        profile = self.user.userprofile
+        profile.legal_name = "Duck User"
+        profile.phone = "+123"
+        profile.save()
+        BasicMedicalInfo.objects.create(
+            user=self.user,
+            blood_type="O+",
+            allergies="Peanuts",
+            medical_notes="Carries inhaler",
+        )
+        Person.objects.create(
+            user=self.user,
+            name="Alex Friend",
+            phone="+999",
+            relationship="Sibling",
+            emergency_contact=True,
+        )
+
+        profile_response = self.client.get(
+            reverse("emergency-profile"),
+            HTTP_HOST=self.host,
+        )
+        self.assertEqual(profile_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(profile_response.data["blood_type"], "O+")
+        self.assertEqual(profile_response.data["contacts"][0]["relationship"], "Sibling")
+
+        log_response = self.client.post(
+            reverse("emergency-access-log-list"),
+            {"source": "android", "method": "locked_screen", "details": "offline cache"},
+            format="json",
+            HTTP_HOST=self.host,
+        )
+        self.assertEqual(log_response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(EmergencyAccessLog.objects.filter(user=self.user).count(), 1)

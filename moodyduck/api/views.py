@@ -9,14 +9,19 @@ from rest_framework.viewsets import GenericViewSet
 
 from moodyduck.mood.models import Activity, Mood, Status
 from moodyduck.habits.models import Habit, HabitLog
-from moodyduck.health.models import HealthLog, HealthParameter, Vaccination
+from moodyduck.health.models import BasicMedicalInfo, HealthLog, HealthParameter, Vaccination
 from moodyduck.cbt.models import ThoughtRecord
 from moodyduck.dreams.models import Dream
+from moodyduck.profiles.models import EmergencyAccessLog
 
 from .serializers import (
     CBTRecordSerializer,
     DreamSerializer,
     ActivitySerializer,
+    BasicMedicalInfoSerializer,
+    EmergencyAccessLogSerializer,
+    EmergencyContactSerializer,
+    EmergencyProfileSerializer,
     habit_log_queryset_for_request,
     habit_queryset_for_request,
     HabitLogSerializer,
@@ -51,6 +56,59 @@ class CurrentProfileView(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)
+
+
+class CurrentEmergencyProfileView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        profile = request.user.userprofile
+        medical_info, _ = BasicMedicalInfo.objects.get_or_create(user=request.user)
+        payload = {
+            "display_name": profile.display_name,
+            "legal_name": profile.legal_name,
+            "phone": profile.phone,
+            "address": profile.address,
+            "date_of_birth": profile.date_of_birth,
+            "blood_type": medical_info.blood_type,
+            "allergies": medical_info.allergies,
+            "medical_notes": medical_info.medical_notes,
+            "contacts": EmergencyContactSerializer(
+                request.user.person_set.filter(emergency_contact=True),
+                many=True,
+            ).data,
+        }
+        return Response(EmergencyProfileSerializer(payload).data)
+
+    def patch(self, request):
+        profile_serializer = UserProfileSerializer(
+            request.user.userprofile,
+            data=request.data,
+            partial=True,
+        )
+        profile_serializer.is_valid(raise_exception=True)
+        profile_serializer.save()
+
+        medical_info, _ = BasicMedicalInfo.objects.get_or_create(user=request.user)
+        medical_serializer = BasicMedicalInfoSerializer(
+            medical_info,
+            data=request.data,
+            partial=True,
+        )
+        medical_serializer.is_valid(raise_exception=True)
+        medical_serializer.save()
+        return self.get(request)
+
+
+class EmergencyAccessLogViewSet(viewsets.ModelViewSet):
+    serializer_class = EmergencyAccessLogSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return EmergencyAccessLog.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
 
 
 class MoodViewSet(viewsets.ModelViewSet):
