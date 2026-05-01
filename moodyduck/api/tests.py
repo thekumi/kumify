@@ -1,9 +1,11 @@
+from datetime import timedelta
 from decimal import Decimal
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -173,6 +175,26 @@ class StatusApiTests(APITestCase):
         self.assertEqual(delete_response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(StatusMedia.objects.filter(status=status_obj).count(), 0)
 
+    def test_status_list_is_newest_first(self):
+        older = Status.objects.create(
+            user=self.user,
+            title="Older",
+            timestamp=timezone.now() - timedelta(days=30),
+        )
+        newer = Status.objects.create(
+            user=self.user,
+            title="Newer",
+            timestamp=timezone.now(),
+        )
+
+        response = self.client.get(self.url, HTTP_HOST=self.host)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            [item["id"] for item in response.data["results"][:2]],
+            [newer.id, older.id],
+        )
+
 
 class DreamApiTests(APITestCase):
     def setUp(self):
@@ -240,6 +262,33 @@ class DreamApiTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("encrypt", response.data)
+
+    def test_dream_list_is_newest_first(self):
+        older = Dream.objects.create(
+            user=self.user,
+            title="Older",
+            content="First",
+            type=0,
+            timestamp=timezone.now() - timedelta(days=30),
+        )
+        newer = Dream.objects.create(
+            user=self.user,
+            title="Newer",
+            content="Second",
+            type=0,
+            timestamp=timezone.now(),
+        )
+
+        response = self.client.get(
+            reverse("dream-list"),
+            HTTP_HOST=self.host,
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            [item["id"] for item in response.data["results"][:2]],
+            [newer.id, older.id],
+        )
 
 
 class ReferenceDataApiTests(APITestCase):
