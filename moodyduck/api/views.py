@@ -12,6 +12,7 @@ from moodyduck.habits.models import Habit, HabitLog
 from moodyduck.health.models import BasicMedicalInfo, HealthLog, HealthParameter, Vaccination
 from moodyduck.cbt.models import ThoughtRecord
 from moodyduck.dreams.models import Dream
+from moodyduck.friends.models import Person
 from moodyduck.profiles.models import EmergencyAccessLog
 
 from .serializers import (
@@ -30,6 +31,7 @@ from .serializers import (
     HealthLogWriteSerializer,
     HealthParameterSerializer,
     MoodSerializer,
+    PersonSerializer,
     StatusSerializer,
     UserProfileSerializer,
     VaccinationSerializer,
@@ -106,6 +108,17 @@ class EmergencyAccessLogViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         return EmergencyAccessLog.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+
+class PersonViewSet(viewsets.ModelViewSet):
+    serializer_class = PersonSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Person.objects.filter(user=self.request.user)
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)

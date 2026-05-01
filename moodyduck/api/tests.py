@@ -237,3 +237,30 @@ class EmergencyApiTests(APITestCase):
         )
         self.assertEqual(log_response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(EmergencyAccessLog.objects.filter(user=self.user).count(), 1)
+
+
+class FriendsApiTests(APITestCase):
+    def setUp(self):
+        self.host = settings.ALLOWED_HOSTS[0]
+        self.user = get_user_model().objects.create_user(
+            username="friends-user",
+            password="secret",
+        )
+        self.client.force_authenticate(user=self.user)
+
+    def test_create_friend(self):
+        response = self.client.post(
+            reverse("friend-list"),
+            {
+                "name": "Alex Friend",
+                "phone": "+999",
+                "relationship": "Sibling",
+                "emergency_contact": True,
+            },
+            format="json",
+            HTTP_HOST=self.host,
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Person.objects.filter(user=self.user, name="Alex Friend").count(), 1)
+        self.assertTrue(Person.objects.get(user=self.user, name="Alex Friend").emergency_contact)

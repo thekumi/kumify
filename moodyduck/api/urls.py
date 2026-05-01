@@ -13,6 +13,7 @@ from .views import (
     HealthLogViewSet,
     HealthParameterViewSet,
     MoodViewSet,
+    PersonViewSet,
     StatusCheckView,
     StatusViewSet,
     VaccinationViewSet,
@@ -21,6 +22,7 @@ from .views import (
 router = DefaultRouter()
 router.register("moods", MoodViewSet, basename="mood")
 router.register("activities", ActivityViewSet, basename="activity")
+router.register("friends", PersonViewSet, basename="friend")
 router.register("statuses", StatusViewSet, basename="status")
 router.register("habits", HabitViewSet, basename="habit")
 router.register("habit-logs", HabitLogViewSet, basename="habit-log")

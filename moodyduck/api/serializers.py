@@ -325,6 +325,25 @@ class EmergencyContactSerializer(serializers.ModelSerializer):
         read_only_fields = ["id"]
 
 
+class PersonSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Person
+        fields = [
+            "id",
+            "name",
+            "nickname",
+            "birthday",
+            "email",
+            "phone",
+            "relationship",
+            "address",
+            "notes",
+            "emergency_contact",
+            "last_contact",
+        ]
+        read_only_fields = ["id"]
+
+
 class EmergencyProfileSerializer(serializers.Serializer):
     display_name = serializers.CharField(allow_blank=True, allow_null=True, required=False)
     legal_name = serializers.CharField(allow_blank=True, allow_null=True, required=False)
