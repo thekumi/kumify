@@ -94,6 +94,7 @@ class StatusSerializer(serializers.ModelSerializer):
     mood = serializers.PrimaryKeyRelatedField(
         queryset=Mood.objects.none(), allow_null=True
     )
+    timestamp = serializers.DateTimeField(required=False, format="iso-8601")
     activities = serializers.SerializerMethodField(read_only=True)
     activity_ids = serializers.PrimaryKeyRelatedField(
         queryset=Activity.objects.none(),
@@ -342,6 +343,7 @@ class DreamSerializer(serializers.ModelSerializer):
     mood = serializers.PrimaryKeyRelatedField(
         queryset=Mood.objects.none(), allow_null=True, required=False
     )
+    timestamp = serializers.DateTimeField(required=False, format="iso-8601")
     encrypt = serializers.BooleanField(required=False, write_only=True, default=False)
     attachments = DreamMediaSerializer(
         source="dreammedia_set",
