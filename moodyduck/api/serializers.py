@@ -4,7 +4,7 @@ import tempfile
 import gnupg
 from rest_framework import serializers
 
-from moodyduck.mood.models import Activity, Mood, Status, StatusActivity
+from moodyduck.mood.models import Activity, Mood, Status, StatusActivity, StatusMedia
 from moodyduck.habits.models import Habit, HabitLog
 from moodyduck.health.models import (
     BasicMedicalInfo,
@@ -14,7 +14,7 @@ from moodyduck.health.models import (
     Vaccination,
 )
 from moodyduck.cbt.models import ThoughtRecord
-from moodyduck.dreams.models import Dream
+from moodyduck.dreams.models import Dream, DreamMedia
 from moodyduck.friends.models import Person
 from moodyduck.profiles.models import EmergencyAccessLog, UserProfile
 
@@ -24,6 +24,26 @@ def habit_queryset_for_request(request):
 
 def habit_log_queryset_for_request(request):
     return HabitLog.objects.select_related("habit").filter(habit__user=request.user)
+
+
+class StatusMediaSerializer(serializers.ModelSerializer):
+    name = serializers.SerializerMethodField()
+    url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = StatusMedia
+        fields = ["id", "name", "url"]
+        read_only_fields = ["id", "name", "url"]
+
+    def get_name(self, obj):
+        return obj.basename
+
+    def get_url(self, obj):
+        request = self.context.get("request")
+        if not obj.file:
+            return None
+        url = obj.file.url
+        return request.build_absolute_uri(url) if request else url
 
 
 class MoodSerializer(serializers.ModelSerializer):
@@ -45,6 +65,11 @@ class StatusSerializer(serializers.ModelSerializer):
         write_only=True,
     )
     encrypt = serializers.BooleanField(required=False, write_only=True, default=False)
+    attachments = StatusMediaSerializer(
+        source="statusmedia_set",
+        many=True,
+        read_only=True,
+    )
 
     class Meta:
         model = Status
@@ -57,6 +82,7 @@ class StatusSerializer(serializers.ModelSerializer):
             "activities",
             "activity_ids",
             "encrypt",
+            "attachments",
         ]
         read_only_fields = ["id"]
 
@@ -283,10 +309,46 @@ class CBTRecordSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "user"]
 
 
+class DreamMediaSerializer(serializers.ModelSerializer):
+    name = serializers.SerializerMethodField()
+    url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = DreamMedia
+        fields = ["id", "name", "url"]
+        read_only_fields = ["id", "name", "url"]
+
+    def get_name(self, obj):
+        return obj.basename
+
+    def get_url(self, obj):
+        request = self.context.get("request")
+        if not obj.media:
+            return None
+        url = obj.media.url
+        return request.build_absolute_uri(url) if request else url
+
+
 class DreamSerializer(serializers.ModelSerializer):
+    attachments = DreamMediaSerializer(
+        source="dreammedia_set",
+        many=True,
+        read_only=True,
+    )
+
     class Meta:
         model = Dream
-        fields = "__all__"
+        fields = [
+            "id",
+            "title",
+            "content",
+            "timestamp",
+            "type",
+            "mood",
+            "lucid",
+            "wet",
+            "attachments",
+        ]
         read_only_fields = ["id", "user"]
 
 

@@ -2,13 +2,15 @@ from decimal import Decimal
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
+from moodyduck.dreams.models import Dream, DreamMedia
 from moodyduck.friends.models import Person
 from moodyduck.health.models import BasicMedicalInfo
-from moodyduck.mood.models import Activity, Mood, Status
+from moodyduck.mood.models import Activity, Mood, Status, StatusMedia
 from moodyduck.health.models import HealthLog, HealthParameter, HealthRecord
 from moodyduck.profiles.models import EmergencyAccessLog
 
@@ -129,6 +131,99 @@ class StatusApiTests(APITestCase):
             [activity["name"] for activity in response.data["activities"]],
             ["Walk", "Reading"],
         )
+
+    def test_status_attachments_upload_and_delete(self):
+        status_obj = Status.objects.create(
+            user=self.user,
+            title="Attachment test",
+            text="With image",
+        )
+
+        upload_response = self.client.post(
+            reverse("status-attachments", kwargs={"pk": status_obj.pk}),
+            {
+                "file": SimpleUploadedFile(
+                    "mood.png",
+                    b"fake-image-data",
+                    content_type="image/png",
+                )
+            },
+            format="multipart",
+            HTTP_HOST=self.host,
+        )
+
+        self.assertEqual(upload_response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(StatusMedia.objects.filter(status=status_obj).count(), 1)
+
+        status_response = self.client.get(
+            reverse("status-detail", kwargs={"pk": status_obj.pk}),
+            HTTP_HOST=self.host,
+        )
+        self.assertEqual(len(status_response.data["attachments"]), 1)
+
+        attachment_id = status_response.data["attachments"][0]["id"]
+        delete_response = self.client.delete(
+            reverse(
+                "status-delete-attachment",
+                kwargs={"pk": status_obj.pk, "attachment_id": attachment_id},
+            ),
+            HTTP_HOST=self.host,
+        )
+
+        self.assertEqual(delete_response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(StatusMedia.objects.filter(status=status_obj).count(), 0)
+
+
+class DreamApiTests(APITestCase):
+    def setUp(self):
+        self.host = settings.ALLOWED_HOSTS[0]
+        self.user = get_user_model().objects.create_user(
+            username="dream-user",
+            password="secret",
+        )
+        self.client.force_authenticate(user=self.user)
+
+    def test_dream_attachments_upload_and_delete(self):
+        dream = Dream.objects.create(
+            user=self.user,
+            title="Flying",
+            content="Dreamed about flying over a city.",
+            type=0,
+        )
+
+        upload_response = self.client.post(
+            reverse("dream-attachments", kwargs={"pk": dream.pk}),
+            {
+                "file": SimpleUploadedFile(
+                    "dream.jpg",
+                    b"fake-jpeg-data",
+                    content_type="image/jpeg",
+                )
+            },
+            format="multipart",
+            HTTP_HOST=self.host,
+        )
+
+        self.assertEqual(upload_response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(DreamMedia.objects.filter(dream=dream).count(), 1)
+
+        detail_response = self.client.get(
+            reverse("dream-detail", kwargs={"pk": dream.pk}),
+            HTTP_HOST=self.host,
+        )
+        self.assertEqual(len(detail_response.data["attachments"]), 1)
+
+        attachment_id = detail_response.data["attachments"][0]["id"]
+        delete_response = self.client.delete(
+            reverse(
+                "dream-delete-attachment",
+                kwargs={"pk": dream.pk, "attachment_id": attachment_id},
+            ),
+            HTTP_HOST=self.host,
+        )
+
+        self.assertEqual(delete_response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(DreamMedia.objects.filter(dream=dream).count(), 0)
 
 
 class ReferenceDataApiTests(APITestCase):

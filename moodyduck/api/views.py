@@ -1,17 +1,21 @@
 from django.http import JsonResponse
 from django.views import View
 
-from rest_framework import permissions, viewsets
+from rest_framework import permissions, status, viewsets
+from rest_framework.decorators import action
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
+from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import GenericViewSet
+from django.shortcuts import get_object_or_404
 
-from moodyduck.mood.models import Activity, Mood, Status
+from moodyduck.common.helpers import get_upload_path
+from moodyduck.mood.models import Activity, Mood, Status, StatusMedia
 from moodyduck.habits.models import Habit, HabitLog
 from moodyduck.health.models import BasicMedicalInfo, HealthLog, HealthParameter, Vaccination
 from moodyduck.cbt.models import ThoughtRecord
-from moodyduck.dreams.models import Dream
+from moodyduck.dreams.models import Dream, DreamMedia
 from moodyduck.friends.models import Person
 from moodyduck.profiles.models import EmergencyAccessLog
 
@@ -20,6 +24,7 @@ from .serializers import (
     DreamSerializer,
     ActivitySerializer,
     BasicMedicalInfoSerializer,
+    DreamMediaSerializer,
     EmergencyAccessLogSerializer,
     EmergencyContactSerializer,
     EmergencyProfileSerializer,
@@ -32,6 +37,7 @@ from .serializers import (
     HealthParameterSerializer,
     MoodSerializer,
     PersonSerializer,
+    StatusMediaSerializer,
     StatusSerializer,
     UserProfileSerializer,
     VaccinationSerializer,
@@ -156,6 +162,51 @@ class StatusViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
+    @action(
+        detail=True,
+        methods=["post"],
+        parser_classes=[MultiPartParser, FormParser],
+        url_path="attachments",
+        url_name="attachments",
+    )
+    def upload_attachments(self, request, pk=None):
+        status_obj = self.get_object()
+        uploads = request.FILES.getlist("file") or request.FILES.getlist("uploads")
+        if not uploads:
+            return Response(
+                {"file": ["Upload at least one attachment."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        attachments = []
+        for upload in uploads:
+            attachment = StatusMedia(status=status_obj)
+            attachment.file.save(get_upload_path(status_obj, upload.name), upload)
+            attachment.save()
+            attachments.append(attachment)
+
+        serializer = StatusMediaSerializer(
+            attachments,
+            many=True,
+            context={"request": request},
+        )
+        return Response(serializer.data, status=201)
+
+    @action(
+        detail=True,
+        methods=["delete"],
+        url_path=r"attachments/(?P<attachment_id>[^/.]+)",
+        url_name="delete-attachment",
+    )
+    def delete_attachment(self, request, pk=None, attachment_id=None):
+        attachment = get_object_or_404(
+            StatusMedia,
+            status=self.get_object(),
+            pk=attachment_id,
+        )
+        attachment.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 class HabitViewSet(viewsets.ModelViewSet):
     serializer_class = HabitSerializer
@@ -234,3 +285,48 @@ class DreamViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+    @action(
+        detail=True,
+        methods=["post"],
+        parser_classes=[MultiPartParser, FormParser],
+        url_path="attachments",
+        url_name="attachments",
+    )
+    def upload_attachments(self, request, pk=None):
+        dream = self.get_object()
+        uploads = request.FILES.getlist("file") or request.FILES.getlist("uploads")
+        if not uploads:
+            return Response(
+                {"file": ["Upload at least one attachment."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        attachments = []
+        for upload in uploads:
+            attachment = DreamMedia(dream=dream)
+            attachment.media.save(get_upload_path(dream, upload.name), upload)
+            attachment.save()
+            attachments.append(attachment)
+
+        serializer = DreamMediaSerializer(
+            attachments,
+            many=True,
+            context={"request": request},
+        )
+        return Response(serializer.data, status=201)
+
+    @action(
+        detail=True,
+        methods=["delete"],
+        url_path=r"attachments/(?P<attachment_id>[^/.]+)",
+        url_name="delete-attachment",
+    )
+    def delete_attachment(self, request, pk=None, attachment_id=None):
+        attachment = get_object_or_404(
+            DreamMedia,
+            dream=self.get_object(),
+            pk=attachment_id,
+        )
+        attachment.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
