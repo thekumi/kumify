@@ -45,6 +45,22 @@
       <dd class="col-sm-9">{{ object.phone }}</dd>
       {% endif %}
 
+      {% if object.relationship %}
+      <dt class="col-sm-3 text-muted">{% trans "Relationship" %}</dt>
+      <dd class="col-sm-9">{{ object.relationship }}</dd>
+      {% endif %}
+
+      <dt class="col-sm-3 text-muted">{% trans "Emergency Contact" %}</dt>
+      <dd class="col-sm-9">
+        {% if object.emergency_contact %}
+          <span class="badge bg-danger-subtle text-danger-emphasis">
+            <i class="ph ph-phone-call me-1"></i>{% trans "Yes" %}
+          </span>
+        {% else %}
+          <span class="text-muted">{% trans "No" %}</span>
+        {% endif %}
+      </dd>
+
       {% if object.address %}
       <dt class="col-sm-3 text-muted">{% trans "Address" %}</dt>
       <dd class="col-sm-9">{{ object.address|linebreaksbr }}</dd>

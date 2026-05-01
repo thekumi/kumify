@@ -4,7 +4,9 @@ from django.urls import reverse_lazy
 from django.shortcuts import redirect
 from django.utils.translation import gettext_lazy as _
 
-from .models import UserProfile
+from moodyduck.health.models import BasicMedicalInfo
+
+from .models import EmergencyAccessLog, UserProfile
 from .forms import UserProfileForm
 
 
@@ -14,7 +16,12 @@ class UserProfileView(LoginRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         profile, created = UserProfile.objects.get_or_create(user=self.request.user)
+        medical_info, _ = BasicMedicalInfo.objects.get_or_create(user=self.request.user)
         context["profile"] = profile
+        context["medical_info"] = medical_info
+        context["recent_emergency_access_logs"] = EmergencyAccessLog.objects.filter(
+            user=self.request.user
+        )[:10]
         context["title"] = _("Your Profile")
         context["subtitle"] = _("View your user profile information.")
         return context

@@ -14,6 +14,13 @@
       <tr><th>Email</th><td>{{ request.user.email }}</td></tr>
       <tr><th>Display Name</th><td>{{ profile.display_name|default:"Not set" }}</td></tr>
       <tr><th>Time Zone</th><td>{{ profile.timezone|default:"Not set" }}</td></tr>
+      <tr><th>Legal Name</th><td>{{ profile.legal_name|default:"Not set" }}</td></tr>
+      <tr><th>Phone</th><td>{{ profile.phone|default:"Not set" }}</td></tr>
+      <tr><th>Date of Birth</th><td>{{ profile.date_of_birth|default:"Not set" }}</td></tr>
+      <tr><th>Address</th><td>{{ profile.address|default:"Not set"|linebreaksbr }}</td></tr>
+      <tr><th>Blood Type</th><td>{{ medical_info.blood_type|default:"Not set" }}</td></tr>
+      <tr><th>Allergies</th><td>{{ medical_info.allergies|default:"Not set"|linebreaksbr }}</td></tr>
+      <tr><th>Medical Notes</th><td>{{ medical_info.medical_notes|default:"Not set"|linebreaksbr }}</td></tr>
       <tr>
         <th>PGP Key</th>
         <td>
@@ -25,6 +32,38 @@
         </td>
       </tr>
     </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Recent Emergency Access</div>
+  <div class="card-body">
+    {% if recent_emergency_access_logs %}
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr>
+              <th>Accessed</th>
+              <th>Source</th>
+              <th>Method</th>
+              <th>Details</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for log in recent_emergency_access_logs %}
+              <tr>
+                <td>{{ log.accessed_at }}</td>
+                <td>{{ log.source }}</td>
+                <td>{{ log.method }}</td>
+                <td>{{ log.details|default:"-" }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="text-muted mb-0">No emergency accesses logged yet.</p>
+    {% endif %}
   </div>
 </div>
 {% endblock content %}

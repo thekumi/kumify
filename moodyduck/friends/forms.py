@@ -13,6 +13,8 @@ class PersonForm(BootstrapMixin, ModelForm):
             "birthday",
             "email",
             "phone",
+            "relationship",
+            "emergency_contact",
             "address",
             "notes",
             "last_contact",
