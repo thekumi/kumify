@@ -18,6 +18,43 @@ from moodyduck.dreams.models import Dream, DreamMedia
 from moodyduck.friends.models import Person
 from moodyduck.profiles.models import EmergencyAccessLog, UserProfile
 
+
+def encrypt_text_for_user(user, plaintext, object_label):
+    pgp_key = getattr(user.userprofile, "pgp_key", "").strip()
+    if not pgp_key:
+        raise serializers.ValidationError(
+            {"encrypt": "Add a PGP public key to your profile before encrypting."}
+        )
+
+    with tempfile.TemporaryDirectory() as gnupghome:
+        gpg = gnupg.GPG(gnupghome=gnupghome)
+        gpg.encoding = "utf-8"
+        imported = gpg.import_keys(pgp_key)
+        if imported.count == 0:
+            logging.error("No public keys imported for user %s", user.pk)
+            raise serializers.ValidationError(
+                {"encrypt": "Your saved PGP key could not be imported."}
+            )
+
+        encrypted = gpg.encrypt(
+            plaintext,
+            recipients=[imported.fingerprints[0]],
+            always_trust=True,
+        )
+        if not encrypted.ok:
+            logging.error(
+                "Error encrypting %s for user %s: %s",
+                object_label,
+                user.pk,
+                encrypted.status,
+            )
+            raise serializers.ValidationError(
+                {"encrypt": f"Error encrypting {object_label}: {encrypted.status}"}
+            )
+
+        return str(encrypted)
+
+
 def habit_queryset_for_request(request):
     return Habit.objects.filter(user=request.user)
 
@@ -131,36 +168,8 @@ class StatusSerializer(serializers.ModelSerializer):
     def _maybe_encrypt(self, status, encrypt):
         if not encrypt or not status.text or status.is_encrypted:
             return
-
-        pgp_key = getattr(status.user.userprofile, "pgp_key", "").strip()
-        if not pgp_key:
-            raise serializers.ValidationError(
-                {"encrypt": "Add a PGP public key to your profile before encrypting."}
-            )
-
-        with tempfile.TemporaryDirectory() as gnupghome:
-            gpg = gnupg.GPG(gnupghome=gnupghome)
-            gpg.encoding = "utf-8"
-            imported = gpg.import_keys(pgp_key)
-            if imported.count == 0:
-                logging.error("No public keys imported for user %s", status.user_id)
-                raise serializers.ValidationError(
-                    {"encrypt": "Your saved PGP key could not be imported."}
-                )
-
-            encrypted = gpg.encrypt(
-                status.text,
-                recipients=[imported.fingerprints[0]],
-                always_trust=True,
-            )
-            if not encrypted.ok:
-                logging.error("Error encrypting status %s: %s", status.pk, encrypted.status)
-                raise serializers.ValidationError(
-                    {"encrypt": f"Error encrypting note: {encrypted.status}"}
-                )
-
-            status.text = str(encrypted)
-            status.save(update_fields=["text"])
+        status.text = encrypt_text_for_user(status.user, status.text, "note")
+        status.save(update_fields=["text"])
 
 
 class ActivitySerializer(serializers.ModelSerializer):
@@ -330,11 +339,43 @@ class DreamMediaSerializer(serializers.ModelSerializer):
 
 
 class DreamSerializer(serializers.ModelSerializer):
+    mood = serializers.PrimaryKeyRelatedField(
+        queryset=Mood.objects.none(), allow_null=True, required=False
+    )
+    encrypt = serializers.BooleanField(required=False, write_only=True, default=False)
     attachments = DreamMediaSerializer(
         source="dreammedia_set",
         many=True,
         read_only=True,
     )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        request = self.context.get("request")
+        if request and hasattr(request, "user") and request.user.is_authenticated:
+            self.fields["mood"].queryset = Mood.objects.filter(user=request.user)
+
+    def create(self, validated_data):
+        encrypt = validated_data.pop("encrypt", False)
+        dream = Dream.objects.create(**validated_data)
+        self._maybe_encrypt(dream, encrypt)
+        return dream
+
+    def update(self, instance, validated_data):
+        encrypt = validated_data.pop("encrypt", False)
+        for field, value in validated_data.items():
+            setattr(instance, field, value)
+        instance.save()
+        self._maybe_encrypt(instance, encrypt)
+        return instance
+
+    def _maybe_encrypt(self, dream, encrypt):
+        if not encrypt or not dream.content or dream.content.startswith(
+            "-----BEGIN PGP MESSAGE-----"
+        ):
+            return
+        dream.content = encrypt_text_for_user(dream.user, dream.content, "dream")
+        dream.save(update_fields=["content"])
 
     class Meta:
         model = Dream
@@ -347,6 +388,7 @@ class DreamSerializer(serializers.ModelSerializer):
             "mood",
             "lucid",
             "wet",
+            "encrypt",
             "attachments",
         ]
         read_only_fields = ["id", "user"]

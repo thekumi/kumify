@@ -225,6 +225,22 @@ class DreamApiTests(APITestCase):
         self.assertEqual(delete_response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(DreamMedia.objects.filter(dream=dream).count(), 0)
 
+    def test_dream_encrypt_without_pgp_key_is_rejected(self):
+        response = self.client.post(
+            reverse("dream-list"),
+            {
+                "title": "Encrypted dream",
+                "content": "Secret dream text",
+                "type": 0,
+                "encrypt": True,
+            },
+            format="json",
+            HTTP_HOST=self.host,
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("encrypt", response.data)
+
 
 class ReferenceDataApiTests(APITestCase):
     def setUp(self):
