@@ -43,6 +43,15 @@ dependencies = [
     "crispy-bootstrap5",
     "django-annoying",
     "djangorestframework",
+    "gunicorn",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-django>=4.10",
+    "djlint>=1.36",
+    "ruff>=0.11",
 ]
 
 [project.scripts]
@@ -56,7 +65,24 @@ ntfy = "moodyduck.msgio.gateways.ntfy:NtfyGateway"
 [tool.hatch.metadata]
 allow-direct-references = true
 
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+
+[tool.ruff.lint]
+extend-select = ["I", "PLC0415"]
+ignore = ["E501"]
+exclude = ["**/migrations/*.py"]
+
+[tool.djlint]
+profile = "django"
+extension = "html"
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "moodyduck.settings"
+python_files = ["tests.py", "test_*.py"]
+
 [project.urls]
-"Homepage" = "https://git.private.coffee/kumi/kumify"
-"Bug Tracker" = "https://git.private.coffee/kumi/kumify/issues"
-"Source Code" = "https://git.private.coffee/kumi/kumify"
+"Homepage" = "https://git.private.coffee/kumi/moodyduck"
+"Bug Tracker" = "https://git.private.coffee/kumi/moodyduck/issues"
+"Source Code" = "https://git.private.coffee/kumi/moodyduck"
