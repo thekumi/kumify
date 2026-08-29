@@ -1,0 +1,19 @@
+[Unit]
+Description=MoodyDuck proxy container
+After=network-online.target moodyduck-web.service
+Wants=network-online.target
+Requires=moodyduck-web.service
+
+[Container]
+Image=docker.io/library/caddy:2-alpine
+ContainerName=moodyduck-proxy
+Network=moodyduck.network
+PublishPort=127.0.0.1:9000:9000
+Volume=/etc/moodyduck/Caddyfile:/etc/caddy/Caddyfile:ro,Z
+Volume=moodyduck-data:/srv/moodyduck:ro,Z
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

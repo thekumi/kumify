@@ -1,3 +1,4 @@
+
 #!/bin/sh
 set -eu
 
@@ -19,6 +20,12 @@ case "${1:-web}" in
             --bind 0.0.0.0:9000 \
             --workers "${GUNICORN_WORKERS:-4}" \
             --timeout "${GUNICORN_TIMEOUT:-120}"
+        ;;
+    worker)
+        exec celery -A moodyduck worker -l INFO
+        ;;
+    beat)
+        exec celery -A moodyduck beat -l INFO --pidfile=
         ;;
     manage)
         shift

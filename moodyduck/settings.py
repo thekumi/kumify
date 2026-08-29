@@ -3,6 +3,7 @@
 
 # If you make any changes in here, you may have trouble updating your MoodyDuck installation.
 
+import os
 from pathlib import Path
 
 from autosecretkey import AutoSecretKey
@@ -10,7 +11,7 @@ from django.contrib.messages import constants as _msg
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-CONFIG_FILE = AutoSecretKey("settings.ini")
+CONFIG_FILE = AutoSecretKey(os.environ.get("MOODYDUCK_SETTINGS", "settings.ini"))
 
 SECRET_KEY = CONFIG_FILE.secret_key
 DEBUG = CONFIG_FILE.config.getboolean("MOODYDUCK", "Debug", fallback=False)
@@ -40,7 +41,6 @@ CORE_MODULES = [
     "common",
     "frontend",
     "msgio",
-    "cronhandler",
     "profiles",
 ]
 
@@ -248,4 +248,18 @@ MESSAGE_TAGS = {
     _msg.SUCCESS: "success",
     _msg.WARNING: "warning",
     _msg.ERROR: "danger",
+}
+
+# Celery
+
+CELERY_BROKER_URL = CONFIG_FILE.config.get(
+    "Redis", "URL", fallback="redis://localhost:6379/0"
+)
+CELERY_RESULT_BACKEND = CELERY_BROKER_URL
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_BEAT_SCHEDULE = {
+    "send-notifications": {
+        "task": "moodyduck.msgio.tasks.send_notifications",
+        "schedule": 60.0,
+    },
 }

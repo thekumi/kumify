@@ -1,0 +1,21 @@
+[Unit]
+Description=MoodyDuck Celery worker container
+After=network-online.target moodyduck-redis.service moodyduck-web.service
+Wants=network-online.target
+Requires=moodyduck-redis.service moodyduck-web.service
+
+[Container]
+Image=git.private.coffee/kumi/moodyduck:latest
+ContainerName=moodyduck-worker
+Network=moodyduck.network
+Volume=/etc/moodyduck/settings.ini:/app/moodyduck.ini:ro,Z
+Volume=moodyduck-data:/app/data:Z
+Environment=MOODYDUCK_SETTINGS=/app/moodyduck.ini
+Exec=worker
+AutoUpdate=registry
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

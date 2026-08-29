@@ -1,0 +1,17 @@
+:9000 {
+    encode zstd gzip
+
+    handle /static/* {
+        root * /srv/moodyduck
+        file_server
+    }
+
+    handle /usermedia/* {
+        root * /srv/moodyduck
+        file_server
+    }
+
+    handle {
+        reverse_proxy moodyduck-web:9000
+    }
+}

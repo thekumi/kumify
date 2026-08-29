@@ -1,0 +1,16 @@
+[Unit]
+Description=MoodyDuck Redis container
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+Image=docker.io/library/redis:7-alpine
+ContainerName=moodyduck-redis
+Network=moodyduck.network
+Volume=moodyduck-redis-data:/data:Z
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

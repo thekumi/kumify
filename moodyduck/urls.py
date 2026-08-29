@@ -31,7 +31,6 @@ urlpatterns = [
     path("profile/", include("moodyduck.profiles.urls", "profiles")),
     path("", include("moodyduck.frontend.urls", "frontend")),
     path("mood/", include("moodyduck.mood.urls", "mood")),
-    path("cron/", include("moodyduck.cronhandler.urls", "cron")),
     path("webhooks/telegram/", TelegramWebhookView.as_view()),
     path("dreams/", include("moodyduck.dreams.urls", "dreams")),
     path("cbt/", include("moodyduck.cbt.urls", "cbt")),
