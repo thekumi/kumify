@@ -21,11 +21,6 @@ mood_settings = [
         "Activities", reverse_lazy("mood:activity_list"), icon="ph ph-list-bullets"
     ),
     NavItem("Moods", reverse_lazy("mood:mood_list"), icon="ph ph-smiley"),
-    NavItem(
-        "Notifications",
-        reverse_lazy("mood:notification_list"),
-        icon="ph ph-bell",
-    ),
     NavItem("Statistics", reverse_lazy("mood:statistics"), icon="ph ph-chart-pie"),
     NavItem("Encryptor", reverse_lazy("mood:encryptor"), icon="ph ph-lock-simple"),
 ]

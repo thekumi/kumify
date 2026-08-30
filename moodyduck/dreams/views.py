@@ -8,7 +8,6 @@ from django.views.generic import (
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
-from django.http import HttpResponseRedirect
 from django.templatetags.static import static
 from django.utils.translation import gettext_lazy as _
 
@@ -16,8 +15,6 @@ from .models import Dream, DreamTheme, DreamMedia, Theme
 from .forms import DreamForm
 
 from moodyduck.common.helpers import get_upload_path
-from moodyduck.msgio.models import NotificationDailySchedule, Notification
-
 
 class DreamListView(LoginRequiredMixin, ListView):
     template_name = "dreams/dream_list.html"
@@ -234,95 +231,3 @@ class ThemeDeleteView(LoginRequiredMixin, DeleteView):
         return reverse_lazy("dreams:theme_list")
 
 
-class NotificationListView(LoginRequiredMixin, ListView):
-    template_name = "dreams/notification_list.html"
-    model = NotificationDailySchedule
-    fields = ["time"]
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["title"] = _("Notifications")
-        context["subtitle"] = _("The daily reminders you have set up.")
-        context["buttons"] = [
-            (reverse_lazy("dreams:notification_create"), _("New Notification"), "plus")
-        ]
-        return context
-
-    def get_queryset(self):
-        return NotificationDailySchedule.objects.filter(
-            notification__recipient=self.request.user, notification__app="dreams"
-        )
-
-
-class NotificationCreateView(LoginRequiredMixin, CreateView):
-    template_name = "dreams/notification_edit.html"
-    model = NotificationDailySchedule
-    fields = ["time"]
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["title"] = _("Create Notification")
-        context["subtitle"] = _("Add a new daily notification.")
-        return context
-
-    def form_valid(self, form):
-        notification = Notification.objects.create(
-            content="What did you dream tonight? Go to %MOODYDUCKURL% to document your dreams!",
-            recipient=self.request.user,
-            app="dreams",
-        )
-        obj = form.save(commit=False)
-        obj.notification = notification
-        return super().form_valid(form)
-
-    def get_success_url(self):
-        return reverse_lazy("dreams:notification_list")
-
-
-class NotificationEditView(LoginRequiredMixin, UpdateView):
-    template_name = "dreams/notification_edit.html"
-    model = NotificationDailySchedule
-    fields = ["time"]
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["title"] = _("Edit Notification")
-        context["subtitle"] = _("Change the time of a daily notification.")
-        context["buttons"] = [
-            (
-                reverse_lazy("dreams:notification_delete", args=[self.kwargs["id"]]),
-                _("Delete Notification"),
-            )
-        ]
-        return context
-
-    def get_success_url(self):
-        return reverse_lazy("dreams:notification_list")
-
-    def get_object(self):
-        return get_object_or_404(
-            NotificationDailySchedule,
-            notification__recipient=self.request.user,
-            id=self.kwargs["id"],
-        )
-
-
-class NotificationDeleteView(LoginRequiredMixin, DeleteView):
-    template_name = "dreams/notification_delete.html"
-    model = NotificationDailySchedule
-
-    def get_object(self):
-        return get_object_or_404(
-            NotificationDailySchedule,
-            notification__recipient=self.request.user,
-            id=self.kwargs["id"],
-        )
-
-    def delete(self, request, *args, **kwargs):
-        self.object = self.get_object()
-        success_url = self.get_success_url()
-        self.object.notification.delete()
-        return HttpResponseRedirect(success_url)
-
-    def get_success_url(self):
-        return reverse_lazy("dreams:notification_list")

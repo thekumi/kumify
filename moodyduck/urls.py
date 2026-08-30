@@ -19,8 +19,6 @@ from django.urls import path, include
 
 from rest_framework.authtoken.views import obtain_auth_token
 
-from moodyduck.msgio.views import TelegramWebhookView
-
 admin.site.site_header = "MoodyDuck Administration"
 admin.site.site_title = "MoodyDuck Admin"
 admin.site.index_title = "MoodyDuck"
@@ -31,7 +29,6 @@ urlpatterns = [
     path("profile/", include("moodyduck.profiles.urls", "profiles")),
     path("", include("moodyduck.frontend.urls", "frontend")),
     path("mood/", include("moodyduck.mood.urls", "mood")),
-    path("webhooks/telegram/", TelegramWebhookView.as_view()),
     path("dreams/", include("moodyduck.dreams.urls", "dreams")),
     path("cbt/", include("moodyduck.cbt.urls", "cbt")),
     path("gpslog/", include("moodyduck.gpslog.urls")),

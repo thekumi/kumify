@@ -17,7 +17,6 @@ dream_list = NavItem("Dream List", reverse_lazy("dreams:dream_list"))
 
 dreams_settings = [
     NavItem("Themes", reverse_lazy("dreams:theme_list")),
-    NavItem("Notifications", reverse_lazy("dreams:notification_list")),
 ]
 
 for item in dreams_settings:

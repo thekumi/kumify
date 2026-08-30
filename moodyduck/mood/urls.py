@@ -11,10 +11,6 @@ from .views import (
     MoodListView,
     MoodEditView,
     MoodCreateView,
-    NotificationCreateView,
-    NotificationDeleteView,
-    NotificationEditView,
-    NotificationListView,
     MoodStatisticsView,
     MoodCSVView,
     MoodPlotView,
@@ -55,22 +51,6 @@ urlpatterns = [
     path("mood/", MoodListView.as_view(), name="mood_list"),
     path("mood/<int:id>/edit/", MoodEditView.as_view(), name="mood_edit"),
     path("mood/new/", MoodCreateView.as_view(), name="mood_create"),
-    path("notification/", NotificationListView.as_view(), name="notification_list"),
-    path(
-        "notification/<int:id>/edit/",
-        NotificationEditView.as_view(),
-        name="notification_edit",
-    ),
-    path(
-        "notification/<int:id>/delete/",
-        NotificationDeleteView.as_view(),
-        name="notification_delete",
-    ),
-    path(
-        "notification/new/",
-        NotificationCreateView.as_view(),
-        name="notification_create",
-    ),
     path("statistics/", MoodStatisticsView.as_view(), name="statistics"),
     path("statistics/csv/", MoodCSVView.as_view(), name="statistics_csv"),
     path(

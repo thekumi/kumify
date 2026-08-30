@@ -8,10 +8,6 @@ from .views import (
     ThemeEditView,
     ThemeCreateView,
     ThemeDeleteView,
-    NotificationCreateView,
-    NotificationDeleteView,
-    NotificationEditView,
-    NotificationListView,
 )
 
 from django.urls import path
@@ -28,20 +24,4 @@ urlpatterns = [
     path("theme/<int:id>/edit/", ThemeEditView.as_view(), name="theme_edit"),
     path("theme/new/", ThemeCreateView.as_view(), name="theme_create"),
     path("theme/<int:id>/delete/", ThemeDeleteView.as_view(), name="theme_delete"),
-    path("notification/", NotificationListView.as_view(), name="notification_list"),
-    path(
-        "notification/<int:id>/edit/",
-        NotificationEditView.as_view(),
-        name="notification_edit",
-    ),
-    path(
-        "notification/<int:id>/delete/",
-        NotificationDeleteView.as_view(),
-        name="notification_delete",
-    ),
-    path(
-        "notification/new/",
-        NotificationCreateView.as_view(),
-        name="notification_create",
-    ),
 ]

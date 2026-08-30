@@ -43,7 +43,6 @@ except NameError:
 CORE_MODULES = [
     "common",
     "frontend",
-    "msgio",
     "profiles",
 ]
 
@@ -56,7 +55,6 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "colorfield",
     "multiselectfield",
-    "dbsettings",
     "mozilla_django_oidc",
     "crispy_forms",
     "crispy_bootstrap5",
@@ -260,9 +258,3 @@ CELERY_BROKER_URL = CONFIG_FILE.config.get(
 )
 CELERY_RESULT_BACKEND = CELERY_BROKER_URL
 CELERY_TIMEZONE = TIME_ZONE
-CELERY_BEAT_SCHEDULE = {
-    "send-notifications": {
-        "task": "moodyduck.msgio.tasks.send_notifications",
-        "schedule": 60.0,
-    },
-}

@@ -23,15 +23,10 @@ dependencies = [
     "django-polymorphic@git+https://github.com/jazzband/django-polymorphic.git@v4.11.1",
     "django-multiselectfield@git+https://git.private.coffee/kumi/django-multiselectfield.git",
     "django-multiupload@git+https://github.com/Chive/django-multiupload.git",
-    "dbsettings",
-    "django-filtersignals",
     "mysqlclient",
     "boto3",
     "argon2_cffi",
-    "python-telegram-bot",
     "python-dateutil",
-    "matrix-nio",
-    "channels",
     "django-autosecretkey",
     "mozilla-django-oidc",
     "python-gnupg",
@@ -53,11 +48,6 @@ dev = [
 
 [project.scripts]
 moodyduck = "moodyduck.manage:main"
-
-[project.entry-points."moodyduck.gateways"]
-telegram = "moodyduck.msgio.gateways.telegram:TelegramGateway"
-matrix = "moodyduck.msgio.gateways.matrix:MatrixGateway"
-ntfy = "moodyduck.msgio.gateways.ntfy:NtfyGateway"
 
 [tool.hatch.metadata]
 allow-direct-references = true
