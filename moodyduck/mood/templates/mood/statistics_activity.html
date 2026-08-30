@@ -1,36 +1,111 @@
 {% extends "frontend/base.html" %}
 {% load i18n %}
-{% load images %}
 {% block content %}
+<div class="row">
+    <div class="col-xl-8 col-lg-7">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 fw-bold text-primary">{% trans "Mood over time" %}</h6>
+            </div>
+            <div class="card-body">
+                <canvas id="moodChart"></canvas>
+            </div>
+        </div>
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 fw-bold text-primary">{% trans "Mood distribution" %}</h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-4">
+                        <p class="fw-bold">{% trans "Last 7 days" %}</p>
+                        <canvas id="pieWeekly"></canvas>
+                    </div>
+                    <div class="col-4">
+                        <p class="fw-bold">{% trans "Last 30 days" %}</p>
+                        <canvas id="pieMonthly"></canvas>
+                    </div>
+                    <div class="col-4">
+                        <p class="fw-bold">{% trans "Last year" %}</p>
+                        <canvas id="pieYearly"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
-                        <div class="row">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script>
+(function () {
+    const moodData = {{ mood_chart|safe }};
+    const piesData = {{ pies_chart|safe }};
 
-                            <!-- Entry details -->
-                            <div class="col-xl-8 col-lg-7">
-                                <div class="card shadow mb-4">
-                                    <!-- Card Header - Dropdown -->
-                                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                                        <h6 class="m-0 fw-bold text-primary">Activity stats</h6>
+    new Chart(document.getElementById('moodChart'), {
+        type: 'scatter',
+        data: {
+            datasets: [
+                {
+                    label: '{% trans "Mood" %}',
+                    data: moodData.points.map(p => ({ x: p.x, y: p.y })),
+                    backgroundColor: moodData.points.map(p => p.color),
+                    pointRadius: 8,
+                    pointHoverRadius: 10,
+                },
+                {
+                    label: '{% trans "7-point average" %}',
+                    type: 'line',
+                    data: moodData.average,
+                    borderColor: 'rgba(80,80,80,0.5)',
+                    backgroundColor: 'transparent',
+                    pointRadius: 0,
+                    tension: 0.3,
+                },
+            ],
+        },
+        options: {
+            responsive: true,
+            scales: {
+                x: {
+                    type: 'linear',
+                    ticks: {
+                        callback: v => new Date(v).toLocaleDateString(),
+                        maxTicksLimit: 8,
+                    },
+                },
+                y: { beginAtZero: true },
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: ctx => {
+                            if (ctx.datasetIndex === 0) {
+                                const p = moodData.points[ctx.dataIndex];
+                                return `${p.label} (${p.y}) — ${new Date(p.x).toLocaleString()}`;
+                            }
+                            return `{% trans "Avg" %}: ${ctx.parsed.y.toFixed(1)}`;
+                        },
+                    },
+                },
+            },
+        },
+    });
 
-                                    </div>
-                                    <!-- Card Body -->
-                                    <div class="card-body">
-                                        <iframe id="plot" src="plot/" width="800px" height="450px"></iframe>
-                                    </div>
-                                </div>
-                                <div class="card shadow mb-4">
-                                    <!-- Card Header - Dropdown -->
-                                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                                        <h6 class="m-0 fw-bold text-primary">Activity stats</h6>
-
-                                    </div>
-                                    <!-- Card Body -->
-                                    <div class="card-body">
-                                        <iframe id="plot" src="pies/" width="800px" height="450px"></iframe>
-                                    </div>
-                                </div>
-                            </div>
-
-                        </div>
-
+    ['Weekly', 'Monthly', 'Yearly'].forEach(period => {
+        const key = period.toLowerCase();
+        const d = piesData[key];
+        new Chart(document.getElementById('pie' + period), {
+            type: 'pie',
+            data: {
+                labels: d.labels,
+                datasets: [{ data: d.data, backgroundColor: d.colors }],
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+            },
+        });
+    });
+})();
+</script>
 {% endblock content %}

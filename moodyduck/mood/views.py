@@ -10,20 +10,23 @@ from django.views.generic import (
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
-from django.http import HttpResponseRedirect, HttpResponse
+from django.http import HttpResponseRedirect, HttpResponse, JsonResponse
 from django.http import Http404
 from django.utils import timezone
-from django.views.decorators.clickjacking import xframe_options_sameorigin
-from django.utils.decorators import method_decorator
 from django.templatetags.static import static
 from django.utils.translation import gettext_lazy as _
 
 from .models import Status, Activity, Mood, StatusMedia, StatusActivity
 from .forms import StatusForm
-from .statistics import moodstats, activitystats, moodpies, activitymood, activitypies
+from .statistics import (
+    moodstats_data,
+    moodpies_data,
+    activitystats,
+    activitymood_data,
+    activitypies_data,
+)
 
 from moodyduck.common.helpers import get_upload_path
-from moodyduck.common.templatetags.images import hvhtml, bkhtml
 from moodyduck.msgio.models import NotificationDailySchedule, Notification
 
 from dateutil import relativedelta
@@ -477,23 +480,11 @@ class MoodStatisticsView(LoginRequiredMixin, TemplateView):
     template_name = "mood/statistics.html"
 
     def get_context_data(self, **kwargs):
-        startdate = self.request.GET.get("start")
-        enddate = self.request.GET.get("end")
-
-        if enddate:
-            maxdate = datetime.strptime(enddate, "%Y-%m-%d")
-        else:
-            maxdate = timezone.now()
-
-        if startdate:
-            mindate = datetime.strptime(startdate, "%Y-%m-%d")
-        else:
-            mindate = maxdate - relativedelta.relativedelta(weeks=1)  # noqa: F841
-            # TODO: Do something with this...?
-
         context = super().get_context_data(**kwargs)
         context["title"] = _("Statistics")
         context["activities"] = activitystats(self.request.user)
+        context["mood_chart"] = json.dumps(moodstats_data(self.request.user))
+        context["pies_chart"] = json.dumps(moodpies_data(self.request.user))
         return context
 
 
@@ -538,27 +529,13 @@ class MoodCSVView(LoginRequiredMixin, View):
 
 
 class MoodPlotView(LoginRequiredMixin, View):
-    @method_decorator(xframe_options_sameorigin)
-    def dispatch(self, *args, **kwargs):
-        return super().dispatch(*args, **kwargs)
-
     def get(self, request, *args, **kwargs):
-        res = HttpResponse(content_type="text/html")
-
-        res.write(hvhtml(moodstats(request.user)))
-        return res
+        return JsonResponse(moodstats_data(request.user))
 
 
 class MoodPiesView(LoginRequiredMixin, View):
-    @method_decorator(xframe_options_sameorigin)
-    def dispatch(self, *args, **kwargs):
-        return super().dispatch(*args, **kwargs)
-
     def get(self, request, *args, **kwargs):
-        res = HttpResponse(content_type="text/html")
-
-        res.write(bkhtml(moodpies(request.user)))
-        return res
+        return JsonResponse(moodpies_data(request.user))
 
 
 class ActivityStatisticsView(LoginRequiredMixin, TemplateView):
@@ -568,43 +545,22 @@ class ActivityStatisticsView(LoginRequiredMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         activity = get_object_or_404(Activity, user=self.request.user, id=kwargs["id"])
         context["title"] = _("Activity Statistics for %s") % activity.name
+        context["activity"] = activity
+        context["mood_chart"] = json.dumps(activitymood_data(activity))
+        context["pies_chart"] = json.dumps(activitypies_data(activity))
         return context
 
 
 class ActivityPlotView(LoginRequiredMixin, View):
-    @method_decorator(xframe_options_sameorigin)
-    def dispatch(self, *args, **kwargs):
-        return super().dispatch(*args, **kwargs)
-
     def get(self, request, *args, **kwargs):
-        res = HttpResponse(content_type="text/html")
-
-        res.write(
-            hvhtml(
-                activitymood(
-                    get_object_or_404(Activity, user=request.user, id=kwargs["id"])
-                )
-            )
-        )
-        return res
+        activity = get_object_or_404(Activity, user=request.user, id=kwargs["id"])
+        return JsonResponse(activitymood_data(activity))
 
 
 class ActivityPiesView(LoginRequiredMixin, View):
-    @method_decorator(xframe_options_sameorigin)
-    def dispatch(self, *args, **kwargs):
-        return super().dispatch(*args, **kwargs)
-
     def get(self, request, *args, **kwargs):
-        res = HttpResponse(content_type="text/html")
-
-        res.write(
-            bkhtml(
-                activitypies(
-                    get_object_or_404(Activity, user=request.user, id=kwargs["id"])
-                )
-            )
-        )
-        return res
+        activity = get_object_or_404(Activity, user=request.user, id=kwargs["id"])
+        return JsonResponse(activitypies_data(activity))
 
 
 class MoodCountHeatmapJSONView(LoginRequiredMixin, View):
