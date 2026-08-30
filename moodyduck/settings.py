@@ -15,6 +15,9 @@ CONFIG_FILE = AutoSecretKey(os.environ.get("MOODYDUCK_SETTINGS", "settings.ini")
 
 SECRET_KEY = CONFIG_FILE.secret_key
 DEBUG = CONFIG_FILE.config.getboolean("MOODYDUCK", "Debug", fallback=False)
+REGISTRATION_OPEN = CONFIG_FILE.config.getboolean(
+    "MOODYDUCK", "AllowRegistration", fallback=False
+)
 
 ALLOWED_HOSTS = [CONFIG_FILE.config.get("MOODYDUCK", "Host")]
 CSRF_TRUSTED_ORIGINS = [f"https://{ALLOWED_HOSTS[0]}"]

@@ -26,6 +26,14 @@ class UserRegistrationView(CreateView):
     model = get_user_model()
     template_name = "registration/registration_form.html"
 
+    def dispatch(self, request, *args, **kwargs):
+        from django.conf import settings
+        from django.http import HttpResponseForbidden
+
+        if not getattr(settings, "REGISTRATION_OPEN", False):
+            return HttpResponseForbidden("Registration is not open.")
+        return super().dispatch(request, *args, **kwargs)
+
     def form_valid(self, form):
         ret = super().form_valid(form)
         login(self.request, self.object)
