@@ -1,4 +1,3 @@
-from math import pi  # noqa: F401 — kept for potential future use
 from django.utils import timezone
 from dateutil.relativedelta import relativedelta
 
