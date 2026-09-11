@@ -1,18 +1,18 @@
-from django.views.generic import (
-    ListView,
-    CreateView,
-    UpdateView,
-    DeleteView,
-    TemplateView,
-)
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db.models import Sum
 from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
-from django.db.models import Sum
 from django.utils.translation import gettext_lazy as _
+from django.views.generic import (
+    CreateView,
+    DeleteView,
+    ListView,
+    TemplateView,
+    UpdateView,
+)
 
-from .models import CO2Category, CO2Entry, CO2Offset
 from .forms import CO2CategoryForm, CO2EntryForm, CO2OffsetForm
+from .models import CO2Category, CO2Entry, CO2Offset
 
 
 class CO2DashboardView(LoginRequiredMixin, TemplateView):

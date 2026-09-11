@@ -1,25 +1,63 @@
 {% extends "frontend/base.html" %}
 {% load i18n %}
 {% block content %}
-<div class="card">
-  <div class="card-header">Medications</div>
-  <div class="card-body p-0">
-    <div class="table-responsive">
-      <table class="table table-hover table-clickable mb-0" id="dataTable">
-        <thead><tr><th>Name</th><th>Dosage</th><th>Frequency</th><th>Next due</th></tr></thead>
-        <tbody>
-          {% for med in object_list %}
-            <tr onclick="window.location.href='{% url "health:medication_edit" med.id %}'">
-              <td><strong>{{ med.name }}</strong></td>
-              <td>{{ med.dosage|default:"—" }}</td>
-              <td>{{ med.get_frequency_display|default:"—" }}</td>
-              <td>{{ med.next|default:"—" }}</td>
-            </tr>
-          {% empty %}
-          {% endfor %}
-        </tbody>
-      </table>
+    {{ payloads|json_script:"ks-payloads" }}
+    <div class="card">
+        <div class="card-header">Medications</div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-clickable mb-0" id="dataTable">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Dosage</th>
+                            <th>Frequency</th>
+                            <th>Next due</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for med in object_list %}
+                            <tr data-ks-row="{{ med.id }}"
+                                onclick="window.location.href='{% url "health:medication_edit" med.id %}'">
+                                <td>
+                                    <strong>
+                                        {% if med.encrypted_payload %}
+                                            <i class="ph ph-lock text-muted me-1"></i><span data-ks-field="name"
+      class="text-muted">Encrypted</span>
+                                        {% else %}
+                                            {{ med.name }}
+                                        {% endif %}
+                                    </strong>
+                                </td>
+                                <td>{{ med.supply|default:"—" }}</td>
+                                <td>—</td>
+                                <td>{{ med.next|default:"—" }}</td>
+                            </tr>
+                        {% empty %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
-  </div>
-</div>
+    <script type="module">
+  (async () => {
+  const raw = document.getElementById('ks-payloads');
+  if (!raw) return;
+  const payloads = JSON.parse(raw.textContent);
+  const dataKey = await window.keystore.ready;
+  if (!dataKey) return;
+  for (const [id, payload] of Object.entries(payloads)) {
+    const row = document.querySelector(`[data-ks-row="${id}"]`);
+    if (!row) continue;
+    try {
+      const fields = await window.keystore.decryptPayload(dataKey, payload);
+      for (const [name, value] of Object.entries(fields)) {
+        const el = row.querySelector(`[data-ks-field="${name}"]`);
+        if (el) el.textContent = value;
+      }
+    } catch (e) { console.warn('decrypt failed for row', id, e); }
+  }
+  })();
+    </script>
 {% endblock content %}

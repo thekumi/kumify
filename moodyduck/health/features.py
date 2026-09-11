@@ -1,9 +1,10 @@
-from moodyduck.frontend.classes import (
-    NavSection,
-    NavItem,
-    NavCollapse,
-)
 from django.urls import reverse_lazy
+
+from moodyduck.frontend.classes import (
+    NavCollapse,
+    NavItem,
+    NavSection,
+)
 
 health_section = NavSection("Health")
 

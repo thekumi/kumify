@@ -1,10 +1,10 @@
-from django.core.management.base import BaseCommand, CommandError
-from django.contrib.auth import get_user_model
-
-from moodyduck.mood.models import Status, Mood, Activity, StatusActivity
-
 import csv
-from datetime import datetime
+from datetime import datetime, timezone
+
+from django.contrib.auth import get_user_model
+from django.core.management.base import BaseCommand, CommandError
+
+from moodyduck.mood.models import Activity, Mood, Status, StatusActivity
 
 DATE_FORMAT = "%Y-%m-%d %I:%M %p"
 
@@ -23,8 +23,8 @@ class Command(BaseCommand):
                 reader = csv.DictReader(infile)
                 for row in reader:
                     timestamp = datetime.strptime(
-                        "%s %s" % (row["full_date"], row["time"]), DATE_FORMAT
-                    )
+                        f"{row['full_date']} {row['time']}", DATE_FORMAT
+                    ).replace(tzinfo=timezone.utc)
                     activities = [a.strip() for a in row["activities"].split("|")]
 
                     try:
@@ -52,12 +52,12 @@ class Command(BaseCommand):
                             StatusActivity.objects.create(status=status, activity=aobj)
 
         except FileNotFoundError:
-            raise CommandError('File "%s" does not exist' % options["path"])
+            raise CommandError(f'File "{options["path"]}" does not exist')
         except get_user_model().DoesNotExist:
-            raise CommandError('User "%s" does not exist' % options["user"])
+            raise CommandError(f'User "{options["user"]}" does not exist')
 
         self.stdout.write(
             self.style.SUCCESS(
-                'Successfully imported data for user "%s"' % options["username"]
+                f'Successfully imported data for user "{options["username"]}"'
             )
         )

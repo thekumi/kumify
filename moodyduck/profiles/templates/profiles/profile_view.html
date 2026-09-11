@@ -1,69 +1,153 @@
 {% extends "frontend/base.html" %}
 {% load i18n %}
 {% block content %}
-<div class="card mb-4">
-  <div class="card-header d-flex justify-content-between align-items-center">
-    <span>My Profile</span>
-    <a class="btn btn-primary btn-sm" href="{% url 'profiles:profile_edit' %}">
-      <i class="ph ph-pencil-simple me-1"></i> Edit Profile
-    </a>
-  </div>
-  <div class="card-body">
-    <table class="table table-hover">
-      <tr><th>Username</th><td>{{ request.user.username }}</td></tr>
-      <tr><th>Email</th><td>{{ request.user.email }}</td></tr>
-      <tr><th>Display Name</th><td>{{ profile.display_name|default:"Not set" }}</td></tr>
-      <tr><th>Time Zone</th><td>{{ profile.timezone|default:"Not set" }}</td></tr>
-      <tr><th>Legal Name</th><td>{{ profile.legal_name|default:"Not set" }}</td></tr>
-      <tr><th>Phone</th><td>{{ profile.phone|default:"Not set" }}</td></tr>
-      <tr><th>Date of Birth</th><td>{{ profile.date_of_birth|default:"Not set" }}</td></tr>
-      <tr><th>Address</th><td>{{ profile.address|default:"Not set"|linebreaksbr }}</td></tr>
-      <tr><th>Blood Type</th><td>{{ medical_info.blood_type|default:"Not set" }}</td></tr>
-      <tr><th>Allergies</th><td>{{ medical_info.allergies|default:"Not set"|linebreaksbr }}</td></tr>
-      <tr><th>Medical Notes</th><td>{{ medical_info.medical_notes|default:"Not set"|linebreaksbr }}</td></tr>
-      <tr>
-        <th>PGP Key</th>
-        <td>
-          {% if profile.pgp_key %}
-            <pre class="mb-0" style="white-space: pre-wrap; font-size: 0.8em;">{{ profile.pgp_key }}</pre>
-          {% else %}
-            <span class="text-muted">No PGP key set.</span>
-          {% endif %}
-        </td>
-      </tr>
-    </table>
-  </div>
-</div>
+    {% if medical_info.encrypted_payload %}{{ medical_info.encrypted_payload|json_script:"ks-medical-ep" }}{% endif %}
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span>My Profile</span>
+            <a class="btn btn-primary btn-sm"
+               href="{% url 'profiles:profile_edit' %}">
+                <i class="ph ph-pencil-simple me-1"></i> Edit Profile
+            </a>
+        </div>
+        <div class="card-body">
+            <table class="table table-hover">
+                <tr>
+                    <th>Username</th>
+                    <td>{{ request.user.username }}</td>
+                </tr>
+                <tr>
+                    <th>Email</th>
+                    <td>{{ request.user.email }}</td>
+                </tr>
+                <tr>
+                    <th>Display Name</th>
+                    <td>{{ profile.display_name|default:"Not set" }}</td>
+                </tr>
+                <tr>
+                    <th>Time Zone</th>
+                    <td>{{ profile.timezone|default:"Not set" }}</td>
+                </tr>
+                <tr>
+                    <th>Legal Name</th>
+                    <td>{{ profile.legal_name|default:"Not set" }}</td>
+                </tr>
+                <tr>
+                    <th>Phone</th>
+                    <td>{{ profile.phone|default:"Not set" }}</td>
+                </tr>
+                <tr>
+                    <th>Date of Birth</th>
+                    <td>{{ profile.date_of_birth|default:"Not set" }}</td>
+                </tr>
+                <tr>
+                    <th>Address</th>
+                    <td>{{ profile.address|default:"Not set"|linebreaksbr }}</td>
+                </tr>
+                {% if medical_info.encrypted_payload %}
+                    <tr>
+                        <th>Blood Type</th>
+                        <td id="ks-blood_type" class="text-muted"><i class="ph ph-lock me-1"></i>Encrypted</td>
+                    </tr>
+                    <tr>
+                        <th>Allergies</th>
+                        <td id="ks-allergies" class="text-muted"><i class="ph ph-lock me-1"></i>Encrypted</td>
+                    </tr>
+                    <tr>
+                        <th>Medical Notes</th>
+                        <td id="ks-medical_notes" class="text-muted"><i class="ph ph-lock me-1"></i>Encrypted</td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <th>Blood Type</th>
+                        <td>{{ medical_info.blood_type|default:"Not set" }}</td>
+                    </tr>
+                    <tr>
+                        <th>Allergies</th>
+                        <td>{{ medical_info.allergies|default:"Not set"|linebreaksbr }}</td>
+                    </tr>
+                    <tr>
+                        <th>Medical Notes</th>
+                        <td>{{ medical_info.medical_notes|default:"Not set"|linebreaksbr }}</td>
+                    </tr>
+                {% endif %}
+            </table>
+        </div>
+    </div>
+    <div class="card mb-4">
+        <div class="card-header"><i class="ph ph-lock-simple me-2"></i>Encryption</div>
+        <div class="card-body">
+            <p class="text-muted mb-3">
+                Your data is end-to-end encrypted. Existing unencrypted entries can be encrypted client-side below.
+                Run this once after setting up on a new device.
+            </p>
+            <div id="ks-staging-status" class="text-muted small mb-3"></div>
+            <button id="ks-staging-btn"
+                    class="btn btn-warning"
+                    onclick="startStaging(this)">
+                <i class="ph ph-lock-simple me-1"></i> Encrypt existing data
+            </button>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header">Recent Emergency Access</div>
+        <div class="card-body">
+            {% if recent_emergency_access_logs %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Accessed</th>
+                                <th>Source</th>
+                                <th>Method</th>
+                                <th>Details</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in recent_emergency_access_logs %}
+                                <tr>
+                                    <td>{{ log.accessed_at }}</td>
+                                    <td>{{ log.source }}</td>
+                                    <td>{{ log.method }}</td>
+                                    <td>{{ log.details|default:"-" }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-muted mb-0">No emergency accesses logged yet.</p>
+            {% endif %}
+        </div>
+    </div>
+    <script type="module">
+  const medEp = document.getElementById('ks-medical-ep');
+  if (medEp) {
+    const dataKey = await window.keystore.ready;
+    if (dataKey) try {
+      const fields = await window.keystore.decryptPayload(dataKey, JSON.parse(medEp.textContent));
+      for (const [name, value] of Object.entries(fields)) {
+        const el = document.getElementById(`ks-${name}`);
+        if (el && value) el.textContent = value;
+      }
+    } catch (e) { console.error('medical decrypt failed', e); }
+  }
 
-<div class="card">
-  <div class="card-header">Recent Emergency Access</div>
-  <div class="card-body">
-    {% if recent_emergency_access_logs %}
-      <div class="table-responsive">
-        <table class="table table-hover mb-0">
-          <thead>
-            <tr>
-              <th>Accessed</th>
-              <th>Source</th>
-              <th>Method</th>
-              <th>Details</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for log in recent_emergency_access_logs %}
-              <tr>
-                <td>{{ log.accessed_at }}</td>
-                <td>{{ log.source }}</td>
-                <td>{{ log.method }}</td>
-                <td>{{ log.details|default:"-" }}</td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    {% else %}
-      <p class="text-muted mb-0">No emergency accesses logged yet.</p>
-    {% endif %}
-  </div>
-</div>
+  window.startStaging = async function(btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="ph ph-spinner me-1"></i> Encrypting…';
+    const status = document.getElementById('ks-staging-status');
+    try {
+      const result = await window.keystore.runStaging();
+      btn.className = 'btn btn-success';
+      btn.innerHTML = '<i class="ph ph-check me-1"></i> Done';
+      if (status) status.textContent = 'All existing records have been encrypted.';
+    } catch (e) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="ph ph-lock-simple me-1"></i> Encrypt existing data';
+      if (status) status.textContent = `Error: ${e.message}`;
+      console.error('staging failed', e);
+    }
+  };
+    </script>
 {% endblock content %}

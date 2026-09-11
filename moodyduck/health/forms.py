@@ -1,13 +1,14 @@
 from django import forms
 
 from moodyduck.frontend.mixins import BootstrapMixin
+
 from .models import (
+    HealthLog,
+    HealthParameter,
+    HealthRecord,
     Medication,
     MedicationSchedule,
     MedicationSettings,
-    HealthParameter,
-    HealthLog,
-    HealthRecord,
     Vaccination,
 )
 

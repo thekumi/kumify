@@ -1,11 +1,10 @@
-from django.db import models
-from django.contrib.auth import get_user_model
-from django.utils import timezone
-from django.utils.translation import gettext_lazy as _
-
-from datetime import time, date
+from datetime import date, time
 
 from dateutil.relativedelta import relativedelta
+from django.contrib.auth import get_user_model
+from django.db import models
+from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 
 
 class MedicationSettings(models.Model):
@@ -32,7 +31,7 @@ class Medication(models.Model):
         ordering = ["name"]
 
     user = models.ForeignKey(get_user_model(), models.CASCADE)
-    name = models.CharField(max_length=128)
+    name = models.CharField(max_length=128, null=True, blank=True)
     icon = models.CharField(max_length=64, default="ph ph-pill")
 
     supply = models.DecimalField(null=True, blank=True, max_digits=5, decimal_places=2)
@@ -40,9 +39,10 @@ class Medication(models.Model):
 
     prn = models.BooleanField(default=False, help_text=_("As needed (pro re nata)"))
     remarks = models.TextField(null=True, blank=True)
+    encrypted_payload = models.JSONField(null=True, blank=True)
 
     def __str__(self):
-        return self.name
+        return self.name or ""
 
 
 class ScheduleChoices(models.IntegerChoices):
@@ -128,6 +128,7 @@ class BasicMedicalInfo(models.Model):
     blood_type = models.CharField(max_length=8, blank=True, null=True)
     allergies = models.TextField(blank=True, null=True)
     medical_notes = models.TextField(blank=True, null=True)
+    encrypted_payload = models.JSONField(null=True, blank=True)
 
     def __str__(self):
         return f"Basic medical info for {self.user}"
@@ -142,6 +143,7 @@ class HealthLog(models.Model):
     user = models.ForeignKey(get_user_model(), models.CASCADE)
     recorded_at = models.DateTimeField(default=timezone.now)
     notes = models.TextField(null=True, blank=True)
+    encrypted_payload = models.JSONField(null=True, blank=True)
 
     def __str__(self):
         return f"Health log — {self.recorded_at:%Y-%m-%d %H:%M}"
@@ -154,6 +156,7 @@ class HealthRecord(models.Model):
     parameter = models.ForeignKey(HealthParameter, models.CASCADE)
     value = models.DecimalField(max_digits=12, decimal_places=6, null=True, blank=True)
     comment = models.TextField(null=True, blank=True)
+    encrypted_payload = models.JSONField(null=True, blank=True)
 
     def __str__(self):
         return f"{self.parameter.name}: {self.value}"
@@ -164,13 +167,14 @@ class Vaccination(models.Model):
         ordering = ["-administered_on", "name"]
 
     user = models.ForeignKey(get_user_model(), models.CASCADE)
-    name = models.CharField(max_length=128)
+    name = models.CharField(max_length=128, null=True, blank=True)
     target_disease = models.CharField(max_length=128, null=True, blank=True)
     administered_on = models.DateField(default=date.today)
     provider = models.CharField(max_length=128, null=True, blank=True)
     batch_number = models.CharField(max_length=64, null=True, blank=True)
     next_due = models.DateField(null=True, blank=True)
     notes = models.TextField(null=True, blank=True)
+    encrypted_payload = models.JSONField(null=True, blank=True)
 
     def __str__(self):
         return f"{self.name} on {self.administered_on:%Y-%m-%d}"

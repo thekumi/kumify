@@ -1,40 +1,71 @@
 {% extends "frontend/base.html" %}
 {% load i18n %}
 {% block content %}
-<div class="card mb-4">
-  <div class="card-header">{% trans "Your Dreams" %}</div>
-  <div class="card-body p-0">
-    <div class="table-responsive">
-      <table data-order="[[ 0, &quot;desc&quot; ]]" class="table table-hover table-clickable mb-0" id="dataTable">
-        <thead>
-          <tr>
-            <th>{% trans "Timestamp" %}</th>
-            <th>{% trans "Mood" %}</th>
-            <th>{% trans "Themes" %}</th>
-            <th>{% trans "Title" %}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for dream in object_list %}
-          <tr onclick="window.location.href='{% url "dreams:dream_view" dream.id %}'">
-            <td data-order="{{ dream.timestamp|date:"U" }}">{{ dream.timestamp }}</td>
-            <td>
-              <i data-order="{{ dream.mood.value }}" style="color:{{ dream.mood.color }}"
-                 class="{{ dream.mood.icon }}"></i> {{ dream.mood }}
-            </td>
-            <td>
-              {% for theme in dream.dreamtheme_set.all %}
-                <i title="{{ theme.theme }}{% if theme.comment %} - {{ theme.comment }}{% endif %}"
-                   style="color:{{ theme.theme.color }}" class="{{ theme.theme.icon }}"></i>
-              {% endfor %}
-            </td>
-            <td>{{ dream.short_text }}</td>
-          </tr>
-          {% empty %}
-          {% endfor %}
-        </tbody>
-      </table>
+    {{ payloads|json_script:"ks-payloads" }}
+    <div class="card mb-4">
+        <div class="card-header">{% trans "Your Dreams" %}</div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table data-order="[[ 0, &quot;desc&quot; ]]"
+                       class="table table-hover table-clickable mb-0"
+                       id="dataTable">
+                    <thead>
+                        <tr>
+                            <th>{% trans "Timestamp" %}</th>
+                            <th>{% trans "Mood" %}</th>
+                            <th>{% trans "Themes" %}</th>
+                            <th>{% trans "Title" %}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for dream in object_list %}
+                            <tr data-ks-row="{{ dream.id }}"
+                                onclick="window.location.href='{% url "dreams:dream_view" dream.id %}'">
+                                <td data-order="{{ dream.timestamp|date:"U" }}">{{ dream.timestamp }}</td>
+                                <td>
+                                    <i data-order="{{ dream.mood.value }}"
+                                       style="color:{{ dream.mood.color }}"
+                                       class="{{ dream.mood.icon }}"></i> {{ dream.mood }}
+                                </td>
+                                <td>
+                                    {% for theme in dream.dreamtheme_set.all %}
+                                        <i title="{{ theme.theme }}"
+                                           style="color:{{ theme.theme.color }}"
+                                           class="{{ theme.theme.icon }}"></i>
+                                    {% endfor %}
+                                </td>
+                                <td>
+                                    {% if dream.encrypted_payload %}
+                                        <i class="ph ph-lock-simple me-1 text-muted"></i><span data-ks-field="title"
+      class="text-muted">Encrypted</span>
+                                    {% else %}
+                                        {{ dream.short_text }}
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% empty %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
-  </div>
-</div>
+    <script type="module">
+  (async () => {
+  const raw = document.getElementById('ks-payloads');
+  if (!raw) return;
+  const payloads = JSON.parse(raw.textContent);
+  const dataKey = await window.keystore.ready;
+  if (!dataKey) return;
+  for (const [id, payload] of Object.entries(payloads)) {
+    const row = document.querySelector(`[data-ks-row="${id}"]`);
+    if (!row) continue;
+    try {
+      const fields = await window.keystore.decryptPayload(dataKey, payload);
+      const el = row.querySelector('[data-ks-field="title"]');
+      if (el) el.textContent = fields.title || fields.content?.slice(0, 64) || '';
+    } catch (e) { console.warn('decrypt failed for row', id, e); }
+  }
+  })();
+    </script>
 {% endblock content %}

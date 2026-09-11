@@ -4,20 +4,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('friends', '0001_initial'),
+        ("friends", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='person',
-            name='emergency_contact',
+            model_name="person",
+            name="emergency_contact",
             field=models.BooleanField(default=False),
         ),
         migrations.AddField(
-            model_name='person',
-            name='relationship',
+            model_name="person",
+            name="relationship",
             field=models.CharField(blank=True, max_length=64, null=True),
         ),
     ]

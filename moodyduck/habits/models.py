@@ -1,13 +1,13 @@
-from django.db import models
-from django.contrib.auth import get_user_model
-from django.utils import timezone
 from datetime import date
 
 from colorfield.fields import ColorField
-from polymorphic.models import PolymorphicModel
 from dateutil.relativedelta import relativedelta
+from django.contrib.auth import get_user_model
+from django.db import models
+from django.utils import timezone
+from polymorphic.models import PolymorphicModel
 
-from moodyduck.common.fields import WeekdayField, DayOfMonthField
+from moodyduck.common.fields import DayOfMonthField, WeekdayField
 
 
 class Habit(models.Model):
@@ -30,7 +30,7 @@ class HabitSchedule(PolymorphicModel):
 
     def next_scheduled(self, today=True):
         raise NotImplementedError(
-            "%s does not implement next_scheduled." % self.__class__
+            f"{self.__class__} does not implement next_scheduled."
         )
 
 

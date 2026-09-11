@@ -1,72 +1,105 @@
 {% extends "frontend/base.html" %}
 {% load i18n %}
 {% block content %}
-<div class="card mb-4">
-  <div class="card-header d-flex align-items-center justify-content-between">
-    <span>{{ object.title|default:"Thought Record" }}</span>
-    <div class="d-flex gap-2">
-      <a href="{% url 'cbt:record_edit' object.id %}" class="btn btn-sm btn-primary">
-        <i class="ph ph-pencil-simple me-1"></i> {% trans "Edit" %}
-      </a>
-      <a href="{% url 'cbt:record_delete' object.id %}" class="btn btn-sm btn-outline-danger">
-        <i class="ph ph-trash me-1"></i> {% trans "Delete" %}
-      </a>
-    </div>
-  </div>
-  <div class="card-body">
-    {% if object.situation %}
-    <div class="mb-4">
-      <h6 class="fw-bold text-muted text-uppercase md-section-label">{% trans "Situation" %}</h6>
-      <p>{{ object.situation }}</p>
-    </div>
+    {% if object.encrypted_payload %}
+        {{ object.encrypted_payload|json_script:"ks-ep" }}
     {% endif %}
-
-    {% if object.automatic_thoughts %}
-    <div class="mb-4">
-      <h6 class="fw-bold text-muted text-uppercase md-section-label">{% trans "Automatic Thoughts" %}</h6>
-      <p>{{ object.automatic_thoughts }}</p>
+    <div class="card mb-4">
+        <div class="card-header d-flex align-items-center justify-content-between">
+            <span id="ks-title">{{ object.title|default:"Thought Record" }}</span>
+            <div class="d-flex gap-2">
+                <a href="{% url 'cbt:record_edit' object.id %}"
+                   class="btn btn-sm btn-primary">
+                    <i class="ph ph-pencil-simple me-1"></i> {% trans "Edit" %}
+                </a>
+                <a href="{% url 'cbt:record_delete' object.id %}"
+                   class="btn btn-sm btn-outline-danger">
+                    <i class="ph ph-trash me-1"></i> {% trans "Delete" %}
+                </a>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="mb-4"
+                 id="ks-situation-block"
+                 {% if not object.situation and not object.encrypted_payload %}style="display:none"{% endif %}>
+                <h6 class="fw-bold text-muted text-uppercase md-section-label">{% trans "Situation" %}</h6>
+                <p id="ks-situation">{{ object.situation }}</p>
+            </div>
+            <div class="mb-4"
+                 id="ks-thoughts-block"
+                 {% if not object.thoughts and not object.encrypted_payload %}style="display:none"{% endif %}>
+                <h6 class="fw-bold text-muted text-uppercase md-section-label">{% trans "Automatic Thoughts" %}</h6>
+                <p id="ks-thoughts">{{ object.thoughts }}</p>
+            </div>
+            <div class="row mb-4">
+                <div class="col-md-6"
+                     id="ks-pro-block"
+                     {% if not object.pro_facts and not object.encrypted_payload %}style="display:none"{% endif %}>
+                    <h6 class="fw-bold text-muted text-uppercase md-section-label">{% trans "Evidence For" %}</h6>
+                    <p id="ks-pro_facts">{{ object.pro_facts }}</p>
+                </div>
+                <div class="col-md-6"
+                     id="ks-con-block"
+                     {% if not object.con_facts and not object.encrypted_payload %}style="display:none"{% endif %}>
+                    <h6 class="fw-bold text-muted text-uppercase md-section-label">{% trans "Evidence Against" %}</h6>
+                    <p id="ks-con_facts">{{ object.con_facts }}</p>
+                </div>
+            </div>
+            <div class="mb-4"
+                 id="ks-realistic-block"
+                 {% if not object.realistic and not object.encrypted_payload %}style="display:none"{% endif %}>
+                <h6 class="fw-bold text-muted text-uppercase md-section-label">{% trans "Balanced Thought" %}</h6>
+                <p id="ks-realistic">{{ object.realistic }}</p>
+            </div>
+            <div class="mb-4"
+                 id="ks-outcome-block"
+                 {% if not object.outcome and not object.encrypted_payload %}style="display:none"{% endif %}>
+                <h6 class="fw-bold text-muted text-uppercase md-section-label">{% trans "Outcome" %}</h6>
+                <p id="ks-outcome">{{ object.outcome }}</p>
+            </div>
+            <div class="pt-3 border-top d-flex align-items-center justify-content-between">
+                <div>
+                    {% if object.complete %}
+                        <span class="badge bg-success"><i class="ph ph-check me-1"></i> {% trans "Complete" %}</span>
+                    {% else %}
+                        <span class="badge bg-warning text-dark"><i class="ph ph-clock me-1"></i> {% trans "In progress" %}</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
     </div>
+    {% if object.encrypted_payload %}
+        <script type="module">
+  const epEl = document.getElementById('ks-ep');
+  if (epEl) {
+    const dataKey = await window.keystore.ready;
+    if (!dataKey) return;
+    try {
+      const payload = JSON.parse(epEl.textContent);
+      const fields = await window.keystore.decryptPayload(dataKey, payload);
+      const map = {
+        title: 'ks-title',
+        situation: 'ks-situation',
+        thoughts: 'ks-thoughts',
+        pro_facts: 'ks-pro_facts',
+        con_facts: 'ks-con_facts',
+        realistic: 'ks-realistic',
+        outcome: 'ks-outcome',
+      };
+      for (const [field, elId] of Object.entries(map)) {
+        if (!fields[field]) continue;
+        document.getElementById(elId).textContent = fields[field];
+        const block = document.getElementById(`ks-${field}-block`) || document.getElementById(`ks-${elId.replace('ks-', '')}-block`);
+        if (block) block.style.display = '';
+      }
+      document.getElementById('ks-situation-block').style.display = fields.situation ? '' : 'none';
+      document.getElementById('ks-thoughts-block').style.display = fields.thoughts ? '' : 'none';
+      document.getElementById('ks-pro-block').style.display = fields.pro_facts ? '' : 'none';
+      document.getElementById('ks-con-block').style.display = fields.con_facts ? '' : 'none';
+      document.getElementById('ks-realistic-block').style.display = fields.realistic ? '' : 'none';
+      document.getElementById('ks-outcome-block').style.display = fields.outcome ? '' : 'none';
+    } catch (e) { console.error('decrypt failed', e); }
+  }
+        </script>
     {% endif %}
-
-    <div class="row mb-4">
-      {% if object.evidence_for %}
-      <div class="col-md-6">
-        <h6 class="fw-bold text-muted text-uppercase md-section-label">{% trans "Evidence For" %}</h6>
-        <p>{{ object.evidence_for }}</p>
-      </div>
-      {% endif %}
-      {% if object.evidence_against %}
-      <div class="col-md-6">
-        <h6 class="fw-bold text-muted text-uppercase md-section-label">{% trans "Evidence Against" %}</h6>
-        <p>{{ object.evidence_against }}</p>
-      </div>
-      {% endif %}
-    </div>
-
-    {% if object.balanced_thought %}
-    <div class="mb-4">
-      <h6 class="fw-bold text-muted text-uppercase md-section-label">{% trans "Balanced Thought" %}</h6>
-      <p>{{ object.balanced_thought }}</p>
-    </div>
-    {% endif %}
-
-    {% if object.outcome %}
-    <div class="mb-4">
-      <h6 class="fw-bold text-muted text-uppercase md-section-label">{% trans "Outcome" %}</h6>
-      <p>{{ object.outcome }}</p>
-    </div>
-    {% endif %}
-
-    <div class="pt-3 border-top d-flex align-items-center justify-content-between">
-      <div>
-        {% if object.complete %}
-          <span class="badge bg-success"><i class="ph ph-check me-1"></i> {% trans "Complete" %}</span>
-        {% else %}
-          <span class="badge bg-warning text-dark"><i class="ph ph-clock me-1"></i> {% trans "In progress" %}</span>
-        {% endif %}
-      </div>
-      <small class="text-muted">{% blocktrans with date=object.created_at|date:"N j, Y" %}Created {{ date }}{% endblocktrans %}</small>
-    </div>
-  </div>
-</div>
 {% endblock content %}

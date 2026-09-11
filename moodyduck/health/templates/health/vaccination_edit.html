@@ -1,58 +1,87 @@
 {% extends "frontend/base.html" %}
 {% load i18n %}
 {% block content %}
-{% if form.errors %}
-  {% for field in form %}
-    {% for error in field.errors %}
-      <div class="alert alert-danger py-2">{{ field.label }}: {{ error }}</div>
-    {% endfor %}
-  {% endfor %}
-  {% for error in form.non_field_errors %}
-    <div class="alert alert-danger py-2">{{ error }}</div>
-  {% endfor %}
-{% endif %}
-<div class="card">
-  <div class="card-header">
-    {% if object %}{% trans "Edit Vaccination" %}{% else %}{% trans "Add Vaccination" %}{% endif %}
-  </div>
-  <div class="card-body">
-    <form method="post">
-      {% csrf_token %}
-      <div class="row">
-        <div class="col-md-6 mb-3">
-          <label class="form-label" for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
-          {{ form.name }}
+    {% if form.errors %}
+        {% for field in form %}
+            {% for error in field.errors %}
+                <div class="alert alert-danger py-2">{{ field.label }}: {{ error }}</div>
+            {% endfor %}
+        {% endfor %}
+        {% for error in form.non_field_errors %}
+            <div class="alert alert-danger py-2">{{ error }}</div>
+        {% endfor %}
+    {% endif %}
+    {% if object.encrypted_payload %}{{ object.encrypted_payload|json_script:"ks-ep" }}{% endif %}
+    <div class="card">
+        <div class="card-header">
+            {% if object %}
+                {% trans "Edit Vaccination" %}
+            {% else %}
+                {% trans "Add Vaccination" %}
+            {% endif %}
         </div>
-        <div class="col-md-6 mb-3">
-          <label class="form-label" for="{{ form.target_disease.id_for_label }}">{{ form.target_disease.label }}</label>
-          {{ form.target_disease }}
+        <div class="card-body">
+            <form method="post"
+                  data-keystore-encrypt
+                  data-encrypt-fields="name,target_disease,provider,batch_number,notes">
+                {% csrf_token %}
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label" for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
+                        {{ form.name }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label"
+                               for="{{ form.target_disease.id_for_label }}">{{ form.target_disease.label }}</label>
+                        {{ form.target_disease }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label"
+                               for="{{ form.administered_on.id_for_label }}">{{ form.administered_on.label }}</label>
+                        {{ form.administered_on }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label"
+                               for="{{ form.next_due.id_for_label }}">{{ form.next_due.label }}</label>
+                        {{ form.next_due }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label"
+                               for="{{ form.provider.id_for_label }}">{{ form.provider.label }}</label>
+                        {{ form.provider }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label"
+                               for="{{ form.batch_number.id_for_label }}">{{ form.batch_number.label }}</label>
+                        {{ form.batch_number }}
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" for="{{ form.notes.id_for_label }}">{{ form.notes.label }}</label>
+                    {{ form.notes }}
+                </div>
+                <div class="d-flex gap-2 mt-4">
+                    <button type="submit"
+                            class="btn btn-primary"><i class="ph ph-floppy-disk me-1"></i> {% trans "Save" %}</button>
+                    <a href="{% url 'health:vaccination_list' %}" class="btn btn-light">{% trans "Cancel" %}</a>
+                </div>
+            </form>
         </div>
-        <div class="col-md-6 mb-3">
-          <label class="form-label" for="{{ form.administered_on.id_for_label }}">{{ form.administered_on.label }}</label>
-          {{ form.administered_on }}
-        </div>
-        <div class="col-md-6 mb-3">
-          <label class="form-label" for="{{ form.next_due.id_for_label }}">{{ form.next_due.label }}</label>
-          {{ form.next_due }}
-        </div>
-        <div class="col-md-6 mb-3">
-          <label class="form-label" for="{{ form.provider.id_for_label }}">{{ form.provider.label }}</label>
-          {{ form.provider }}
-        </div>
-        <div class="col-md-6 mb-3">
-          <label class="form-label" for="{{ form.batch_number.id_for_label }}">{{ form.batch_number.label }}</label>
-          {{ form.batch_number }}
-        </div>
-      </div>
-      <div class="mb-3">
-        <label class="form-label" for="{{ form.notes.id_for_label }}">{{ form.notes.label }}</label>
-        {{ form.notes }}
-      </div>
-      <div class="d-flex gap-2 mt-4">
-        <button type="submit" class="btn btn-primary"><i class="ph ph-floppy-disk me-1"></i> {% trans "Save" %}</button>
-        <a href="{% url 'health:vaccination_list' %}" class="btn btn-light">{% trans "Cancel" %}</a>
-      </div>
-    </form>
-  </div>
-</div>
+    </div>
+    {% if object.encrypted_payload %}
+        <script type="module">
+  const epEl = document.getElementById('ks-ep');
+  if (epEl) {
+    const dataKey = await window.keystore.ready;
+    if (!dataKey) return;
+    try {
+      const fields = await window.keystore.decryptPayload(dataKey, JSON.parse(epEl.textContent));
+      for (const [name, value] of Object.entries(fields)) {
+        const el = document.querySelector(`[name="${CSS.escape(name)}"]`);
+        if (el && value != null) el.value = value;
+      }
+    } catch (e) { console.error('decrypt failed', e); }
+  }
+        </script>
+    {% endif %}
 {% endblock content %}

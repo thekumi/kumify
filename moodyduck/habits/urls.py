@@ -1,14 +1,14 @@
 from django.urls import path
 
 from .views import (
-    HabitListView,
     HabitCreateView,
-    HabitEditView,
     HabitDeleteView,
-    HabitLogListView,
+    HabitEditView,
+    HabitListView,
     HabitLogCreateView,
-    HabitLogEditView,
     HabitLogDeleteView,
+    HabitLogEditView,
+    HabitLogListView,
 )
 
 app_name = "habits"

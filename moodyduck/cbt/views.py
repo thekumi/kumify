@@ -1,17 +1,19 @@
-from django.views.generic import (
-    CreateView,
-    ListView,
-    DetailView,
-    UpdateView,
-    DeleteView,
-)
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
 from django.utils.translation import gettext_lazy as _
+from django.views.generic import (
+    CreateView,
+    DeleteView,
+    DetailView,
+    ListView,
+    UpdateView,
+)
 
-from .models import ThoughtRecord
+from moodyduck.common.views import EncryptedPayloadMixin
+
 from .forms import ThoughtRecordForm
+from .models import ThoughtRecord
 
 
 class ThoughtRecordListView(LoginRequiredMixin, ListView):
@@ -25,6 +27,11 @@ class ThoughtRecordListView(LoginRequiredMixin, ListView):
         context["buttons"] = [
             (reverse_lazy("cbt:record_create"), _("New Record"), "plus")
         ]
+        context["payloads"] = {
+            str(obj.id): obj.encrypted_payload
+            for obj in context["object_list"]
+            if obj.encrypted_payload
+        }
         return context
 
     def get_queryset(self):
@@ -54,7 +61,7 @@ class ThoughtRecordViewView(LoginRequiredMixin, DetailView):
         )
 
 
-class ThoughtRecordCreateView(LoginRequiredMixin, CreateView):
+class ThoughtRecordCreateView(EncryptedPayloadMixin, LoginRequiredMixin, CreateView):
     form_class = ThoughtRecordForm
     template_name = "cbt/record_edit.html"
     model = ThoughtRecord
@@ -73,7 +80,7 @@ class ThoughtRecordCreateView(LoginRequiredMixin, CreateView):
         return reverse_lazy("cbt:record_view", kwargs={"id": self.object.id})
 
 
-class ThoughtRecordEditView(LoginRequiredMixin, UpdateView):
+class ThoughtRecordEditView(EncryptedPayloadMixin, LoginRequiredMixin, UpdateView):
     form_class = ThoughtRecordForm
     template_name = "cbt/record_edit.html"
     model = ThoughtRecord

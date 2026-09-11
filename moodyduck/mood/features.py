@@ -1,12 +1,12 @@
-from moodyduck.frontend.classes import (
-    NavSection,
-    NavItem,
-    NavCollapse,
-    DashboardSection,
-)
-
-from django.urls import reverse_lazy
 from django.templatetags.static import static
+from django.urls import reverse_lazy
+
+from moodyduck.frontend.classes import (
+    DashboardSection,
+    NavCollapse,
+    NavItem,
+    NavSection,
+)
 
 # Sidebar navigation items
 
@@ -22,7 +22,6 @@ mood_settings = [
     ),
     NavItem("Moods", reverse_lazy("mood:mood_list"), icon="ph ph-smiley"),
     NavItem("Statistics", reverse_lazy("mood:statistics"), icon="ph ph-chart-pie"),
-    NavItem("Encryptor", reverse_lazy("mood:encryptor"), icon="ph ph-lock-simple"),
 ]
 
 for setting in mood_settings:

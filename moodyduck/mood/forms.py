@@ -1,13 +1,12 @@
 from django.forms import (
     ModelForm,
     ModelMultipleChoiceField,
-    BooleanField,
 )
-
 from multiupload.fields import MultiFileField
 
 from moodyduck.frontend.mixins import BootstrapMixin
-from .models import Status, Activity
+
+from .models import Activity, Status
 
 
 class StatusForm(BootstrapMixin, ModelForm):
@@ -16,7 +15,6 @@ class StatusForm(BootstrapMixin, ModelForm):
         queryset=Activity.objects.none(),
         required=False,
     )
-    encrypt = BooleanField(required=False)
 
     class Meta:
         model = Status

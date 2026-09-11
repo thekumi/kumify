@@ -1,22 +1,24 @@
-from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
 from django.utils.translation import gettext_lazy as _
+from django.views.generic import CreateView, DeleteView, ListView, UpdateView
 
-from .models import (
-    Medication,
-    MedicationSettings,
-    HealthParameter,
-    HealthLog,
-    Vaccination,
-)
+from moodyduck.common.views import EncryptedPayloadMixin
+
 from .forms import (
+    HealthLogForm,
+    HealthParameterForm,
     MedicationForm,
     MedicationSettingsForm,
-    HealthParameterForm,
-    HealthLogForm,
     VaccinationForm,
+)
+from .models import (
+    HealthLog,
+    HealthParameter,
+    Medication,
+    MedicationSettings,
+    Vaccination,
 )
 
 
@@ -39,10 +41,15 @@ class MedicationListView(LoginRequiredMixin, ListView):
             context["settings"] = MedicationSettings.objects.get(user=self.request.user)
         except MedicationSettings.DoesNotExist:
             context["settings"] = None
+        context["payloads"] = {
+            str(obj.id): obj.encrypted_payload
+            for obj in context["object_list"]
+            if obj.encrypted_payload
+        }
         return context
 
 
-class MedicationCreateView(LoginRequiredMixin, CreateView):
+class MedicationCreateView(EncryptedPayloadMixin, LoginRequiredMixin, CreateView):
     template_name = "health/medication_edit.html"
     model = Medication
     form_class = MedicationForm
@@ -63,7 +70,7 @@ class MedicationCreateView(LoginRequiredMixin, CreateView):
         return reverse_lazy("health:medication_list")
 
 
-class MedicationEditView(LoginRequiredMixin, UpdateView):
+class MedicationEditView(EncryptedPayloadMixin, LoginRequiredMixin, UpdateView):
     template_name = "health/medication_edit.html"
     model = Medication
     form_class = MedicationForm
@@ -208,6 +215,11 @@ class HealthLogListView(LoginRequiredMixin, ListView):
         context["buttons"] = [
             (reverse_lazy("health:log_create"), _("New Check-in"), "plus"),
         ]
+        context["payloads"] = {
+            str(obj.id): obj.encrypted_payload
+            for obj in context["object_list"]
+            if obj.encrypted_payload
+        }
         return context
 
 
@@ -245,7 +257,7 @@ class HealthLogMixin(LoginRequiredMixin):
         return reverse_lazy("health:log_list")
 
 
-class HealthLogCreateView(HealthLogMixin, CreateView):
+class HealthLogCreateView(EncryptedPayloadMixin, HealthLogMixin, CreateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["title"] = _("New Health Check-in")
@@ -256,7 +268,7 @@ class HealthLogCreateView(HealthLogMixin, CreateView):
         return context
 
 
-class HealthLogEditView(HealthLogMixin, UpdateView):
+class HealthLogEditView(EncryptedPayloadMixin, HealthLogMixin, UpdateView):
     def get_object(self, queryset=None):
         return get_object_or_404(
             HealthLog, user=self.request.user, id=self.kwargs["id"]
@@ -303,10 +315,15 @@ class VaccinationListView(LoginRequiredMixin, ListView):
         context["buttons"] = [
             (reverse_lazy("health:vaccination_create"), _("Add Vaccination"), "plus"),
         ]
+        context["payloads"] = {
+            str(obj.id): obj.encrypted_payload
+            for obj in context["object_list"]
+            if obj.encrypted_payload
+        }
         return context
 
 
-class VaccinationCreateView(LoginRequiredMixin, CreateView):
+class VaccinationCreateView(EncryptedPayloadMixin, LoginRequiredMixin, CreateView):
     template_name = "health/vaccination_edit.html"
     model = Vaccination
     form_class = VaccinationForm
@@ -327,7 +344,7 @@ class VaccinationCreateView(LoginRequiredMixin, CreateView):
         return reverse_lazy("health:vaccination_list")
 
 
-class VaccinationEditView(LoginRequiredMixin, UpdateView):
+class VaccinationEditView(EncryptedPayloadMixin, LoginRequiredMixin, UpdateView):
     template_name = "health/vaccination_edit.html"
     model = Vaccination
     form_class = VaccinationForm

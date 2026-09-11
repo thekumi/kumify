@@ -1,11 +1,11 @@
 from django.urls import path
 
 from .views import (
+    ThoughtRecordCreateView,
+    ThoughtRecordDeleteView,
+    ThoughtRecordEditView,
     ThoughtRecordListView,
     ThoughtRecordViewView,
-    ThoughtRecordCreateView,
-    ThoughtRecordEditView,
-    ThoughtRecordDeleteView,
 )
 
 app_name = "cbt"

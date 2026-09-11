@@ -11,9 +11,14 @@ from rest_framework.test import APITestCase
 
 from moodyduck.dreams.models import Dream, DreamMedia
 from moodyduck.friends.models import Person
-from moodyduck.health.models import BasicMedicalInfo, Vaccination
+from moodyduck.health.models import (
+    BasicMedicalInfo,
+    HealthLog,
+    HealthParameter,
+    HealthRecord,
+    Vaccination,
+)
 from moodyduck.mood.models import Activity, Mood, Status, StatusMedia
-from moodyduck.health.models import HealthLog, HealthParameter, HealthRecord
 from moodyduck.profiles.models import EmergencyAccessLog
 
 
@@ -63,7 +68,7 @@ class HealthLogApiTests(APITestCase):
         records = HealthRecord.objects.filter(log=log).order_by("parameter__name")
         self.assertEqual(records.count(), 2)
         self.assertEqual(records[0].parameter, pulse)
-        self.assertEqual(records[0].value, Decimal("58"))
+        self.assertEqual(records[0].value, Decimal(58))
         self.assertEqual(records[1].parameter, weight)
         self.assertEqual(records[1].value, Decimal("71.4"))
 
@@ -350,7 +355,9 @@ class ReferenceDataApiTests(APITestCase):
         self.assertEqual(parameter_response.status_code, status.HTTP_201_CREATED)
 
         self.assertEqual(Mood.objects.filter(user=self.user, name="Focused").count(), 1)
-        self.assertEqual(Activity.objects.filter(user=self.user, name="Reading").count(), 1)
+        self.assertEqual(
+            Activity.objects.filter(user=self.user, name="Reading").count(), 1
+        )
 
 
 class EmergencyApiTests(APITestCase):
@@ -405,14 +412,24 @@ class EmergencyApiTests(APITestCase):
         )
         self.assertEqual(profile_response.status_code, status.HTTP_200_OK)
         self.assertEqual(profile_response.data["blood_type"], "O+")
-        self.assertEqual(profile_response.data["contacts"][0]["relationship"], "Sibling")
+        self.assertEqual(
+            profile_response.data["contacts"][0]["relationship"], "Sibling"
+        )
         self.assertEqual(len(profile_response.data["vaccinations"]), 2)
-        self.assertEqual(profile_response.data["vaccinations"][0]["target_disease"], "COVID-19")
-        self.assertEqual(profile_response.data["vaccinations"][1]["name"], "Flu shot 2025")
+        self.assertEqual(
+            profile_response.data["vaccinations"][0]["target_disease"], "COVID-19"
+        )
+        self.assertEqual(
+            profile_response.data["vaccinations"][1]["name"], "Flu shot 2025"
+        )
 
         log_response = self.client.post(
             reverse("emergency-access-log-list"),
-            {"source": "android", "method": "locked_screen", "details": "offline cache"},
+            {
+                "source": "android",
+                "method": "locked_screen",
+                "details": "offline cache",
+            },
             format="json",
             HTTP_HOST=self.host,
         )
@@ -443,5 +460,9 @@ class FriendsApiTests(APITestCase):
         )
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(Person.objects.filter(user=self.user, name="Alex Friend").count(), 1)
-        self.assertTrue(Person.objects.get(user=self.user, name="Alex Friend").emergency_contact)
+        self.assertEqual(
+            Person.objects.filter(user=self.user, name="Alex Friend").count(), 1
+        )
+        self.assertTrue(
+            Person.objects.get(user=self.user, name="Alex Friend").emergency_contact
+        )

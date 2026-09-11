@@ -1,38 +1,75 @@
 {% extends "frontend/base.html" %}
 {% load i18n %}
 {% block content %}
-<div class="card">
-  <div class="card-header">{% trans "Thought Records" %}</div>
-  <div class="card-body p-0">
-    <div class="table-responsive">
-      <table class="table table-hover table-clickable mb-0" id="dataTable">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>{% trans "Title" %}</th>
-            <th>{% trans "Situation" %}</th>
-            <th>{% trans "Status" %}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for record in object_list %}
-            <tr onclick="window.location.href='{% url "cbt:record_view" record.id %}'">
-              <td class="text-muted td-id-col">{{ record.id }}</td>
-              <td>{{ record.title|default:"(untitled)" }}</td>
-              <td class="text-muted">{{ record.situation|truncatechars:80|default:"—" }}</td>
-              <td>
-                {% if record.complete %}
-                  <span class="badge bg-success">{% trans "Complete" %}</span>
-                {% else %}
-                  <span class="badge bg-warning text-dark">{% trans "In progress" %}</span>
-                {% endif %}
-              </td>
-            </tr>
-          {% empty %}
-          {% endfor %}
-        </tbody>
-      </table>
+    {{ payloads|json_script:"ks-payloads" }}
+    <div class="card">
+        <div class="card-header">{% trans "Thought Records" %}</div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-clickable mb-0" id="dataTable">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>{% trans "Title" %}</th>
+                            <th>{% trans "Situation" %}</th>
+                            <th>{% trans "Status" %}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for record in object_list %}
+                            <tr data-ks-row="{{ record.id }}"
+                                onclick="window.location.href='{% url "cbt:record_view" record.id %}'">
+                                <td class="text-muted td-id-col">{{ record.id }}</td>
+                                <td>
+                                    {% if record.encrypted_payload %}
+                                        <i class="ph ph-lock text-muted me-1"></i><span data-ks-field="title"
+      class="text-muted">Encrypted</span>
+                                    {% else %}
+                                        {{ record.title|default:"(untitled)" }}
+                                    {% endif %}
+                                </td>
+                                <td class="text-muted">
+                                    {% if record.encrypted_payload %}
+                                        <span data-ks-field="situation"></span>
+                                    {% else %}
+                                        {{ record.situation|truncatechars:80|default:"—" }}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if record.complete %}
+                                        <span class="badge bg-success">{% trans "Complete" %}</span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark">{% trans "In progress" %}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% empty %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
-  </div>
-</div>
+    <script type="module">
+  (async () => {
+  const raw = document.getElementById('ks-payloads');
+  if (!raw) return;
+  const payloads = JSON.parse(raw.textContent);
+  const dataKey = await window.keystore.ready;
+  if (!dataKey) return;
+  for (const [id, payload] of Object.entries(payloads)) {
+    const row = document.querySelector(`[data-ks-row="${id}"]`);
+    if (!row) continue;
+    try {
+      const fields = await window.keystore.decryptPayload(dataKey, payload);
+      for (const [name, value] of Object.entries(fields)) {
+        const el = row.querySelector(`[data-ks-field="${name}"]`);
+        if (!el || !value) continue;
+        if (name === 'situation') el.textContent = value.length > 80 ? value.slice(0, 79) + '…' : value;
+        else el.textContent = value;
+      }
+    } catch (e) { console.warn('decrypt failed for row', id, e); }
+  }
+  })();
+    </script>
 {% endblock content %}

@@ -1,58 +1,70 @@
-import logging
-import tempfile
-
-import gnupg
 from rest_framework import serializers
 
-from moodyduck.mood.models import Activity, Mood, Status, StatusActivity, StatusMedia
+from moodyduck.cbt.models import ThoughtRecord
+from moodyduck.dreams.models import Dream, DreamMedia, DreamTheme, Theme
+from moodyduck.friends.models import Person
 from moodyduck.habits.models import Habit, HabitLog
 from moodyduck.health.models import (
     BasicMedicalInfo,
-    HealthParameter,
     HealthLog,
+    HealthParameter,
     HealthRecord,
+    Medication,
     Vaccination,
 )
-from moodyduck.cbt.models import ThoughtRecord
-from moodyduck.dreams.models import Dream, DreamMedia
-from moodyduck.friends.models import Person
+from moodyduck.keystore.models import UserDevice, UserKeyBackup, UserKeyPair
+from moodyduck.mood.models import Activity, Mood, Status, StatusActivity, StatusMedia
 from moodyduck.profiles.models import EmergencyAccessLog, UserProfile
 
 
-def encrypt_text_for_user(user, plaintext, object_label):
-    pgp_key = getattr(user.userprofile, "pgp_key", "").strip()
-    if not pgp_key:
-        raise serializers.ValidationError(
-            {"encrypt": "Add a PGP public key to your profile before encrypting."}
-        )
+class UserDeviceSerializer(serializers.ModelSerializer):
+    has_data_key = serializers.SerializerMethodField()
 
-    with tempfile.TemporaryDirectory() as gnupghome:
-        gpg = gnupg.GPG(gnupghome=gnupghome)
-        gpg.encoding = "utf-8"
-        imported = gpg.import_keys(pgp_key)
-        if imported.count == 0:
-            logging.error("No public keys imported for user %s", user.pk)
-            raise serializers.ValidationError(
-                {"encrypt": "Your saved PGP key could not be imported."}
-            )
+    class Meta:
+        model = UserDevice
+        fields = [
+            "device_id",
+            "label",
+            "public_key",
+            "encrypted_data_key",
+            "has_data_key",
+            "created_at",
+            "last_seen",
+        ]
+        read_only_fields = [
+            "device_id",
+            "encrypted_data_key",
+            "has_data_key",
+            "created_at",
+            "last_seen",
+        ]
 
-        encrypted = gpg.encrypt(
-            plaintext,
-            recipients=[imported.fingerprints[0]],
-            always_trust=True,
-        )
-        if not encrypted.ok:
-            logging.error(
-                "Error encrypting %s for user %s: %s",
-                object_label,
-                user.pk,
-                encrypted.status,
-            )
-            raise serializers.ValidationError(
-                {"encrypt": f"Error encrypting {object_label}: {encrypted.status}"}
-            )
+    def get_has_data_key(self, obj):
+        return obj.encrypted_data_key is not None
 
-        return str(encrypted)
+
+class UserDeviceRegisterSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserDevice
+        fields = ["label", "public_key"]
+
+
+class UserDeviceKeySerializer(serializers.Serializer):
+    encrypted_data_key = serializers.CharField()
+
+
+class UserKeyBackupSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserKeyBackup
+        fields = ["encrypted_data_key", "kdf_salt", "created_at", "updated_at"]
+        read_only_fields = ["created_at", "updated_at"]
+
+
+class UserKeyPairSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserKeyPair
+        fields = ["public_key", "encrypted_private_key", "created_at", "updated_at"]
+        read_only_fields = ["created_at", "updated_at"]
 
 
 def habit_queryset_for_request(request):
@@ -86,7 +98,7 @@ class StatusMediaSerializer(serializers.ModelSerializer):
 class MoodSerializer(serializers.ModelSerializer):
     class Meta:
         model = Mood
-        fields = ["id", "name", "value", "icon", "color"]
+        fields = ["id", "name", "value", "icon", "color", "encrypted_payload"]
         read_only_fields = ["id"]
 
 
@@ -102,7 +114,6 @@ class StatusSerializer(serializers.ModelSerializer):
         required=False,
         write_only=True,
     )
-    encrypt = serializers.BooleanField(required=False, write_only=True, default=False)
     attachments = StatusMediaSerializer(
         source="statusmedia_set",
         many=True,
@@ -116,10 +127,10 @@ class StatusSerializer(serializers.ModelSerializer):
             "mood",
             "title",
             "text",
+            "encrypted_payload",
             "timestamp",
             "activities",
             "activity_ids",
-            "encrypt",
             "attachments",
         ]
         read_only_fields = ["id"]
@@ -129,54 +140,46 @@ class StatusSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         if request and hasattr(request, "user") and request.user.is_authenticated:
             self.fields["mood"].queryset = Mood.objects.filter(user=request.user)
-            self.fields["activity_ids"].child_relation.queryset = Activity.objects.filter(
-                user=request.user
-            )
+            self.fields[
+                "activity_ids"
+            ].child_relation.queryset = Activity.objects.filter(user=request.user)
 
     def get_activities(self, obj):
         return ActivitySerializer(obj.activity_set, many=True).data
 
     def create(self, validated_data):
-        encrypt = validated_data.pop("encrypt", False)
         activity_ids = validated_data.pop("activity_ids", [])
         status = Status.objects.create(**validated_data)
         self._sync_activities(status, activity_ids)
-        self._maybe_encrypt(status, encrypt)
         return status
 
     def update(self, instance, validated_data):
-        encrypt = validated_data.pop("encrypt", False)
         activity_ids = validated_data.pop("activity_ids", None)
         for field, value in validated_data.items():
             setattr(instance, field, value)
         instance.save()
         if activity_ids is not None:
             self._sync_activities(instance, activity_ids)
-        self._maybe_encrypt(instance, encrypt)
         return instance
 
     def _sync_activities(self, status, activities):
-        StatusActivity.objects.filter(status=status).exclude(activity__in=activities).delete()
+        StatusActivity.objects.filter(status=status).exclude(
+            activity__in=activities
+        ).delete()
         existing_ids = set(
-            StatusActivity.objects.filter(status=status, activity__in=activities).values_list(
-                "activity_id", flat=True
-            )
+            StatusActivity.objects.filter(
+                status=status, activity__in=activities
+            ).values_list("activity_id", flat=True)
         )
         for activity in activities:
             if activity.pk not in existing_ids:
                 StatusActivity.objects.create(status=status, activity=activity)
 
-    def _maybe_encrypt(self, status, encrypt):
-        if not encrypt or not status.text or status.is_encrypted:
-            return
-        status.text = encrypt_text_for_user(status.user, status.text, "note")
-        status.save(update_fields=["text"])
-
 
 class ActivitySerializer(serializers.ModelSerializer):
     class Meta:
         model = Activity
-        fields = ["id", "name", "icon", "color"]
+        fields = ["id", "name", "icon", "color", "encrypted_payload"]
         read_only_fields = ["id"]
 
 
@@ -219,7 +222,9 @@ class HealthRecordSerializer(serializers.ModelSerializer):
 
 
 class HealthRecordWriteSerializer(serializers.Serializer):
-    parameter = serializers.PrimaryKeyRelatedField(queryset=HealthParameter.objects.none())
+    parameter = serializers.PrimaryKeyRelatedField(
+        queryset=HealthParameter.objects.none()
+    )
     value = serializers.DecimalField(max_digits=12, decimal_places=6)
 
     def __init__(self, *args, **kwargs):
@@ -236,7 +241,7 @@ class HealthLogSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = HealthLog
-        fields = ["id", "recorded_at", "notes", "records"]
+        fields = ["id", "recorded_at", "notes", "encrypted_payload", "records"]
         read_only_fields = ["id"]
 
 
@@ -245,7 +250,7 @@ class HealthLogWriteSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = HealthLog
-        fields = ["id", "recorded_at", "notes", "records"]
+        fields = ["id", "recorded_at", "notes", "encrypted_payload", "records"]
         read_only_fields = ["id"]
 
     def __init__(self, *args, **kwargs):
@@ -296,6 +301,13 @@ class HealthLogWriteSerializer(serializers.ModelSerializer):
         ).delete()
 
 
+class MedicationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Medication
+        fields = ["id", "name", "icon", "supply", "prn", "remarks", "encrypted_payload"]
+        read_only_fields = ["id"]
+
+
 class VaccinationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Vaccination
@@ -308,6 +320,7 @@ class VaccinationSerializer(serializers.ModelSerializer):
             "batch_number",
             "next_due",
             "notes",
+            "encrypted_payload",
         ]
         read_only_fields = ["id"]
 
@@ -317,6 +330,7 @@ class CBTRecordSerializer(serializers.ModelSerializer):
         model = ThoughtRecord
         fields = "__all__"
         read_only_fields = ["id", "user"]
+        # encrypted_payload is included via __all__
 
 
 class DreamMediaSerializer(serializers.ModelSerializer):
@@ -339,16 +353,26 @@ class DreamMediaSerializer(serializers.ModelSerializer):
         return request.build_absolute_uri(url) if request else url
 
 
+class ThemeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Theme
+        fields = ["id", "name", "icon", "color"]
+        read_only_fields = ["id"]
+
+
 class DreamSerializer(serializers.ModelSerializer):
     mood = serializers.PrimaryKeyRelatedField(
         queryset=Mood.objects.none(), allow_null=True, required=False
     )
     timestamp = serializers.DateTimeField(required=False, format="iso-8601")
-    encrypt = serializers.BooleanField(required=False, write_only=True, default=False)
     attachments = DreamMediaSerializer(
         source="dreammedia_set",
         many=True,
         read_only=True,
+    )
+    themes = ThemeSerializer(source="theme_set", many=True, read_only=True)
+    theme_ids = serializers.PrimaryKeyRelatedField(
+        queryset=Theme.objects.none(), many=True, write_only=True, required=False
     )
 
     def __init__(self, *args, **kwargs):
@@ -356,28 +380,31 @@ class DreamSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         if request and hasattr(request, "user") and request.user.is_authenticated:
             self.fields["mood"].queryset = Mood.objects.filter(user=request.user)
+            self.fields["theme_ids"].child_relation.queryset = Theme.objects.filter(
+                user=request.user
+            )
+
+    def _set_themes(self, dream, theme_ids):
+        dream.dreamtheme_set.all().delete()
+        DreamTheme.objects.bulk_create(
+            [DreamTheme(dream=dream, theme=t) for t in theme_ids]
+        )
 
     def create(self, validated_data):
-        encrypt = validated_data.pop("encrypt", False)
+        theme_ids = validated_data.pop("theme_ids", [])
         dream = Dream.objects.create(**validated_data)
-        self._maybe_encrypt(dream, encrypt)
+        if theme_ids:
+            self._set_themes(dream, theme_ids)
         return dream
 
     def update(self, instance, validated_data):
-        encrypt = validated_data.pop("encrypt", False)
+        theme_ids = validated_data.pop("theme_ids", None)
         for field, value in validated_data.items():
             setattr(instance, field, value)
         instance.save()
-        self._maybe_encrypt(instance, encrypt)
+        if theme_ids is not None:
+            self._set_themes(instance, theme_ids)
         return instance
-
-    def _maybe_encrypt(self, dream, encrypt):
-        if not encrypt or not dream.content or dream.content.startswith(
-            "-----BEGIN PGP MESSAGE-----"
-        ):
-            return
-        dream.content = encrypt_text_for_user(dream.user, dream.content, "dream")
-        dream.save(update_fields=["content"])
 
     class Meta:
         model = Dream
@@ -385,12 +412,14 @@ class DreamSerializer(serializers.ModelSerializer):
             "id",
             "title",
             "content",
+            "encrypted_payload",
             "timestamp",
             "type",
             "mood",
             "lucid",
             "wet",
-            "encrypt",
+            "themes",
+            "theme_ids",
             "attachments",
         ]
         read_only_fields = ["id", "user"]
@@ -407,13 +436,14 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "phone",
             "address",
             "date_of_birth",
+            "encrypted_payload",
         ]
 
 
 class BasicMedicalInfoSerializer(serializers.ModelSerializer):
     class Meta:
         model = BasicMedicalInfo
-        fields = ["blood_type", "allergies", "medical_notes"]
+        fields = ["blood_type", "allergies", "medical_notes", "encrypted_payload"]
 
 
 class EmergencyContactSerializer(serializers.ModelSerializer):
@@ -453,23 +483,35 @@ class PersonSerializer(serializers.ModelSerializer):
 class EmergencyVaccinationSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     name = serializers.CharField()
-    target_disease = serializers.CharField(allow_blank=True, allow_null=True, required=False)
+    target_disease = serializers.CharField(
+        allow_blank=True, allow_null=True, required=False
+    )
     administered_on = serializers.DateField()
     provider = serializers.CharField(allow_blank=True, allow_null=True, required=False)
     next_due = serializers.DateField(allow_null=True, required=False)
-    batch_number = serializers.CharField(allow_blank=True, allow_null=True, required=False)
+    batch_number = serializers.CharField(
+        allow_blank=True, allow_null=True, required=False
+    )
     notes = serializers.CharField(allow_blank=True, allow_null=True, required=False)
 
 
 class EmergencyProfileSerializer(serializers.Serializer):
-    display_name = serializers.CharField(allow_blank=True, allow_null=True, required=False)
-    legal_name = serializers.CharField(allow_blank=True, allow_null=True, required=False)
+    display_name = serializers.CharField(
+        allow_blank=True, allow_null=True, required=False
+    )
+    legal_name = serializers.CharField(
+        allow_blank=True, allow_null=True, required=False
+    )
     phone = serializers.CharField(allow_blank=True, allow_null=True, required=False)
     address = serializers.CharField(allow_blank=True, allow_null=True, required=False)
     date_of_birth = serializers.DateField(allow_null=True, required=False)
-    blood_type = serializers.CharField(allow_blank=True, allow_null=True, required=False)
+    blood_type = serializers.CharField(
+        allow_blank=True, allow_null=True, required=False
+    )
     allergies = serializers.CharField(allow_blank=True, allow_null=True, required=False)
-    medical_notes = serializers.CharField(allow_blank=True, allow_null=True, required=False)
+    medical_notes = serializers.CharField(
+        allow_blank=True, allow_null=True, required=False
+    )
     contacts = EmergencyContactSerializer(many=True, read_only=True)
     vaccinations = EmergencyVaccinationSerializer(many=True, read_only=True)
 

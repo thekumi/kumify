@@ -1,73 +1,128 @@
 {% extends "frontend/base.html" %}
 {% load i18n %}
 {% block content %}
-<div class="row">
-  <div class="col-xl-8 col-lg-7">
-    <div class="card mb-4">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <span>Diary Entry</span>
-        <span class="text-muted small">{{ object.timestamp }}</span>
-      </div>
-      <div class="card-body">
-        {% if object.title %}<h5 class="mb-3">{{ object.title }}</h5>{% endif %}
-        <blockquote class="blockquote">
-          {% if object.is_encrypted %}
-            <p class="text-muted fst-italic">
-              <i class="ph ph-lock-simple me-2"></i>This entry is encrypted. If Mailvelope is installed, it should detect the armored message below.
-            </p>
-            <pre class="border rounded bg-light p-3 small" style="white-space: pre-wrap;">{{ object.text }}</pre>
-          {% elif object.text %}
-            {{ object.text|linebreaks }}
-          {% endif %}
-        </blockquote>
-        <div class="mt-4">
-          <a href="{% url "mood:status_edit" object.id %}" class="btn btn-primary">
-            <i class="ph ph-pencil-simple me-1"></i> Edit
-          </a>
-          <a href="{% url "mood:status_delete" object.id %}" class="btn btn-danger ms-2">
-            <i class="ph ph-trash me-1"></i> Delete
-          </a>
+    <div class="row">
+        <div class="col-xl-8 col-lg-7">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>Diary Entry</span>
+                    <span class="text-muted small">{{ object.timestamp }}</span>
+                </div>
+                <div class="card-body">
+                    {% if object.encrypted_payload %}
+                        {{ object.encrypted_payload|json_script:"ks-ep" }}
+                        <h5 id="ks-title" class="mb-3 d-none"></h5>
+                        <blockquote class="blockquote">
+                            <p id="ks-text" class="text-muted fst-italic">
+                                <i class="ph ph-lock-simple me-1"></i>Decrypting…
+                            </p>
+                        </blockquote>
+                        <script type="module">
+            (async () => {
+              const dataKey = await window.keystore.ready;
+              if (!dataKey) return;
+              const payload = JSON.parse(document.getElementById("ks-ep").textContent);
+              const dec = await window.keystore.decryptPayload(dataKey, payload);
+              if (dec.title) {
+                const el = document.getElementById("ks-title");
+                el.textContent = dec.title;
+                el.classList.remove("d-none");
+              }
+              if (dec.text) {
+                const el = document.getElementById("ks-text");
+                el.className = "";
+                el.style.whiteSpace = "pre-wrap";
+                el.textContent = dec.text;
+              }
+            })();
+                        </script>
+                    {% else %}
+                        {% if object.title %}<h5 class="mb-3">{{ object.title }}</h5>{% endif %}
+                        <blockquote class="blockquote">
+                            {% if object.text %}{{ object.text|linebreaks }}{% endif %}
+                        </blockquote>
+                    {% endif %}
+                    <div class="mt-4">
+                        <a href="{% url "mood:status_edit" object.id %}" class="btn btn-primary">
+                            <i class="ph ph-pencil-simple me-1"></i> Edit
+                        </a>
+                        <a href="{% url "mood:status_delete" object.id %}"
+                           class="btn btn-danger ms-2">
+                            <i class="ph ph-trash me-1"></i> Delete
+                        </a>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
-  </div>
-  <div class="col-xl-4 col-lg-5">
-    <div class="card mb-4">
-      <div class="card-header">Mood</div>
-      <div class="card-body text-center">
-        <i title="{{ object.mood }}" style="color: {{ object.mood.color }}; font-size: 120px"
-           class="{{ object.mood.icon }}"></i>
-        <p class="mt-2 fw-bold">{{ object.mood }}</p>
-      </div>
-    </div>
-    {% if object.statusactivity_set.all %}
-    <div class="card mb-4">
-      <div class="card-header">Activities</div>
-      <div class="card-body">
-        <div class="d-flex flex-wrap gap-3">
-          {% for activity in object.statusactivity_set.all %}
-          <div class="text-center">
-            <i title="{{ activity.activity }}" style="color: {{ activity.activity.color }}; font-size: 40px"
-               class="{{ activity.activity.icon }}"></i>
-            <div class="small mt-1">{{ activity.activity }}</div>
-          </div>
-          {% endfor %}
+        <div class="col-xl-4 col-lg-5">
+            <div class="card mb-4">
+                <div class="card-header">Mood</div>
+                <div class="card-body text-center">
+                    <i title="{{ object.mood }}"
+                       style="color: {{ object.mood.color }};
+                              font-size: 120px"
+                       class="{{ object.mood.icon }}"></i>
+                    <p class="mt-2 fw-bold">{{ object.mood }}</p>
+                </div>
+            </div>
+            {% if object.statusactivity_set.all %}
+                <div class="card mb-4">
+                    <div class="card-header">Activities</div>
+                    <div class="card-body">
+                        <div class="d-flex flex-wrap gap-3">
+                            {% for activity in object.statusactivity_set.all %}
+                                <div class="text-center">
+                                    <i title="{{ activity.activity }}"
+                                       style="color: {{ activity.activity.color }};
+                                              font-size: 40px"
+                                       class="{{ activity.activity.icon }}"></i>
+                                    <div class="small mt-1">{{ activity.activity }}</div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+            {% if media_list %}
+                {{ media_list|json_script:"ks-media-list" }}
+                <div class="card mb-4">
+                    <div class="card-header">Attachments</div>
+                    <div class="card-body">
+                        <ul class="list-unstyled mb-0">
+                            {% for m in media_list %}
+                                <li id="ks-media-{{ m.id }}">
+                                    {% if m.ep %}
+                                        <a href="#"><i class="ph ph-paperclip me-1"></i><span class="text-muted"><i class="ph ph-lock me-1"></i>Encrypted attachment</span></a>
+                                    {% else %}
+                                        <a href="{{ m.url }}"><i class="ph ph-paperclip me-1"></i>{{ m.name }}</a>
+                                    {% endif %}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+                <script type="module">
+      const raw = document.getElementById('ks-media-list');
+      if (raw) {
+        const items = JSON.parse(raw.textContent);
+        const dataKey = await window.keystore.ready;
+        if (dataKey) for (const item of items) {
+          if (!item.ep) continue;
+          try {
+            const meta = await window.keystore.decryptPayload(dataKey, item.ep);
+            const objUrl = await window.keystore.decryptMediaUrl(dataKey, item.url, meta.mime_type);
+            const li = document.getElementById(`ks-media-${item.id}`);
+            if (!li) continue;
+            const a = li.querySelector('a');
+            a.href = objUrl;
+            a.download = meta.filename || 'attachment';
+            const span = a.querySelector('span');
+            if (span) span.textContent = meta.filename || 'attachment';
+          } catch (e) { console.warn('media decrypt failed', item.id, e); }
+        }
+      }
+                </script>
+            {% endif %}
         </div>
-      </div>
     </div>
-    {% endif %}
-    {% if object.statusmedia_set.all %}
-    <div class="card mb-4">
-      <div class="card-header">Attachments</div>
-      <div class="card-body">
-        <ul class="list-unstyled mb-0">
-          {% for attachment in object.statusmedia_set.all %}
-          <li><a href="{{ attachment.file.url }}"><i class="ph ph-paperclip me-1"></i>{{ attachment.basename }}</a></li>
-          {% endfor %}
-        </ul>
-      </div>
-    </div>
-    {% endif %}
-  </div>
-</div>
 {% endblock content %}

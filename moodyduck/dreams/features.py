@@ -1,11 +1,11 @@
-from moodyduck.frontend.classes import (
-    NavSection,
-    NavItem,
-    NavCollapse,
-    DashboardSection,
-)
-
 from django.urls import reverse_lazy
+
+from moodyduck.frontend.classes import (
+    DashboardSection,
+    NavCollapse,
+    NavItem,
+    NavSection,
+)
 
 # Sidebar navigation items
 

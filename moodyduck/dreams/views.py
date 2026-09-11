@@ -1,20 +1,32 @@
-from django.views.generic import (
-    ListView,
-    UpdateView,
-    DetailView,
-    CreateView,
-    DeleteView,
-)
+import json
+
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import get_object_or_404
-from django.urls import reverse_lazy
 from django.templatetags.static import static
+from django.urls import reverse_lazy
 from django.utils.translation import gettext_lazy as _
-
-from .models import Dream, DreamTheme, DreamMedia, Theme
-from .forms import DreamForm
+from django.views.generic import (
+    CreateView,
+    DeleteView,
+    DetailView,
+    ListView,
+    UpdateView,
+)
 
 from moodyduck.common.helpers import get_upload_path
+from moodyduck.common.views import EncryptedPayloadMixin
+
+from .forms import DreamForm
+from .models import Dream, DreamMedia, DreamTheme, Theme
+
+
+def _parse_enc_file_meta(request):
+    raw = request.POST.get("encrypted_file_metadata", "[]")
+    try:
+        return json.loads(raw)
+    except (ValueError, TypeError):
+        return []
+
 
 class DreamListView(LoginRequiredMixin, ListView):
     template_name = "dreams/dream_list.html"
@@ -27,6 +39,11 @@ class DreamListView(LoginRequiredMixin, ListView):
         context["buttons"] = [
             (reverse_lazy("dreams:dream_create"), _("New Dream"), "plus")
         ]
+        context["payloads"] = {
+            str(obj.id): obj.encrypted_payload
+            for obj in context["object_list"]
+            if obj.encrypted_payload
+        }
         return context
 
     def get_queryset(self):
@@ -48,13 +65,22 @@ class DreamViewView(LoginRequiredMixin, DetailView):
                 "pencil-simple",
             )
         ]
+        context["media_list"] = [
+            {
+                "id": m.pk,
+                "url": m.media.url,
+                "ep": m.encrypted_payload,
+                "name": m.basename,
+            }
+            for m in self.object.dreammedia_set.all()
+        ]
         return context
 
     def get_object(self):
         return get_object_or_404(Dream, user=self.request.user, id=self.kwargs["id"])
 
 
-class DreamCreateView(LoginRequiredMixin, CreateView):
+class DreamCreateView(EncryptedPayloadMixin, LoginRequiredMixin, CreateView):
     template_name = "dreams/dream_edit.html"
     form_class = DreamForm
     model = Dream
@@ -80,9 +106,12 @@ class DreamCreateView(LoginRequiredMixin, CreateView):
             if theme.user == self.request.user:
                 DreamTheme.objects.create(theme=theme, dream=form.instance)
 
-        for attachment in form.cleaned_data["uploads"]:
+        enc_meta = _parse_enc_file_meta(self.request)
+        for i, attachment in enumerate(form.cleaned_data["uploads"]):
             dba = DreamMedia(dream=form.instance)
             dba.media.save(get_upload_path(form.instance, attachment.name), attachment)
+            if i < len(enc_meta):
+                dba.encrypted_payload = enc_meta[i]
             dba.save()
 
         return ret
@@ -91,7 +120,7 @@ class DreamCreateView(LoginRequiredMixin, CreateView):
         return reverse_lazy("dreams:dream_view", kwargs={"id": self.object.id})
 
 
-class DreamEditView(LoginRequiredMixin, UpdateView):
+class DreamEditView(EncryptedPayloadMixin, LoginRequiredMixin, UpdateView):
     template_name = "dreams/dream_edit.html"
     form_class = DreamForm
     model = Dream
@@ -120,17 +149,19 @@ class DreamEditView(LoginRequiredMixin, UpdateView):
 
     def form_valid(self, form):
         for theme in form.cleaned_data["themes"]:
-            if theme.user == self.request.user:
-                if theme not in form.instance.theme_set:
-                    DreamTheme.objects.create(theme=theme, dream=form.instance)
+            if theme.user == self.request.user and theme not in form.instance.theme_set:
+                DreamTheme.objects.create(theme=theme, dream=form.instance)
 
         for dreamtheme in form.instance.dreamtheme_set.all():
             if dreamtheme.theme not in form.cleaned_data["themes"]:
                 dreamtheme.delete()
 
-        for attachment in form.cleaned_data["uploads"]:
+        enc_meta = _parse_enc_file_meta(self.request)
+        for i, attachment in enumerate(form.cleaned_data["uploads"]):
             dba = DreamMedia(dream=form.instance)
             dba.media.save(get_upload_path(form.instance, attachment.name), attachment)
+            if i < len(enc_meta):
+                dba.encrypted_payload = enc_meta[i]
             dba.save()
 
         return super().form_valid(form)
@@ -229,5 +260,3 @@ class ThemeDeleteView(LoginRequiredMixin, DeleteView):
 
     def get_success_url(self):
         return reverse_lazy("dreams:theme_list")
-
-

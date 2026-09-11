@@ -1,9 +1,13 @@
 __pycache__/
 *.pyc
+*.pyo
 db.sqlite*
 venv/
+node_modules/
 localsettings.py
 settings.ini
 /static/
 /output
 /usermedia
+/dump.json
+/moodyduck/spa/

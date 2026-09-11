@@ -1,29 +1,62 @@
 {% extends "frontend/base.html" %}
 {% load i18n %}
 {% block content %}
-<div class="card mb-4">
-  <div class="card-header">Your Moods</div>
-  <div class="card-body p-0">
-    <div class="table-responsive">
-      <table class="table table-hover table-clickable mb-0" id="dataTable">
-        <thead>
-          <tr>
-            <th>Name <i>(Value)</i></th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for mood in object_list %}
-          <tr onclick="window.location.href='{% url "mood:mood_edit" mood.id %}'">
-            <td>
-              <i data-order="{{ mood.value }}" style="color:{{ mood.color }}" class="{{ mood.icon }}"></i>
-              {{ mood }} <i>({{ mood.value }})</i>
-            </td>
-          </tr>
-          {% empty %}
-          {% endfor %}
-        </tbody>
-      </table>
+    {{ payloads|json_script:"ks-payloads" }}
+    <div class="card mb-4">
+        <div class="card-header">Your Moods</div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-clickable mb-0" id="dataTable">
+                    <thead>
+                        <tr>
+                            <th>Name <i>(Value)</i></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for mood in object_list %}
+                            <tr data-ks-row="{{ mood.id }}"
+                                onclick="window.location.href='{% url "mood:mood_edit" mood.id %}'">
+                                <td>
+                                    {% if mood.encrypted_payload %}
+                                        <i class="ph ph-lock text-muted me-1"></i>
+                                        <span data-ks-field="name" class="text-muted">Encrypted</span>
+                                        <i data-ks-field="(value)" class="text-muted"></i>
+                                    {% else %}
+                                        <i data-order="{{ mood.value }}"
+                                           style="color:{{ mood.color }}"
+                                           class="{{ mood.icon }}"></i>
+                                        {{ mood }} <i>({{ mood.value }})</i>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% empty %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
-  </div>
-</div>
+    <script type="module">
+  (async () => {
+  const raw = document.getElementById('ks-payloads');
+  if (!raw) return;
+  const payloads = JSON.parse(raw.textContent);
+  const dataKey = await window.keystore.ready;
+  if (!dataKey) return;
+  for (const [id, payload] of Object.entries(payloads)) {
+    const row = document.querySelector(`[data-ks-row="${id}"]`);
+    if (!row) continue;
+    try {
+      const fields = await window.keystore.decryptPayload(dataKey, payload);
+      const nameEl = row.querySelector('[data-ks-field="name"]');
+      if (nameEl && fields.name) {
+        nameEl.textContent = fields.name;
+        if (fields.color) nameEl.previousElementSibling.style.color = fields.color;
+        if (fields.icon) nameEl.previousElementSibling.className = fields.icon;
+        if (fields.value) nameEl.nextElementSibling.textContent = `(${fields.value})`;
+      }
+    } catch (e) { console.warn('decrypt failed for row', id, e); }
+  }
+  })();
+    </script>
 {% endblock content %}

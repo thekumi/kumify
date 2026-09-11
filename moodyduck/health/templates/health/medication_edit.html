@@ -1,31 +1,51 @@
 {% extends "frontend/base.html" %}
 {% load i18n %}
 {% block content %}
-{% if form.errors %}
-  {% for field in form %}
-    {% for error in field.errors %}
-      <div class="alert alert-danger py-2">{{ field.label }}: {{ error }}</div>
-    {% endfor %}
-  {% endfor %}
-{% endif %}
-<div class="card mb-4">
-  <div class="card-header">{% if object %}Edit {{ object.name }}{% else %}New Medication{% endif %}</div>
-  <div class="card-body">
-    <form action="" method="post">
-      {% csrf_token %}
-      {% for field in form %}
-        <div class="mb-3">
-          <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
-          {{ field }}
-          {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
-          {% for error in field.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+    {% if form.errors %}
+        {% for field in form %}
+            {% for error in field.errors %}
+                <div class="alert alert-danger py-2">{{ field.label }}: {{ error }}</div>
+            {% endfor %}
+        {% endfor %}
+    {% endif %}
+    {% if object.encrypted_payload %}{{ object.encrypted_payload|json_script:"ks-ep" }}{% endif %}
+    <div class="card mb-4">
+        <div class="card-header">{% if object %}Edit Medication{% else %}New Medication{% endif %}</div>
+        <div class="card-body">
+            <form action=""
+                  method="post"
+                  data-keystore-encrypt
+                  data-encrypt-fields="name,remarks">
+                {% csrf_token %}
+                {% for field in form %}
+                    <div class="mb-3">
+                        <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+                        {% for error in field.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+                    </div>
+                {% endfor %}
+                <button type="submit" class="btn btn-primary">
+                    <i class="ph ph-floppy-disk me-1"></i> Save
+                </button>
+                <button type="button" onclick="history.back()" class="btn btn-light ms-2">Cancel</button>
+            </form>
         </div>
-      {% endfor %}
-      <button type="submit" class="btn btn-primary">
-        <i class="ph ph-floppy-disk me-1"></i> Save
-      </button>
-      <button type="button" onclick="history.back()" class="btn btn-light ms-2">Cancel</button>
-    </form>
-  </div>
-</div>
+    </div>
+    {% if object.encrypted_payload %}
+        <script type="module">
+  const epEl = document.getElementById('ks-ep');
+  if (epEl) {
+    const dataKey = await window.keystore.ready;
+    if (!dataKey) return;
+    try {
+      const fields = await window.keystore.decryptPayload(dataKey, JSON.parse(epEl.textContent));
+      for (const [name, value] of Object.entries(fields)) {
+        const el = document.querySelector(`[name="${CSS.escape(name)}"]`);
+        if (el && value != null) el.value = value;
+      }
+    } catch (e) { console.error('decrypt failed', e); }
+  }
+        </script>
+    {% endif %}
 {% endblock content %}

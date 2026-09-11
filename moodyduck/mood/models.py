@@ -1,11 +1,10 @@
-from django.db import models
-from django.contrib.auth import get_user_model
-from django.core.validators import MaxValueValidator, MinValueValidator
-from django.utils import timezone
-
 import os.path
 
 from colorfield.fields import ColorField
+from django.contrib.auth import get_user_model
+from django.core.validators import MaxValueValidator, MinValueValidator
+from django.db import models
+from django.utils import timezone
 
 from moodyduck.common.helpers import get_upload_path
 
@@ -15,15 +14,18 @@ class Mood(models.Model):
         ordering = ["-value"]
 
     user = models.ForeignKey(get_user_model(), models.CASCADE)
-    name = models.CharField(max_length=64)
-    icon = models.CharField(default="ph ph-star", max_length=64)
-    color = ColorField(default="#000000")
+    name = models.CharField(max_length=64, null=True, blank=True)
+    icon = models.CharField(default="ph ph-star", max_length=64, null=True, blank=True)
+    color = ColorField(default="#000000", null=True, blank=True)
     value = models.IntegerField(
-        validators=[MinValueValidator(1), MaxValueValidator(255)]
+        validators=[MinValueValidator(1), MaxValueValidator(255)],
+        null=True,
+        blank=True,
     )
+    encrypted_payload = models.JSONField(null=True, blank=True)
 
     def __str__(self):
-        return self.name
+        return self.name or ""
 
 
 class Status(models.Model):
@@ -35,14 +37,17 @@ class Status(models.Model):
     mood = models.ForeignKey(Mood, models.SET_NULL, null=True)
     title = models.CharField(max_length=64, null=True, blank=True)
     text = models.TextField(null=True, blank=True)
+    encrypted_payload = models.JSONField(null=True, blank=True)
 
     @property
     def short_text(self):
-        return self.title or (self.text[:64] if not self.is_encrypted else "")
+        if self.encrypted_payload:
+            return self.title or ""
+        return self.title or (self.text[:64] if self.text else "")
 
     @property
     def is_encrypted(self):
-        return bool(self.text) and self.text.startswith("-----BEGIN PGP MESSAGE-----")
+        return bool(self.encrypted_payload)
 
     @property
     def activity_set(self):
@@ -67,19 +72,21 @@ class Activity(models.Model):
         ordering = ["name"]
 
     user = models.ForeignKey(get_user_model(), models.CASCADE)
-    name = models.CharField(max_length=64)
-    icon = models.CharField(default="ph ph-check", max_length=64)
-    color = ColorField(default="#000000")
+    name = models.CharField(max_length=64, null=True, blank=True)
+    icon = models.CharField(default="ph ph-check", max_length=64, null=True, blank=True)
+    color = ColorField(default="#000000", null=True, blank=True)
     category = models.ForeignKey(ActivityCategory, models.SET_NULL, null=True)
     hidden = models.BooleanField(default=False)
+    encrypted_payload = models.JSONField(null=True, blank=True)
 
     def __str__(self):
-        return self.name
+        return self.name or ""
 
 
 class StatusMedia(models.Model):
     status = models.ForeignKey(Status, models.CASCADE)
     file = models.FileField(get_upload_path)
+    encrypted_payload = models.JSONField(null=True, blank=True)
 
     @property
     def basename(self):

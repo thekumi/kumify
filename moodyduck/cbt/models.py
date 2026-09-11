@@ -1,5 +1,5 @@
-from django.db import models
 from django.contrib.auth import get_user_model
+from django.db import models
 
 from moodyduck.common.fields import PercentageField
 
@@ -22,3 +22,4 @@ class ThoughtRecord(models.Model):
     outcome = models.TextField(blank=True, null=True)
     emotions_now = models.ManyToManyField(EmotionRecord, related_name="emotions_now")
     complete = models.BooleanField(default=False)
+    encrypted_payload = models.JSONField(null=True, blank=True)

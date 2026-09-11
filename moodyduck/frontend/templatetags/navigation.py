@@ -1,11 +1,10 @@
 import logging
+from importlib import import_module
 
 from django import template
 from django.conf import settings
 
 from ..classes import NavSection
-
-from importlib import import_module
 
 logger = logging.getLogger(__name__)
 register = template.Library()

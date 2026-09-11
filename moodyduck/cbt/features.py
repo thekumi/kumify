@@ -1,6 +1,6 @@
-from moodyduck.frontend.classes import NavSection, NavItem
-
 from django.urls import reverse_lazy
+
+from moodyduck.frontend.classes import NavItem, NavSection
 
 cbt_section = NavSection("CBT")
 cbt_section.add_item(

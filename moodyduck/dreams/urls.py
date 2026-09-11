@@ -1,16 +1,16 @@
+from django.urls import path
+
 from .views import (
-    DreamListView,
-    DreamViewView,
+    DreamCreateView,
     DreamDeleteView,
     DreamEditView,
-    DreamCreateView,
-    ThemeListView,
-    ThemeEditView,
+    DreamListView,
+    DreamViewView,
     ThemeCreateView,
     ThemeDeleteView,
+    ThemeEditView,
+    ThemeListView,
 )
-
-from django.urls import path
 
 app_name = "dreams"
 

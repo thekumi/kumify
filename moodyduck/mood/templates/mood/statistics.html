@@ -1,73 +1,73 @@
 {% extends "frontend/base.html" %}
 {% load i18n %}
 {% block content %}
-<div class="row">
-    <div class="col-xl-8 col-lg-7">
-        <div class="card shadow mb-4">
-            <div class="card-header py-3">
-                <h6 class="m-0 fw-bold text-primary">{% trans "Mood over time" %}</h6>
+    <div class="row">
+        <div class="col-xl-8 col-lg-7">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 fw-bold text-primary">{% trans "Mood over time" %}</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="moodChart"></canvas>
+                </div>
             </div>
-            <div class="card-body">
-                <canvas id="moodChart"></canvas>
-            </div>
-        </div>
-        <div class="card shadow mb-4">
-            <div class="card-header py-3">
-                <h6 class="m-0 fw-bold text-primary">{% trans "Mood distribution" %}</h6>
-            </div>
-            <div class="card-body">
-                <div class="row text-center">
-                    <div class="col-4">
-                        <p class="fw-bold">{% trans "Last 7 days" %}</p>
-                        <canvas id="pieWeekly"></canvas>
-                    </div>
-                    <div class="col-4">
-                        <p class="fw-bold">{% trans "Last 30 days" %}</p>
-                        <canvas id="pieMonthly"></canvas>
-                    </div>
-                    <div class="col-4">
-                        <p class="fw-bold">{% trans "Last year" %}</p>
-                        <canvas id="pieYearly"></canvas>
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 fw-bold text-primary">{% trans "Mood distribution" %}</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <p class="fw-bold">{% trans "Last 7 days" %}</p>
+                            <canvas id="pieWeekly"></canvas>
+                        </div>
+                        <div class="col-4">
+                            <p class="fw-bold">{% trans "Last 30 days" %}</p>
+                            <canvas id="pieMonthly"></canvas>
+                        </div>
+                        <div class="col-4">
+                            <p class="fw-bold">{% trans "Last year" %}</p>
+                            <canvas id="pieYearly"></canvas>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-    <div class="col-xl-4 col-lg-5">
-        <div class="card shadow mb-4">
-            <div class="card-header py-3">
-                <h6 class="m-0 fw-bold text-primary">{% trans "Activities" %}</h6>
-            </div>
-            <div class="card-body">
-                <table class="table table-sm">
-                    <thead>
-                        <tr>
-                            <th>{% trans "Activity" %}</th>
-                            <th class="text-end">{% trans "7d" %}</th>
-                            <th class="text-end">{% trans "30d" %}</th>
-                            <th class="text-end">{% trans "1y" %}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for activity, counts in activities.items %}
-                            <tr style="cursor:pointer" onclick="window.location.href='activity/{{ activity.id }}/'">
-                                <td style="color:{{ activity.color }};">
-                                    <i class="{{ activity.icon }}"></i> <b>{{ activity }}</b>
-                                </td>
-                                <td class="text-end">{{ counts.weekly }}</td>
-                                <td class="text-end">{{ counts.monthly }}</td>
-                                <td class="text-end">{{ counts.yearly }}</td>
+        <div class="col-xl-4 col-lg-5">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 fw-bold text-primary">{% trans "Activities" %}</h6>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>{% trans "Activity" %}</th>
+                                <th class="text-end">{% trans "7d" %}</th>
+                                <th class="text-end">{% trans "30d" %}</th>
+                                <th class="text-end">{% trans "1y" %}</th>
                             </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {% for activity, counts in activities.items %}
+                                <tr style="cursor:pointer"
+                                    onclick="window.location.href='activity/{{ activity.id }}/'">
+                                    <td style="color:{{ activity.color }};">
+                                        <i class="{{ activity.icon }}"></i> <b>{{ activity }}</b>
+                                    </td>
+                                    <td class="text-end">{{ counts.weekly }}</td>
+                                    <td class="text-end">{{ counts.monthly }}</td>
+                                    <td class="text-end">{{ counts.yearly }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
-<script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+    <script>
 (function () {
     const moodData = {{ mood_chart|safe }};
     const piesData = {{ pies_chart|safe }};
@@ -140,5 +140,5 @@
         });
     });
 })();
-</script>
+    </script>
 {% endblock content %}

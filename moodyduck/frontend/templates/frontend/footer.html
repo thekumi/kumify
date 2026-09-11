@@ -1,4 +1,7 @@
 {% load static %}
+{% if user.is_authenticated %}
+    <script src="{% static 'keystore/encrypt-forms.js' %}"></script>
+{% endif %}
 <!-- jQuery (needed for DataTables) -->
 <script src="{% static 'frontend/vendor/jquery/jquery.min.js' %}"></script>
 <!-- Bootstrap 5 -->

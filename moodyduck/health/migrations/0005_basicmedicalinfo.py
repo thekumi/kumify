@@ -6,21 +6,34 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('health', '0004_repair_legacy_schema'),
+        ("health", "0004_repair_legacy_schema"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='BasicMedicalInfo',
+            name="BasicMedicalInfo",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('blood_type', models.CharField(blank=True, max_length=8, null=True)),
-                ('allergies', models.TextField(blank=True, null=True)),
-                ('medical_notes', models.TextField(blank=True, null=True)),
-                ('user', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("blood_type", models.CharField(blank=True, max_length=8, null=True)),
+                ("allergies", models.TextField(blank=True, null=True)),
+                ("medical_notes", models.TextField(blank=True, null=True)),
+                (
+                    "user",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
         ),
     ]

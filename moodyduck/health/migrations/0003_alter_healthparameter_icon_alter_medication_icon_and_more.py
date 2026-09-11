@@ -7,7 +7,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("health", "0002_icon_phosphor_migration"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),

@@ -1,41 +1,44 @@
+import json
+from datetime import datetime
+
+from dateutil import relativedelta
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.http import HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404
+from django.templatetags.static import static
+from django.urls import reverse_lazy
+from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 from django.views.generic import (
-    TemplateView,
-    ListView,
-    UpdateView,
-    DetailView,
     CreateView,
     DeleteView,
+    DetailView,
+    ListView,
+    TemplateView,
+    UpdateView,
     View,
-)
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.shortcuts import get_object_or_404
-from django.urls import reverse_lazy
-from django.http import HttpResponseRedirect, HttpResponse, JsonResponse
-from django.http import Http404
-from django.utils import timezone
-from django.templatetags.static import static
-from django.utils.translation import gettext_lazy as _
-
-from .models import Status, Activity, Mood, StatusMedia, StatusActivity
-from .forms import StatusForm
-from .statistics import (
-    moodstats_data,
-    moodpies_data,
-    activitystats,
-    activitymood_data,
-    activitypies_data,
 )
 
 from moodyduck.common.helpers import get_upload_path
-from dateutil import relativedelta
+from moodyduck.common.views import EncryptedPayloadMixin
 
-from datetime import datetime
+from .forms import StatusForm
+from .models import Activity, Mood, Status, StatusActivity, StatusMedia
+from .statistics import (
+    activitymood_data,
+    activitypies_data,
+    activitystats,
+    moodpies_data,
+    moodstats_data,
+)
 
-import json
-import tempfile
-import logging
 
-import gnupg
+def _parse_enc_file_meta(request):
+    raw = request.POST.get("encrypted_file_metadata", "[]")
+    try:
+        return json.loads(raw)
+    except (ValueError, TypeError):
+        return []
 
 
 class StatusListView(LoginRequiredMixin, ListView):
@@ -49,6 +52,11 @@ class StatusListView(LoginRequiredMixin, ListView):
         context["buttons"] = [
             (reverse_lazy("mood:status_create"), _("New Status"), "plus")
         ]
+        context["payloads"] = {
+            str(obj.id): obj.encrypted_payload
+            for obj in context["object_list"]
+            if obj.encrypted_payload
+        }
         return context
 
     def get_queryset(self):
@@ -57,12 +65,15 @@ class StatusListView(LoginRequiredMixin, ListView):
         )
 
         if "from" in self.request.GET:
-            from_timestamp = datetime.strptime(self.request.GET["from"], "%Y-%m-%d")
+            from_timestamp = datetime.strptime(
+                self.request.GET["from"], "%Y-%m-%d"
+            ).replace(tzinfo=timezone.utc)
             status_list = status_list.filter(timestamp__gte=from_timestamp)
 
         if "to" in self.request.GET:
-            to_timestamp = datetime.strptime(self.request.GET["to"], "%Y-%m-%d")
-            to_timestamp = to_timestamp.replace(hour=23, minute=59, second=59)
+            to_timestamp = datetime.strptime(
+                self.request.GET["to"], "%Y-%m-%d"
+            ).replace(hour=23, minute=59, second=59, tzinfo=timezone.utc)
             status_list = status_list.filter(timestamp__lte=to_timestamp)
 
         return status_list
@@ -83,26 +94,22 @@ class StatusViewView(LoginRequiredMixin, DetailView):
                 "pencil-simple",
             )
         ]
+        context["media_list"] = [
+            {
+                "id": m.pk,
+                "url": m.file.url,
+                "ep": m.encrypted_payload,
+                "name": m.basename,
+            }
+            for m in self.object.statusmedia_set.all()
+        ]
         return context
 
     def get_object(self):
         return get_object_or_404(Status, user=self.request.user, id=self.kwargs["id"])
 
 
-class StatusEncryptedDownloadView(LoginRequiredMixin, View):
-    def get(self, request, id):
-        status = get_object_or_404(Status, user=request.user, id=id)
-        if not status.is_encrypted or not status.text:
-            raise Http404(_("This status is not encrypted."))
-
-        response = HttpResponse(status.text, content_type="text/plain; charset=utf-8")
-        response["Content-Disposition"] = (
-            f'attachment; filename="moodyduck-status-{status.id}.asc"'
-        )
-        return response
-
-
-class StatusCreateView(LoginRequiredMixin, CreateView):
+class StatusCreateView(EncryptedPayloadMixin, LoginRequiredMixin, CreateView):
     template_name = "mood/status_edit.html"
     form_class = StatusForm
     model = Status
@@ -128,49 +135,13 @@ class StatusCreateView(LoginRequiredMixin, CreateView):
             if activity.user == self.request.user:
                 StatusActivity.objects.create(activity=activity, status=form.instance)
 
-        for attachment in form.cleaned_data["uploads"]:
+        enc_meta = _parse_enc_file_meta(self.request)
+        for i, attachment in enumerate(form.cleaned_data["uploads"]):
             dba = StatusMedia(status=form.instance)
             dba.file.save(get_upload_path(form.instance, attachment.name), attachment)
+            if i < len(enc_meta):
+                dba.encrypted_payload = enc_meta[i]
             dba.save()
-
-        if (
-            form.cleaned_data["encrypt"]
-            and self.request.user.userprofile.pgp_key
-            and form.instance.text
-        ):
-            with tempfile.TemporaryDirectory() as gnupghome:
-                gpg = gnupg.GPG(gnupghome=gnupghome)
-                gpg.encoding = "utf-8"
-
-                if form.instance.is_encrypted:
-                    logging.info("Content is already encrypted, skipping encryption.")
-                else:
-                    # Import the user's public key
-                    import_result = gpg.import_keys(
-                        self.request.user.userprofile.pgp_key
-                    )
-
-                    if import_result.count == 0:
-                        logging.error("No public keys imported")
-                        form.add_error(None, "Invalid PGP Key: No keys imported")
-                        return super().form_invalid(form)
-
-                    # Use the first imported key's fingerprint as recipient
-                    recipient_fingerprint = import_result.fingerprints[0]
-
-                    encrypted = gpg.encrypt(
-                        form.instance.text,
-                        recipients=[recipient_fingerprint],
-                        always_trust=True,
-                    )
-
-                    if encrypted.ok:
-                        form.instance.text = str(encrypted)
-                        form.instance.save()
-                    else:
-                        logging.error(f"Error encrypting: {encrypted.status}")
-                        form.add_error(None, f"Error encrypting: {encrypted.status}")
-                        return super().form_invalid(form)
 
         return ret
 
@@ -178,7 +149,7 @@ class StatusCreateView(LoginRequiredMixin, CreateView):
         return reverse_lazy("mood:status_view", kwargs={"id": self.object.id})
 
 
-class StatusEditView(LoginRequiredMixin, UpdateView):
+class StatusEditView(EncryptedPayloadMixin, LoginRequiredMixin, UpdateView):
     template_name = "mood/status_edit.html"
     form_class = StatusForm
     model = Status
@@ -206,17 +177,20 @@ class StatusEditView(LoginRequiredMixin, UpdateView):
         return get_object_or_404(Status, user=self.request.user, id=self.kwargs["id"])
 
     def form_valid(self, form):
-        for attachment in form.cleaned_data["uploads"]:
+        enc_meta = _parse_enc_file_meta(self.request)
+        for i, attachment in enumerate(form.cleaned_data["uploads"]):
             dba = StatusMedia(status=form.instance)
             dba.file.save(get_upload_path(form.instance, attachment.name), attachment)
+            if i < len(enc_meta):
+                dba.encrypted_payload = enc_meta[i]
             dba.save()
 
         for activity in form.cleaned_data["activities"]:
-            if activity.user == self.request.user:
-                if activity not in form.instance.activity_set:
-                    StatusActivity.objects.create(
-                        activity=activity, status=form.instance
-                    )
+            if (
+                activity.user == self.request.user
+                and activity not in form.instance.activity_set
+            ):
+                StatusActivity.objects.create(activity=activity, status=form.instance)
 
         for statusactivity in form.instance.statusactivity_set.all():
             if statusactivity.activity not in form.cleaned_data["activities"]:
@@ -254,13 +228,18 @@ class ActivityListView(LoginRequiredMixin, ListView):
                 "pencil-simple",
             )
         ]
+        context["payloads"] = {
+            str(obj.id): obj.encrypted_payload
+            for obj in context["object_list"]
+            if obj.encrypted_payload
+        }
         return context
 
     def get_queryset(self):
         return Activity.objects.filter(user=self.request.user)
 
 
-class ActivityEditView(LoginRequiredMixin, UpdateView):
+class ActivityEditView(EncryptedPayloadMixin, LoginRequiredMixin, UpdateView):
     template_name = "mood/activity_edit.html"
     model = Activity
     fields = ["name", "icon", "color", "hidden"]
@@ -282,7 +261,7 @@ class ActivityEditView(LoginRequiredMixin, UpdateView):
         return reverse_lazy("mood:activity_list")
 
 
-class ActivityCreateView(LoginRequiredMixin, CreateView):
+class ActivityCreateView(EncryptedPayloadMixin, LoginRequiredMixin, CreateView):
     template_name = "mood/activity_edit.html"
     model = Activity
     fields = ["name", "icon", "color"]
@@ -328,13 +307,18 @@ class MoodListView(LoginRequiredMixin, ListView):
         context["buttons"] = [
             (reverse_lazy("mood:mood_create"), _("Create Mood"), "pencil-simple")
         ]
+        context["payloads"] = {
+            str(obj.id): obj.encrypted_payload
+            for obj in context["object_list"]
+            if obj.encrypted_payload
+        }
         return context
 
     def get_queryset(self):
         return Mood.objects.filter(user=self.request.user)
 
 
-class MoodEditView(LoginRequiredMixin, UpdateView):
+class MoodEditView(EncryptedPayloadMixin, LoginRequiredMixin, UpdateView):
     template_name = "mood/mood_edit.html"
     model = Mood
     fields = ["name", "icon", "color", "value"]
@@ -356,7 +340,7 @@ class MoodEditView(LoginRequiredMixin, UpdateView):
         return reverse_lazy("mood:mood_list")
 
 
-class MoodCreateView(LoginRequiredMixin, CreateView):
+class MoodCreateView(EncryptedPayloadMixin, LoginRequiredMixin, CreateView):
     template_name = "mood/mood_edit.html"
     model = Mood
     fields = ["name", "icon", "color", "value"]
@@ -404,13 +388,17 @@ class MoodCSVView(LoginRequiredMixin, View):
         mindate = None
 
         if enddate:
-            maxdate = datetime.strptime(enddate, "%Y-%m-%d")
+            maxdate = datetime.strptime(enddate, "%Y-%m-%d").replace(
+                tzinfo=timezone.utc
+            )
 
             if not startdate:
                 mindate = maxdate - relativedelta.relativedelta(weeks=1)
 
         if startdate:
-            mindate = datetime.strptime(startdate, "%Y-%m-%d")
+            mindate = datetime.strptime(startdate, "%Y-%m-%d").replace(
+                tzinfo=timezone.utc
+            )
 
             if not enddate:
                 maxdate = mindate + relativedelta.relativedelta(weeks=1)
@@ -481,13 +469,14 @@ class MoodCountHeatmapJSONView(LoginRequiredMixin, View):
         end = request.GET.get("end")
 
         if end:
-            maxdate = datetime.strptime(end, "%Y-%m-%d")
-            maxdate = maxdate.replace(hour=23, minute=59, second=59)
+            maxdate = datetime.strptime(end, "%Y-%m-%d").replace(
+                hour=23, minute=59, second=59, tzinfo=timezone.utc
+            )
         else:
             maxdate = timezone.now()
 
         if start:
-            mindate = datetime.strptime(start, "%Y-%m-%d")
+            mindate = datetime.strptime(start, "%Y-%m-%d").replace(tzinfo=timezone.utc)
         else:
             mindate = maxdate - relativedelta.relativedelta(years=1)
 
@@ -546,114 +535,3 @@ class MoodHeatmapValuesJSONView(LoginRequiredMixin, View):
         res.write(json.dumps(output))
 
         return res
-
-
-class EncryptorView(LoginRequiredMixin, View):
-    """Bulk-encrypt existing mood entries using the user's stored PGP public key.
-
-    Requires the user to have a PGP key saved in their profile. If not, they
-    are redirected to profile settings. On GET, shows a confirmation page with
-    the count of unencrypted entries. On POST, encrypts them all.
-    """
-
-    template_name = "mood/encryptor.html"
-
-    def _get_pgp_key(self):
-        try:
-            return self.request.user.userprofile.pgp_key or None
-        except Exception:
-            return None
-
-    def get(self, request, *args, **kwargs):
-        from django.shortcuts import render, redirect
-        from django.contrib import messages
-
-        pgp_key = self._get_pgp_key()
-        if not pgp_key:
-            messages.warning(
-                request,
-                "You need to add a PGP public key to your profile before you can encrypt entries.",
-            )
-            return redirect("profiles:profile_edit")
-
-        unencrypted_count = (
-            Status.objects.filter(user=request.user)
-            .exclude(text__startswith="-----BEGIN PGP MESSAGE-----")
-            .filter(text__isnull=False)
-            .exclude(text="")
-            .count()
-        )
-
-        return render(
-            request, self.template_name, {"unencrypted_count": unencrypted_count}
-        )
-
-    def post(self, request, *args, **kwargs):
-        from django.shortcuts import render, redirect
-        from django.contrib import messages
-
-        pgp_key = self._get_pgp_key()
-        if not pgp_key:
-            messages.warning(
-                request,
-                "You need to add a PGP public key to your profile before you can encrypt entries.",
-            )
-            return redirect("profiles:profile_edit")
-
-        encrypted_count = 0
-        error = None
-
-        with tempfile.TemporaryDirectory() as tempdir:
-            gpg = gnupg.GPG(gnupghome=tempdir)
-            gpg.encoding = "utf-8"
-
-            try:
-                imported_keys = gpg.import_keys(pgp_key)
-            except Exception as e:
-                error = str(e)
-            else:
-                if not imported_keys.count:
-                    error = "Could not import your stored PGP key. Please check the key in your profile settings."
-                else:
-                    for status in Status.objects.filter(user=request.user):
-                        if not status.is_encrypted and status.text:
-                            encrypted = gpg.encrypt(
-                                status.text,
-                                imported_keys.fingerprints,
-                                always_trust=True,
-                            )
-                            if encrypted.ok:
-                                status.text = encrypted.data.decode()
-                                status.save()
-                                encrypted_count += 1
-                            else:
-                                logging.error(
-                                    f"Error encrypting entry {status.id}: {encrypted.status}"
-                                )
-                                if encrypted.status == "invalid recipient":
-                                    logging.error(encrypted.status_detail)
-                                error = f"Error encrypting entry: {encrypted.status}"
-                                break
-
-        if error:
-            unencrypted_count = (
-                Status.objects.filter(user=request.user)
-                .exclude(text__startswith="-----BEGIN PGP MESSAGE-----")
-                .filter(text__isnull=False)
-                .exclude(text="")
-                .count()
-            )
-            return render(
-                request,
-                self.template_name,
-                {
-                    "unencrypted_count": unencrypted_count,
-                    "error": error,
-                },
-            )
-
-        messages.success(
-            request,
-            f"Successfully encrypted {encrypted_count} entr{'y' if encrypted_count == 1 else 'ies'}.",
-        )
-        return redirect("mood:status_list")

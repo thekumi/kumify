@@ -9,8 +9,8 @@ from pathlib import Path
 from autosecretkey import AutoSecretKey
 from django.contrib.messages import constants as _msg
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
+# Root of the moodyduck package directory.
+BASE_DIR = Path(__file__).resolve().parent
 CONFIG_FILE = AutoSecretKey(os.environ.get("MOODYDUCK_SETTINGS", "settings.ini"))
 
 SECRET_KEY = CONFIG_FILE.secret_key
@@ -27,7 +27,7 @@ TIME_ZONE = CONFIG_FILE.config.get("MOODYDUCK", "TimeZone", fallback="UTC")
 # Application definition
 
 try:
-    ENABLED_MODULES  # TODO: Move this to settings.ini
+    ENABLED_MODULES  # noqa: B018  # TODO: Move this to settings.ini
 except NameError:
     ENABLED_MODULES = [
         "cbt",
@@ -43,6 +43,7 @@ except NameError:
 CORE_MODULES = [
     "common",
     "frontend",
+    "keystore",
     "profiles",
 ]
 
@@ -118,7 +119,7 @@ else:
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
+            "NAME": Path.cwd() / "db.sqlite3",
         }
     }
 
@@ -178,9 +179,10 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 STATIC_URL = "/static/"
 
-STATIC_ROOT = CONFIG_FILE.config.get(
-    "MOODYDUCK", "StaticRoot", fallback="static"
-)
+STATIC_ROOT = CONFIG_FILE.config.get("MOODYDUCK", "StaticRoot", fallback="static")
+
+_SPA_DIST = BASE_DIR / "spa"
+STATICFILES_DIRS = [("spa", _SPA_DIST)] if _SPA_DIST.exists() else []
 
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/"

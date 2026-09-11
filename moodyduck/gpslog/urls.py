@@ -1,6 +1,6 @@
-from .views import GPSLogView
-
 from django.urls import path
+
+from .views import GPSLogView
 
 app_name = "gpslog"
 

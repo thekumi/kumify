@@ -1,7 +1,7 @@
-from django.db import models
-from django.contrib.auth import get_user_model
-
 from uuid import uuid4
+
+from django.contrib.auth import get_user_model
+from django.db import models
 
 
 class GPSTrack(models.Model):
@@ -23,8 +23,8 @@ class GPSToken(models.Model):
 class GPSPoint(models.Model):
     track = models.ForeignKey(GPSTrack, models.CASCADE)
 
-    latitude = models.FloatField()
-    longitude = models.FloatField()
+    latitude = models.FloatField(null=True, blank=True)
+    longitude = models.FloatField(null=True, blank=True)
     altitude = models.FloatField(null=True, blank=True)
 
     timestamp = models.DateTimeField()
@@ -37,3 +37,4 @@ class GPSPoint(models.Model):
     bearing = models.FloatField(null=True, blank=True)
     satellites = models.IntegerField(null=True, blank=True)
     user_agent = models.TextField(null=True, blank=True)
+    encrypted_payload = models.JSONField(null=True, blank=True)

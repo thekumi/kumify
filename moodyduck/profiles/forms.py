@@ -2,13 +2,18 @@ from django import forms
 
 from moodyduck.frontend.mixins import BootstrapMixin
 from moodyduck.health.models import BasicMedicalInfo
+
 from .models import UserProfile
 
 
 class UserProfileForm(BootstrapMixin, forms.ModelForm):
     blood_type = forms.CharField(required=False, max_length=8)
-    allergies = forms.CharField(required=False, widget=forms.Textarea(attrs={"rows": 3}))
-    medical_notes = forms.CharField(required=False, widget=forms.Textarea(attrs={"rows": 4}))
+    allergies = forms.CharField(
+        required=False, widget=forms.Textarea(attrs={"rows": 3})
+    )
+    medical_notes = forms.CharField(
+        required=False, widget=forms.Textarea(attrs={"rows": 4})
+    )
 
     class Meta:
         model = UserProfile
@@ -34,7 +39,9 @@ class UserProfileForm(BootstrapMixin, forms.ModelForm):
             self.fields[name].required = False
 
         if self.instance and self.instance.pk:
-            medical_info, _ = BasicMedicalInfo.objects.get_or_create(user=self.instance.user)
+            medical_info, _ = BasicMedicalInfo.objects.get_or_create(
+                user=self.instance.user
+            )
             self.fields["blood_type"].initial = medical_info.blood_type
             self.fields["allergies"].initial = medical_info.allergies
             self.fields["medical_notes"].initial = medical_info.medical_notes

@@ -1,7 +1,7 @@
-from django.utils import timezone
 from dateutil.relativedelta import relativedelta
+from django.utils import timezone
 
-from .models import Status, Mood, StatusActivity
+from .models import Mood, Status, StatusActivity
 
 
 def _rolling_mean(values, window=7):
@@ -15,9 +15,7 @@ def _rolling_mean(values, window=7):
 def moodstats_data(user):
     entries = []
     for status in (
-        Status.objects.filter(user=user)
-        .select_related("mood")
-        .order_by("timestamp")
+        Status.objects.filter(user=user).select_related("mood").order_by("timestamp")
     ):
         if status.mood:
             entries.append(

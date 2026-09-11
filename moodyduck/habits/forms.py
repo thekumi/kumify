@@ -1,6 +1,7 @@
 from django.forms import ModelForm
 
 from moodyduck.frontend.mixins import BootstrapMixin
+
 from .models import Habit, HabitLog
 
 

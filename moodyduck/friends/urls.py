@@ -1,11 +1,11 @@
 from django.urls import path
 
 from .views import (
+    PersonCreateView,
+    PersonDeleteView,
+    PersonEditView,
     PersonListView,
     PersonViewView,
-    PersonCreateView,
-    PersonEditView,
-    PersonDeleteView,
 )
 
 app_name = "friends"

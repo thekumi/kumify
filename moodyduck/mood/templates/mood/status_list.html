@@ -1,43 +1,72 @@
 {% extends "frontend/base.html" %}
 {% load i18n %}
 {% block content %}
-<div class="card mb-4">
-  <div class="card-header">Your Moods</div>
-  <div class="card-body p-0">
-    <div class="table-responsive">
-      <table data-order="[[ 0, &quot;desc&quot; ]]" class="table table-hover table-clickable mb-0" id="dataTable">
-        <thead>
-          <tr>
-            <th>Timestamp</th>
-            <th>Mood</th>
-            <th>Activities</th>
-            <th>Title</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for status in object_list %}
-          <tr onclick="window.location.href='{% url "mood:status_view" status.id %}'">
-            <td data-order="{{ status.timestamp|date:"U" }}">{{ status.timestamp }}</td>
-            <td>
-              <i data-order="{{ status.mood.value }}" style="color:{{ status.mood.color }}" class="{{ status.mood.icon }}"></i>
-              {{ status.mood }}
-            </td>
-            <td>
-              {% for activity in status.statusactivity_set.all %}
-                <i title="{{ activity.activity }}{% if activity.comment %} - {{ activity.comment }}{% endif %}"
-                   style="color:{{ activity.activity.color }}" class="{{ activity.activity.icon }}"></i>
-              {% endfor %}
-            </td>
-            <td>
-              {% if status.is_encrypted %}<i class="ph ph-lock-simple me-1"></i>{% endif %}
-              {{ status.short_text }}
-            </td>
-          </tr>
-          {% empty %}
-          {% endfor %}
-        </tbody>
-      </table>
+    {{ payloads|json_script:"ks-payloads" }}
+    <div class="card mb-4">
+        <div class="card-header">Your Moods</div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table data-order="[[ 0, &quot;desc&quot; ]]"
+                       class="table table-hover table-clickable mb-0"
+                       id="dataTable">
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>Mood</th>
+                            <th>Activities</th>
+                            <th>Title</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for status in object_list %}
+                            <tr data-ks-row="{{ status.id }}"
+                                onclick="window.location.href='{% url "mood:status_view" status.id %}'">
+                                <td data-order="{{ status.timestamp|date:"U" }}">{{ status.timestamp }}</td>
+                                <td>
+                                    <i data-order="{{ status.mood.value }}"
+                                       style="color:{{ status.mood.color }}"
+                                       class="{{ status.mood.icon }}"></i>
+                                    {{ status.mood }}
+                                </td>
+                                <td>
+                                    {% for activity in status.statusactivity_set.all %}
+                                        <i title="{{ activity.activity }}{% if activity.comment %} - {{ activity.comment }}{% endif %}"
+                                           style="color:{{ activity.activity.color }}"
+                                           class="{{ activity.activity.icon }}"></i>
+                                    {% endfor %}
+                                </td>
+                                <td>
+                                    {% if status.encrypted_payload %}
+                                        <i class="ph ph-lock-simple me-1 text-muted"></i><span data-ks-field="title"
+      class="text-muted">Encrypted</span>
+                                    {% else %}
+                                        {{ status.short_text }}
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% empty %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
-  </div>
-</div>
+    <script type="module">
+  (async () => {
+  const raw = document.getElementById('ks-payloads');
+  if (!raw) return;
+  const payloads = JSON.parse(raw.textContent);
+  const dataKey = await window.keystore.ready;
+  if (!dataKey) return;
+  for (const [id, payload] of Object.entries(payloads)) {
+    const row = document.querySelector(`[data-ks-row="${id}"]`);
+    if (!row) continue;
+    try {
+      const fields = await window.keystore.decryptPayload(dataKey, payload);
+      const el = row.querySelector('[data-ks-field="title"]');
+      if (el) el.textContent = fields.title || fields.text?.slice(0, 64) || '';
+    } catch (e) { console.warn('decrypt failed for row', id, e); }
+  }
+  })();
+    </script>
 {% endblock content %}

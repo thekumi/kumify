@@ -1,15 +1,14 @@
-from django.db import models
-from django.core.validators import MaxValueValidator, MinValueValidator
-from django.utils import timezone
-from django.contrib.auth import get_user_model
-from django.utils.translation import gettext_lazy as _
-
 import os.path
 
-from moodyduck.mood.models import Mood
-from moodyduck.common.helpers import get_upload_path
-
 from colorfield.fields import ColorField
+from django.contrib.auth import get_user_model
+from django.core.validators import MaxValueValidator, MinValueValidator
+from django.db import models
+from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
+
+from moodyduck.common.helpers import get_upload_path
+from moodyduck.mood.models import Mood
 
 
 class Theme(models.Model):
@@ -30,12 +29,13 @@ class Dream(models.Model):
 
     user = models.ForeignKey(get_user_model(), models.CASCADE)
     timestamp = models.DateTimeField(default=timezone.now)
-    title = models.CharField(max_length=64)
-    content = models.TextField()
+    title = models.CharField(max_length=64, null=True, blank=True)
+    content = models.TextField(null=True, blank=True)
     type = models.IntegerField(choices=DreamTypes.choices)
     mood = models.ForeignKey(Mood, models.SET_NULL, null=True)
     lucid = models.BooleanField(default=False)
     wet = models.BooleanField(default=False)
+    encrypted_payload = models.JSONField(null=True, blank=True)
 
     @property
     def short_text(self):
@@ -54,6 +54,7 @@ class DreamTheme(models.Model):
 class DreamMedia(models.Model):
     dream = models.ForeignKey(Dream, models.CASCADE)
     media = models.FileField(get_upload_path)
+    encrypted_payload = models.JSONField(null=True, blank=True)
 
     @property
     def basename(self):

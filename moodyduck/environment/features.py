@@ -1,6 +1,6 @@
-from moodyduck.frontend.classes import NavSection, NavItem, NavCollapse
-
 from django.urls import reverse_lazy
+
+from moodyduck.frontend.classes import NavCollapse, NavItem, NavSection
 
 env_section = NavSection("Environment")
 env_settings = NavCollapse("Details", icon="ph ph-list-bullets")

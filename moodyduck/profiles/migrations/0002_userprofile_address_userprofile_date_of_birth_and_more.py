@@ -6,45 +6,58 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('profiles', '0001_initial'),
+        ("profiles", "0001_initial"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='userprofile',
-            name='address',
+            model_name="userprofile",
+            name="address",
             field=models.TextField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='userprofile',
-            name='date_of_birth',
+            model_name="userprofile",
+            name="date_of_birth",
             field=models.DateField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='userprofile',
-            name='legal_name',
+            model_name="userprofile",
+            name="legal_name",
             field=models.CharField(blank=True, max_length=128, null=True),
         ),
         migrations.AddField(
-            model_name='userprofile',
-            name='phone',
+            model_name="userprofile",
+            name="phone",
             field=models.CharField(blank=True, max_length=32, null=True),
         ),
         migrations.CreateModel(
-            name='EmergencyAccessLog',
+            name="EmergencyAccessLog",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('accessed_at', models.DateTimeField(auto_now_add=True)),
-                ('source', models.CharField(default='android', max_length=32)),
-                ('method', models.CharField(default='emergency_screen', max_length=32)),
-                ('details', models.TextField(blank=True, null=True)),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("accessed_at", models.DateTimeField(auto_now_add=True)),
+                ("source", models.CharField(default="android", max_length=32)),
+                ("method", models.CharField(default="emergency_screen", max_length=32)),
+                ("details", models.TextField(blank=True, null=True)),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'ordering': ['-accessed_at'],
+                "ordering": ["-accessed_at"],
             },
         ),
     ]

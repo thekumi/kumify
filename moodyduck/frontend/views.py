@@ -1,43 +1,30 @@
-from django.views.generic import TemplateView, CreateView
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.contrib.auth.forms import UserCreationForm
-from django.contrib.auth import get_user_model, login
-from django.urls import reverse_lazy
+from pathlib import Path
 
-from .templatetags.dashboard import dashboard_styles, dashboard_scripts
+from django.http import FileResponse, HttpResponse
+from django.views import View
 
-
-class DashboardView(LoginRequiredMixin, TemplateView):
-    template_name = "frontend/dashboard.html"
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["title"] = "Dashboard"
-        context["subtitle"] = (
-            "An overview of everything going on in your MoodyDuck account."
-        )
-        context["scripts"] = dashboard_scripts()
-        context["styles"] = dashboard_styles()
-        return context
+_SPA_DIR = Path(__file__).resolve().parent.parent / "spa"
 
 
-class UserRegistrationView(CreateView):
-    form_class = UserCreationForm
-    model = get_user_model()
-    template_name = "registration/registration_form.html"
+class SpaView(View):
+    def get(self, request, *args, **kwargs):
+        index = _SPA_DIR / "index.html"
+        if not index.exists():
+            return HttpResponse(
+                "<h1>Frontend not built</h1>"
+                "<p>Run <code>cd moodyduck/spa_src && npm run build</code> to build the SPA.</p>",
+                content_type="text/html",
+                status=503,
+            )
+        return FileResponse(open(index, "rb"), content_type="text/html")
 
-    def dispatch(self, request, *args, **kwargs):
-        from django.conf import settings
-        from django.http import HttpResponseForbidden
 
-        if not getattr(settings, "REGISTRATION_OPEN", False):
-            return HttpResponseForbidden("Registration is not open.")
-        return super().dispatch(request, *args, **kwargs)
-
-    def form_valid(self, form):
-        ret = super().form_valid(form)
-        login(self.request, self.object)
-        return ret
-
-    def get_success_url(self):
-        return reverse_lazy("frontend:dashboard")
+class ServiceWorkerView(View):
+    def get(self, request):
+        sw = _SPA_DIR / "sw.js"
+        if not sw.exists():
+            return HttpResponse(status=404)
+        response = FileResponse(open(sw, "rb"), content_type="text/javascript")  # noqa: SIM115
+        response["Service-Worker-Allowed"] = "/"
+        response["Cache-Control"] = "no-store"
+        return response

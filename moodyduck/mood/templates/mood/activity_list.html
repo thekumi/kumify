@@ -1,27 +1,61 @@
 {% extends "frontend/base.html" %}
 {% load i18n %}
 {% block content %}
-<div class="card mb-4">
-  <div class="card-header">Your Activities</div>
-  <div class="card-body p-0">
-    <div class="table-responsive">
-      <table class="table table-hover table-clickable mb-0" id="dataTable">
-        <thead>
-          <tr><th>Name</th></tr>
-        </thead>
-        <tbody>
-          {% for activity in object_list %}
-          <tr onclick="window.location.href='{% url "mood:activity_edit" activity.id %}'">
-            <td>
-              <i style="color:{{ activity.color }}" class="{{ activity.icon }}"></i>
-              {{ activity }}
-            </td>
-          </tr>
-          {% empty %}
-          {% endfor %}
-        </tbody>
-      </table>
+    {{ payloads|json_script:"ks-payloads" }}
+    <div class="card mb-4">
+        <div class="card-header">Your Activities</div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-clickable mb-0" id="dataTable">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for activity in object_list %}
+                            <tr data-ks-row="{{ activity.id }}"
+                                onclick="window.location.href='{% url "mood:activity_edit" activity.id %}'">
+                                <td>
+                                    {% if activity.encrypted_payload %}
+                                        <i class="ph ph-lock text-muted me-1 ks-icon"></i>
+                                        <span data-ks-field="name" class="text-muted">Encrypted</span>
+                                    {% else %}
+                                        <i style="color:{{ activity.color }}" class="{{ activity.icon }}"></i>
+                                        {{ activity }}
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% empty %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
-  </div>
-</div>
+    <script type="module">
+  (async () => {
+  const raw = document.getElementById('ks-payloads');
+  if (!raw) return;
+  const payloads = JSON.parse(raw.textContent);
+  const dataKey = await window.keystore.ready;
+  if (!dataKey) return;
+  for (const [id, payload] of Object.entries(payloads)) {
+    const row = document.querySelector(`[data-ks-row="${id}"]`);
+    if (!row) continue;
+    try {
+      const fields = await window.keystore.decryptPayload(dataKey, payload);
+      const nameEl = row.querySelector('[data-ks-field="name"]');
+      if (nameEl && fields.name) {
+        nameEl.textContent = fields.name;
+        const iconEl = row.querySelector('.ks-icon');
+        if (iconEl) {
+          if (fields.icon) iconEl.className = fields.icon;
+          if (fields.color) iconEl.style.color = fields.color;
+        }
+      }
+    } catch (e) { console.warn('decrypt failed for row', id, e); }
+  }
+  })();
+    </script>
 {% endblock content %}

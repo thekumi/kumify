@@ -29,13 +29,13 @@ dependencies = [
     "python-dateutil",
     "django-autosecretkey",
     "mozilla-django-oidc",
-    "python-gnupg",
     "django-crispy-forms",
     "crispy-bootstrap5",
     "django-annoying",
     "djangorestframework",
     "gunicorn",
     "celery[redis]",
+    "cryptography",
 ]
 
 [project.optional-dependencies]
@@ -52,13 +52,16 @@ moodyduck = "moodyduck.manage:main"
 [tool.hatch.metadata]
 allow-direct-references = true
 
+[tool.hatch.build.targets.wheel]
+artifacts = ["moodyduck/spa/**"]
+
 [tool.ruff]
 line-length = 88
 target-version = "py310"
 
 [tool.ruff.lint]
 extend-select = ["I", "PLC0415"]
-ignore = ["E501"]
+ignore = ["E501", "RUF012"]
 exclude = ["**/migrations/*.py"]
 
 [tool.djlint]
@@ -73,3 +76,4 @@ python_files = ["tests.py", "test_*.py"]
 "Homepage" = "https://git.private.coffee/kumi/moodyduck"
 "Bug Tracker" = "https://git.private.coffee/kumi/moodyduck/issues"
 "Source Code" = "https://git.private.coffee/kumi/moodyduck"
+

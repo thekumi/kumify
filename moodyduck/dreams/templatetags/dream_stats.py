@@ -1,7 +1,7 @@
-from django import template
-
-from datetime import datetime, timedelta
 from collections import Counter
+from datetime import datetime, timedelta, timezone
+
+from django import template
 
 register = template.Library()
 
@@ -13,7 +13,7 @@ def total_dreams(context):
 
 @register.simple_tag(takes_context=True)
 def weekly_dreams(context):
-    now = datetime.now()
+    now = datetime.now(tz=timezone.utc)
     start = now - timedelta(days=7)
 
     return len(
@@ -27,7 +27,7 @@ def most_common_theme(context, start, end=None):
         timestamp__gte=start.date(),
         timestamp__lte=(end.date() if end else start.date()),
     )
-    themes = list()
+    themes = []
 
     for dream in dream_list:
         for theme in dream.dreamtheme_set.all():
@@ -36,13 +36,13 @@ def most_common_theme(context, start, end=None):
     try:
         most_common = Counter(themes).most_common(1)[0]
         return most_common[0], most_common[1]
-    except Exception:
+    except IndexError:
         return None, None
 
 
 @register.simple_tag(takes_context=True)
 def most_common_theme_weekly(context):
-    now = datetime.now()
+    now = datetime.now(tz=timezone.utc)
     start = now - timedelta(days=7)
 
     return most_common_theme(context, start, now)
@@ -61,7 +61,7 @@ def special_dreams(context, start, end=None):
 
 @register.simple_tag(takes_context=True)
 def special_dreams_weekly(context):
-    now = datetime.now()
+    now = datetime.now(tz=timezone.utc)
     start = now - timedelta(days=7)
 
     return special_dreams(context, start, now)

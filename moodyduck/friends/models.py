@@ -1,7 +1,6 @@
-from django.db import models
 from django.contrib.auth import get_user_model
+from django.db import models
 from django.utils import timezone
-from datetime import date
 
 
 class Person(models.Model):
@@ -33,14 +32,14 @@ class Person(models.Model):
     @property
     def days_since_contact(self):
         if self.last_contact:
-            return (date.today() - self.last_contact).days
+            return (timezone.now().date() - self.last_contact).days
         return None
 
     @property
     def days_until_birthday(self):
         if not self.birthday:
             return None
-        today = date.today()
+        today = timezone.now().date()
         next_bday = self.birthday.replace(year=today.year)
         if next_bday < today:
             next_bday = self.birthday.replace(year=today.year + 1)

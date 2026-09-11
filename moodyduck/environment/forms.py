@@ -1,6 +1,7 @@
 from django.forms import ModelForm
 
 from moodyduck.frontend.mixins import BootstrapMixin
+
 from .models import CO2Category, CO2Entry, CO2Offset
 
 

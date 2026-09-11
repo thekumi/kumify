@@ -1,6 +1,6 @@
-from .views import DashboardView, UserRegistrationView
-
 from django.urls import path
+
+from .views import DashboardView, UserRegistrationView
 
 app_name = "frontend"
 

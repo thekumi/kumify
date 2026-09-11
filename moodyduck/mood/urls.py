@@ -1,44 +1,36 @@
+from django.urls import path
+
 from .views import (
-    StatusListView,
-    StatusViewView,
-    StatusDeleteView,
-    StatusEditView,
-    StatusCreateView,
-    ActivityListView,
-    ActivityEditView,
     ActivityCreateView,
     ActivityDeleteView,
-    MoodListView,
-    MoodEditView,
-    MoodCreateView,
-    MoodStatisticsView,
-    MoodCSVView,
-    MoodPlotView,
-    MoodPiesView,
-    ActivityStatisticsView,
-    ActivityPlotView,
+    ActivityEditView,
+    ActivityListView,
     ActivityPiesView,
+    ActivityPlotView,
+    ActivityStatisticsView,
     MoodCountHeatmapJSONView,
+    MoodCreateView,
+    MoodCSVView,
+    MoodEditView,
     MoodHeatmapValuesJSONView,
-    EncryptorView,
-    StatusEncryptedDownloadView,
+    MoodListView,
+    MoodPiesView,
+    MoodPlotView,
+    MoodStatisticsView,
+    StatusCreateView,
+    StatusDeleteView,
+    StatusEditView,
+    StatusListView,
+    StatusViewView,
 )
-
-from django.urls import path
 
 app_name = "mood"
 
 urlpatterns = [
     path("", StatusListView.as_view(), name="status_list"),
     path("status/<int:id>/view/", StatusViewView.as_view(), name="status_view"),
-    path(
-        "status/<int:id>/encrypted/",
-        StatusEncryptedDownloadView.as_view(),
-        name="status_encrypted_download",
-    ),
     path("status/<int:id>/edit/", StatusEditView.as_view(), name="status_edit"),
     path("status/<int:id>/delete/", StatusDeleteView.as_view(), name="status_delete"),
-    path("status/encryptor/", EncryptorView.as_view(), name="encryptor"),
     path("status/new/", StatusCreateView.as_view(), name="status_create"),
     path("activity/", ActivityListView.as_view(), name="activity_list"),
     path("activity/<int:id>/edit/", ActivityEditView.as_view(), name="activity_edit"),

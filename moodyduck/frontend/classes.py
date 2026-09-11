@@ -1,6 +1,6 @@
-from django.template.loader import render_to_string
-
 import random
+
+from django.template.loader import render_to_string
 
 
 class NavSection:
