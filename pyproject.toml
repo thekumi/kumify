@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "moodyduck"
-version = "0.1.0"
+version = "0.2.0"
 authors = [{ name = "Kumi Mitterer", email = "kumify@kumi.email" }]
 description = "A Django-based application for managing your life."
 readme = "README.md"
