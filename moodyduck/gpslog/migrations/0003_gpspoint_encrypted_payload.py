@@ -3,15 +3,27 @@
 from django.db import migrations, models
 
 
+def _set_fk_checks(val):
+    def fn(apps, schema_editor):
+        if schema_editor.connection.vendor == "mysql":
+            schema_editor.execute(f"SET FOREIGN_KEY_CHECKS={val}")
+
+    return fn
+
+
 class Migration(migrations.Migration):
     dependencies = [
         ("gpslog", "0002_initial"),
     ]
 
     operations = [
+        # MySQL error 1832: adding a JSON column forces ALGORITHM=COPY which
+        # re-validates FK constraints on track_id. Disable checks for the ALTER.
+        migrations.RunPython(_set_fk_checks(0), _set_fk_checks(1)),
         migrations.AddField(
             model_name="gpspoint",
             name="encrypted_payload",
             field=models.JSONField(blank=True, null=True),
         ),
+        migrations.RunPython(_set_fk_checks(1), _set_fk_checks(0)),
     ]
