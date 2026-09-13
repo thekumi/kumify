@@ -72,7 +72,7 @@ const error = ref('')
 let rawVaccination = null
 let hiddenNotes = null
 
-const ENCRYPTED_FIELDS = ['name', 'target_disease', 'provider', 'batch_number', 'notes']
+const ENCRYPTED_FIELDS = ['name', 'target_disease', 'administered_on', 'next_due', 'provider', 'batch_number', 'notes']
 
 async function fillForm(v) {
   const dec = await ks.decrypt(v)
@@ -97,9 +97,13 @@ async function save() {
       if (!payload.next_due) payload.next_due = null
       await saveEncrypted(updateVaccination, id, payload, ENCRYPTED_FIELDS, rawVaccination, ks)
     } else {
-      const payload = { ...form.value }
-      if (!payload.next_due) payload.next_due = null
-      await createVaccination(payload)
+      const toEncrypt = {}
+      for (const field of ENCRYPTED_FIELDS) {
+        const v = form.value[field] ?? (field === 'notes' ? hiddenNotes : null)
+        if (v !== null && v !== undefined && v !== '') toEncrypt[field] = String(v)
+      }
+      const encrypted_payload = await ks.encryptPayload(toEncrypt)
+      await createVaccination({ encrypted_payload })
     }
     router.push('/health/vaccinations')
   } catch { error.value = 'Could not save.' }

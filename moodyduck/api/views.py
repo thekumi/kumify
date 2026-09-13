@@ -243,9 +243,7 @@ class CurrentEmergencyProfileView(APIView):
     def get(self, request):
         profile = request.user.userprofile
         medical_info, _ = BasicMedicalInfo.objects.get_or_create(user=request.user)
-        vaccinations = Vaccination.objects.filter(user=request.user).order_by(
-            "-administered_on"
-        )
+        vaccinations = Vaccination.objects.filter(user=request.user).order_by("-pk")
 
         return Response(
             {

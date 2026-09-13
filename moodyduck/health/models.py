@@ -164,12 +164,12 @@ class HealthRecord(models.Model):
 
 class Vaccination(models.Model):
     class Meta:
-        ordering = ["-administered_on", "name"]
+        ordering = ["-pk"]
 
     user = models.ForeignKey(get_user_model(), models.CASCADE)
     name = models.CharField(max_length=128, null=True, blank=True)
     target_disease = models.CharField(max_length=128, null=True, blank=True)
-    administered_on = models.DateField(default=date.today)
+    administered_on = models.DateField(null=True, blank=True)
     provider = models.CharField(max_length=128, null=True, blank=True)
     batch_number = models.CharField(max_length=64, null=True, blank=True)
     next_due = models.DateField(null=True, blank=True)
@@ -177,4 +177,6 @@ class Vaccination(models.Model):
     encrypted_payload = models.JSONField(null=True, blank=True)
 
     def __str__(self):
-        return f"{self.name} on {self.administered_on:%Y-%m-%d}"
+        if self.administered_on:
+            return f"{self.name} on {self.administered_on:%Y-%m-%d}"
+        return self.name or str(self.pk)
