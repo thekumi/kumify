@@ -3,7 +3,7 @@ import json
 import uuid
 from collections import Counter
 
-from django.db.models import Prefetch
+from django.db.models import Prefetch, Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -155,6 +155,15 @@ class StagingView(APIView):
             result[key] = serializer_cls(
                 qs[:_STAGING_BATCH], many=True, context={"request": request}
             ).data
+        result["vaccination_upgrades"] = VaccinationSerializer(
+            Vaccination.objects.filter(
+                user=request.user,
+                encrypted_payload__isnull=False,
+            ).filter(
+                Q(administered_on__isnull=False) | Q(next_due__isnull=False)
+            )[:_STAGING_BATCH],
+            many=True,
+        ).data
         result["status_media"] = [
             {"id": m.pk, "url": m.file.url}
             for m in StatusMedia.objects.filter(
@@ -185,6 +194,19 @@ class StagingView(APIView):
                     updated += rows
                 else:
                     errors.append({"model": key, "id": pk, "error": "Not found"})
+        for item in request.data.get("vaccination_upgrades", []):
+            pk = item.get("id")
+            payload = item.get("encrypted_payload")
+            if not pk or not payload:
+                continue
+            rows = Vaccination.objects.filter(
+                user=request.user, pk=pk
+            ).update(encrypted_payload=payload, administered_on=None, next_due=None)
+            if rows:
+                updated += rows
+            else:
+                errors.append({"model": "vaccination_upgrades", "id": pk, "error": "Not found"})
+
         resp = {"updated": updated}
         if errors:
             resp["errors"] = errors

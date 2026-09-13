@@ -88,6 +88,14 @@ const saved = ref(false)
 const error = ref('')
 let raw = null
 
+async function decryptVaccinations(dataKey, list) {
+  return Promise.all((list ?? []).map(async (v) => {
+    if (!v.encrypted_payload) return v
+    const dec = await decryptPayload(dataKey, v.encrypted_payload).catch(() => ({}))
+    return { id: v.id, ...dec }
+  }))
+}
+
 async function applyDecryption() {
   if (!raw || !ks.dataKey) return
   const profilePlain = raw.profile_encrypted_payload
@@ -106,12 +114,12 @@ async function applyDecryption() {
     medical_notes: medicalPlain.medical_notes ?? '',
   }
   form.value = plain
-  // Update the offline cache with fresh plaintext
+  const vaccinations = await decryptVaccinations(ks.dataKey, raw.vaccinations)
   localStorage.setItem(EMERGENCY_CACHE_KEY, JSON.stringify({
     ...plain,
     display_name: raw.display_name,
     contacts: raw.contacts,
-    vaccinations: raw.vaccinations,
+    vaccinations,
   }))
 }
 
@@ -133,12 +141,12 @@ async function save() {
       medical_encrypted_payload: medicalPayload,
     })
 
-    // Refresh the offline cache
+    const vaccinations = await decryptVaccinations(ks.dataKey, raw.vaccinations)
     localStorage.setItem(EMERGENCY_CACHE_KEY, JSON.stringify({
       ...form.value,
       display_name: raw.display_name,
       contacts: raw.contacts,
-      vaccinations: raw.vaccinations,
+      vaccinations,
     }))
 
     saved.value = true

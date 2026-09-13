@@ -1,5 +1,5 @@
 import { apiFetch } from './util.js'
-import { encryptPayload } from './fields.js'
+import { encryptPayload, decryptPayload } from './fields.js'
 
 const MODEL_FIELDS = {
   statuses:     ['title', 'text'],
@@ -8,7 +8,7 @@ const MODEL_FIELDS = {
   dreams:       ['title', 'content'],
   cbt_records:  ['title', 'situation', 'thoughts', 'pro_facts', 'con_facts', 'realistic', 'outcome'],
   health_logs:  ['notes'],
-  vaccinations: ['name', 'target_disease', 'provider', 'batch_number', 'notes'],
+  vaccinations: ['name', 'target_disease', 'administered_on', 'next_due', 'provider', 'batch_number', 'notes'],
 }
 
 // Encrypts all plaintext records in batches of _STAGING_BATCH (server-side page size).
@@ -25,8 +25,9 @@ export async function runStaging(dataKey) {
     const staging = await res.json()
 
     // Count total fetched across all models; stop when server returns nothing.
+    const upgrades = staging['vaccination_upgrades'] ?? []
     const totalFetched = Object.keys(MODEL_FIELDS)
-      .reduce((n, key) => n + (staging[key]?.length ?? 0), 0)
+      .reduce((n, key) => n + (staging[key]?.length ?? 0), 0) + upgrades.length
     if (totalFetched === 0) break
 
     const patch = {}
@@ -48,6 +49,22 @@ export async function runStaging(dataKey) {
         patch[key].push({
           id: record.id,
           encrypted_payload: await encryptPayload(dataKey, plain),
+        })
+        batchCount++
+      }
+    }
+
+    // Upgrade pass: merge plaintext dates into already-encrypted vaccination payloads.
+    if (upgrades.length) {
+      patch['vaccination_upgrades'] = []
+      for (const record of upgrades) {
+        if (!record.encrypted_payload) continue
+        const existing = await decryptPayload(dataKey, record.encrypted_payload).catch(() => ({}))
+        if (record.administered_on) existing['administered_on'] = record.administered_on
+        if (record.next_due) existing['next_due'] = record.next_due
+        patch['vaccination_upgrades'].push({
+          id: record.id,
+          encrypted_payload: await encryptPayload(dataKey, existing),
         })
         batchCount++
       }

@@ -61,6 +61,12 @@
               {{ c.name }}<span v-if="c.relationship" class="text-stone-400"> ({{ c.relationship }})</span><span v-if="c.phone"> · {{ c.phone }}</span>
             </div>
           </div>
+          <div v-if="emergency.vaccinations?.length" class="pt-1">
+            <p class="text-xs font-semibold text-stone-400 uppercase tracking-wider mb-1">Vaccinations</p>
+            <div v-for="v in emergency.vaccinations" :key="v.id" class="text-stone-700">
+              {{ v.name }}<span v-if="v.target_disease" class="text-stone-400"> ({{ v.target_disease }})</span><span v-if="v.administered_on" class="text-stone-400"> · {{ v.administered_on }}</span><span v-if="v.next_due" class="text-stone-400"> · Due {{ v.next_due }}</span>
+            </div>
+          </div>
           <p v-if="!hasAnyEmergencyData" class="text-stone-400 text-center py-2">No emergency info set up yet.</p>
         </template>
       </div>
@@ -138,10 +144,17 @@ async function refreshEmergencyCache(dataKey) {
     const medicalPlain = raw.medical_encrypted_payload
       ? await decryptPayload(dataKey, raw.medical_encrypted_payload).catch(() => ({}))
       : {}
+    const vaccinations = await Promise.all(
+      (raw.vaccinations ?? []).map(async (v) => {
+        if (!v.encrypted_payload) return v
+        const dec = await decryptPayload(dataKey, v.encrypted_payload).catch(() => ({}))
+        return { id: v.id, ...dec }
+      })
+    )
     localStorage.setItem(EMERGENCY_CACHE_KEY, JSON.stringify({
       display_name: raw.display_name,
       contacts: raw.contacts,
-      vaccinations: raw.vaccinations,
+      vaccinations,
       ...profilePlain,
       ...medicalPlain,
     }))
@@ -188,7 +201,8 @@ const emergency = ref(null)
 const emergencyLoading = ref(false)
 const hasAnyEmergencyData = computed(() => emergency.value && (
   emergency.value.display_name || emergency.value.legal_name || emergency.value.blood_type ||
-  emergency.value.allergies || emergency.value.medical_notes || emergency.value.contacts?.length
+  emergency.value.allergies || emergency.value.medical_notes || emergency.value.contacts?.length ||
+  emergency.value.vaccinations?.length
 ))
 
 async function toggleEmergency() {
