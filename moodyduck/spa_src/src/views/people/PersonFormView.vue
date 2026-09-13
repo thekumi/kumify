@@ -51,6 +51,11 @@
           <textarea v-model="form.notes" rows="3" placeholder="Anything to remember…"
             class="w-full px-3 py-2.5 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-violet-400 text-stone-800 bg-stone-50 text-sm resize-none"></textarea>
         </div>
+        <div>
+          <label class="text-sm font-semibold text-stone-500 block mb-1.5">Last contact</label>
+          <input v-model="form.last_contact" type="date"
+            class="w-full px-3 py-2.5 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-violet-400 text-stone-800 bg-stone-50 text-sm" />
+        </div>
       </div>
 
       <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
@@ -85,25 +90,58 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import TopBar from '@/components/TopBar.vue'
 import BottomNav from '@/components/BottomNav.vue'
 import { getPerson, createPerson, updatePerson, deletePerson } from '@/api/people'
+import { useKeystoreStore } from '@/stores/keystore'
+import { saveEncrypted } from '@/keystore/saveEncrypted'
 
+const ks = useKeystoreStore()
 const route = useRoute()
 const router = useRouter()
 const id = route.params.id
-const form = ref({ name: '', nickname: '', relationship: '', phone: '', email: '', birthday: '', address: '', notes: '', emergency_contact: false })
+const form = ref({ name: '', nickname: '', relationship: '', phone: '', email: '', birthday: '', address: '', notes: '', last_contact: '', emergency_contact: false })
 const loading = ref(!!id)
 const saving = ref(false)
 const error = ref('')
+let rawPerson = null
+
+const ENCRYPTED_FIELDS = ['name', 'nickname', 'birthday', 'email', 'phone', 'relationship', 'address', 'notes', 'last_contact']
+
+async function fillForm(p) {
+  const dec = await ks.decrypt(p)
+  form.value = {
+    name: dec.name ?? '',
+    nickname: dec.nickname ?? '',
+    relationship: dec.relationship ?? '',
+    phone: dec.phone ?? '',
+    email: dec.email ?? '',
+    birthday: dec.birthday ?? '',
+    address: dec.address ?? '',
+    notes: dec.notes ?? '',
+    last_contact: dec.last_contact ?? '',
+    emergency_contact: p.emergency_contact ?? false,
+  }
+}
+
+watch(() => ks.dataKey, async (key) => { if (key && rawPerson) await fillForm(rawPerson) })
 
 async function save() {
   saving.value = true; error.value = ''
   try {
-    if (id) await updatePerson(id, form.value)
-    else await createPerson(form.value)
+    if (id) {
+      await saveEncrypted(updatePerson, id, { ...form.value }, ENCRYPTED_FIELDS, rawPerson, ks)
+    } else {
+      const toEncrypt = {}
+      for (const field of ENCRYPTED_FIELDS) {
+        const v = form.value[field]
+        if (v !== null && v !== undefined && v !== '') toEncrypt[field] = String(v)
+      }
+      const encrypted_payload = await ks.encryptPayload(toEncrypt)
+      await createPerson({ encrypted_payload, emergency_contact: form.value.emergency_contact })
+    }
     router.push('/people')
   } catch { error.value = 'Could not save.' }
   finally { saving.value = false }
@@ -117,18 +155,8 @@ async function remove() {
 
 onMounted(async () => {
   if (id) {
-    const p = await getPerson(id)
-    form.value = {
-      name: p.name ?? '',
-      nickname: p.nickname ?? '',
-      relationship: p.relationship ?? '',
-      phone: p.phone ?? '',
-      email: p.email ?? '',
-      birthday: p.birthday ?? '',
-      address: p.address ?? '',
-      notes: p.notes ?? '',
-      emergency_contact: p.emergency_contact ?? false,
-    }
+    rawPerson = await getPerson(id)
+    await fillForm(rawPerson)
     loading.value = false
   }
 })

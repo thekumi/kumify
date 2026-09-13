@@ -449,15 +449,7 @@ class BasicMedicalInfoSerializer(serializers.ModelSerializer):
 class EmergencyContactSerializer(serializers.ModelSerializer):
     class Meta:
         model = Person
-        fields = [
-            "id",
-            "name",
-            "nickname",
-            "phone",
-            "email",
-            "relationship",
-            "notes",
-        ]
+        fields = ["id", "encrypted_payload"]
         read_only_fields = ["id"]
 
 
@@ -476,6 +468,7 @@ class PersonSerializer(serializers.ModelSerializer):
             "notes",
             "emergency_contact",
             "last_contact",
+            "encrypted_payload",
         ]
         read_only_fields = ["id"]
 

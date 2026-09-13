@@ -128,6 +128,7 @@ _STAGING_MODELS = {
     "cbt_records": (ThoughtRecord, "user", CBTRecordSerializer),
     "health_logs": (HealthLog, "user", HealthLogSerializer),
     "vaccinations": (Vaccination, "user", VaccinationSerializer),
+    "people": (Person, "user", PersonSerializer),
 }
 
 

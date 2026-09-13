@@ -144,16 +144,20 @@ async function refreshEmergencyCache(dataKey) {
     const medicalPlain = raw.medical_encrypted_payload
       ? await decryptPayload(dataKey, raw.medical_encrypted_payload).catch(() => ({}))
       : {}
-    const vaccinations = await Promise.all(
-      (raw.vaccinations ?? []).map(async (v) => {
-        if (!v.encrypted_payload) return v
-        const dec = await decryptPayload(dataKey, v.encrypted_payload).catch(() => ({}))
-        return { id: v.id, ...dec }
+    const decryptList = (list) => Promise.all(
+      (list ?? []).map(async (item) => {
+        if (!item.encrypted_payload) return item
+        const dec = await decryptPayload(dataKey, item.encrypted_payload).catch(() => ({}))
+        return { id: item.id, ...dec }
       })
     )
+    const [contacts, vaccinations] = await Promise.all([
+      decryptList(raw.contacts),
+      decryptList(raw.vaccinations),
+    ])
     localStorage.setItem(EMERGENCY_CACHE_KEY, JSON.stringify({
       display_name: raw.display_name,
-      contacts: raw.contacts,
+      contacts,
       vaccinations,
       ...profilePlain,
       ...medicalPlain,

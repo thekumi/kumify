@@ -5,10 +5,10 @@ from django.utils import timezone
 
 class Person(models.Model):
     class Meta:
-        ordering = ["name"]
+        ordering = ["-pk"]
 
     user = models.ForeignKey(get_user_model(), models.CASCADE)
-    name = models.CharField(max_length=128)
+    name = models.CharField(max_length=128, null=True, blank=True)
     nickname = models.CharField(max_length=64, null=True, blank=True)
     birthday = models.DateField(null=True, blank=True)
     email = models.EmailField(null=True, blank=True)
@@ -16,12 +16,13 @@ class Person(models.Model):
     relationship = models.CharField(max_length=64, null=True, blank=True)
     address = models.TextField(null=True, blank=True)
     notes = models.TextField(null=True, blank=True)
+    encrypted_payload = models.JSONField(null=True, blank=True)
     emergency_contact = models.BooleanField(default=False)
     last_contact = models.DateField(null=True, blank=True)
     created_at = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
-        return self.name
+        return self.name or str(self.pk)
 
     @property
     def display_name(self):

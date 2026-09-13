@@ -88,11 +88,11 @@ const saved = ref(false)
 const error = ref('')
 let raw = null
 
-async function decryptVaccinations(dataKey, list) {
-  return Promise.all((list ?? []).map(async (v) => {
-    if (!v.encrypted_payload) return v
-    const dec = await decryptPayload(dataKey, v.encrypted_payload).catch(() => ({}))
-    return { id: v.id, ...dec }
+async function decryptList(dataKey, list) {
+  return Promise.all((list ?? []).map(async (item) => {
+    if (!item.encrypted_payload) return item
+    const dec = await decryptPayload(dataKey, item.encrypted_payload).catch(() => ({}))
+    return { id: item.id, ...dec }
   }))
 }
 
@@ -114,11 +114,14 @@ async function applyDecryption() {
     medical_notes: medicalPlain.medical_notes ?? '',
   }
   form.value = plain
-  const vaccinations = await decryptVaccinations(ks.dataKey, raw.vaccinations)
+  const [contacts, vaccinations] = await Promise.all([
+    decryptList(ks.dataKey, raw.contacts),
+    decryptList(ks.dataKey, raw.vaccinations),
+  ])
   localStorage.setItem(EMERGENCY_CACHE_KEY, JSON.stringify({
     ...plain,
     display_name: raw.display_name,
-    contacts: raw.contacts,
+    contacts,
     vaccinations,
   }))
 }
@@ -141,11 +144,14 @@ async function save() {
       medical_encrypted_payload: medicalPayload,
     })
 
-    const vaccinations = await decryptVaccinations(ks.dataKey, raw.vaccinations)
+    const [contacts, vaccinations] = await Promise.all([
+      decryptList(ks.dataKey, raw.contacts),
+      decryptList(ks.dataKey, raw.vaccinations),
+    ])
     localStorage.setItem(EMERGENCY_CACHE_KEY, JSON.stringify({
       ...form.value,
       display_name: raw.display_name,
-      contacts: raw.contacts,
+      contacts,
       vaccinations,
     }))
 

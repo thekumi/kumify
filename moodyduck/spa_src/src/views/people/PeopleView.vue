@@ -64,19 +64,26 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import TopBar from '@/components/TopBar.vue'
 import BottomNav from '@/components/BottomNav.vue'
 import { getPeople } from '@/api/people'
+import { useKeystoreStore } from '@/stores/keystore'
 
+const ks = useKeystoreStore()
 const people = ref([])
+const raw = ref([])
 const loading = ref(true)
 
 const emergency = computed(() => people.value.filter(p => p.emergency_contact))
 const others = computed(() => people.value.filter(p => !p.emergency_contact))
 
+async function applyDecryption() { people.value = await ks.decryptAll(raw.value) }
+watch(() => ks.dataKey, (key) => { if (key) applyDecryption() })
+
 onMounted(async () => {
-  people.value = await getPeople().catch(() => [])
+  raw.value = await getPeople().catch(() => [])
+  await applyDecryption()
   loading.value = false
 })
 </script>

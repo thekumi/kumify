@@ -9,6 +9,7 @@ const MODEL_FIELDS = {
   cbt_records:  ['title', 'situation', 'thoughts', 'pro_facts', 'con_facts', 'realistic', 'outcome'],
   health_logs:  ['notes'],
   vaccinations: ['name', 'target_disease', 'administered_on', 'next_due', 'provider', 'batch_number', 'notes'],
+  people: ['name', 'nickname', 'birthday', 'email', 'phone', 'relationship', 'address', 'notes', 'last_contact'],
 }
 
 // Encrypts all plaintext records in batches of _STAGING_BATCH (server-side page size).
