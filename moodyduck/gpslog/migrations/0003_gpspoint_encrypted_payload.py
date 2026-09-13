@@ -2,30 +2,61 @@
 
 from django.db import migrations, models
 
+_FK_NAME = "gpslog_gpspoint_track_id_cff1e831_fk_gpslog_gpstrack_id"
 
-def _set_fk_checks(val):
-    def fn(apps, schema_editor):
-        if schema_editor.connection.vendor == "mysql":
-            schema_editor.execute(f"SET FOREIGN_KEY_CHECKS={val}")
 
-    return fn
+def _forward(apps, schema_editor):
+    if schema_editor.connection.vendor == "mysql":
+        # MySQL error 1832: ADD COLUMN on this table internally tries to modify
+        # track_id while the FK constraint exists. Drop and recreate the FK.
+        schema_editor.execute(
+            f"ALTER TABLE `gpslog_gpspoint` DROP FOREIGN KEY `{_FK_NAME}`"
+        )
+        schema_editor.execute(
+            "ALTER TABLE `gpslog_gpspoint` ADD COLUMN `encrypted_payload` JSON NULL"
+        )
+        schema_editor.execute(
+            f"ALTER TABLE `gpslog_gpspoint` ADD CONSTRAINT `{_FK_NAME}` "
+            "FOREIGN KEY (`track_id`) REFERENCES `gpslog_gpstrack` (`id`) "
+            "ON DELETE CASCADE"
+        )
+    else:
+        GPSPoint = apps.get_model("gpslog", "GPSPoint")
+        field = models.JSONField(blank=True, null=True)
+        field.set_attributes_from_name("encrypted_payload")
+        schema_editor.add_field(GPSPoint, field)
+
+
+def _reverse(apps, schema_editor):
+    if schema_editor.connection.vendor == "mysql":
+        schema_editor.execute(
+            "ALTER TABLE `gpslog_gpspoint` DROP COLUMN `encrypted_payload`"
+        )
+    else:
+        GPSPoint = apps.get_model("gpslog", "GPSPoint")
+        field = models.JSONField(blank=True, null=True)
+        field.set_attributes_from_name("encrypted_payload")
+        schema_editor.remove_field(GPSPoint, field)
 
 
 class Migration(migrations.Migration):
-    atomic = False  # SET FOREIGN_KEY_CHECKS cannot run inside a transaction
+    atomic = False  # DDL with FK drops cannot run inside a transaction on MySQL
 
     dependencies = [
         ("gpslog", "0002_initial"),
     ]
 
     operations = [
-        # MySQL error 1832: adding a JSON column forces ALGORITHM=COPY which
-        # re-validates FK constraints on track_id. Disable checks for the ALTER.
-        migrations.RunPython(_set_fk_checks(0), _set_fk_checks(1)),
-        migrations.AddField(
-            model_name="gpspoint",
-            name="encrypted_payload",
-            field=models.JSONField(blank=True, null=True),
+        migrations.SeparateDatabaseAndState(
+            database_operations=[
+                migrations.RunPython(_forward, _reverse),
+            ],
+            state_operations=[
+                migrations.AddField(
+                    model_name="gpspoint",
+                    name="encrypted_payload",
+                    field=models.JSONField(blank=True, null=True),
+                ),
+            ],
         ),
-        migrations.RunPython(_set_fk_checks(1), _set_fk_checks(0)),
     ]
