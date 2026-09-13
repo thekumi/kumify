@@ -12,6 +12,8 @@ def _set_fk_checks(val):
 
 
 class Migration(migrations.Migration):
+    atomic = False  # SET FOREIGN_KEY_CHECKS cannot run inside a transaction
+
     dependencies = [
         ("gpslog", "0002_initial"),
     ]
