@@ -243,16 +243,9 @@ class CurrentEmergencyProfileView(APIView):
     def get(self, request):
         profile = request.user.userprofile
         medical_info, _ = BasicMedicalInfo.objects.get_or_create(user=request.user)
-        latest_vaccinations = []
-        seen_targets = set()
-        for vaccination in Vaccination.objects.filter(user=request.user).order_by(
-            "target_disease", "-administered_on", "name"
-        ):
-            target = (vaccination.target_disease or vaccination.name).strip()
-            if target in seen_targets:
-                continue
-            seen_targets.add(target)
-            latest_vaccinations.append(vaccination)
+        vaccinations = Vaccination.objects.filter(user=request.user).order_by(
+            "-administered_on"
+        )
 
         return Response(
             {
@@ -264,7 +257,7 @@ class CurrentEmergencyProfileView(APIView):
                     many=True,
                 ).data,
                 "vaccinations": EmergencyVaccinationSerializer(
-                    latest_vaccinations,
+                    vaccinations,
                     many=True,
                 ).data,
             }
