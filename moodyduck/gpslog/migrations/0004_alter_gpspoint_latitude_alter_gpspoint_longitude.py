@@ -3,20 +3,79 @@
 from django.db import migrations, models
 
 
+def _forward(apps, schema_editor):
+    if schema_editor.connection.vendor != "mysql":
+        GPSPoint = apps.get_model("gpslog", "GPSPoint")
+        for col in ("latitude", "longitude"):
+            old_field = models.FloatField()
+            old_field.set_attributes_from_name(col)
+            new_field = models.FloatField(blank=True, null=True)
+            new_field.set_attributes_from_name(col)
+            schema_editor.alter_field(GPSPoint, old_field, new_field)
+        return
+
+    # The production DB may have been created from a pre-latitude schema.
+    # Add the column if absent; modify it to nullable if it already exists.
+    with schema_editor.connection.cursor() as cursor:
+        cursor.execute(
+            "SELECT COLUMN_NAME FROM information_schema.COLUMNS "
+            "WHERE TABLE_SCHEMA = DATABASE() "
+            "AND TABLE_NAME = 'gpslog_gpspoint' "
+            "AND COLUMN_NAME IN ('latitude', 'longitude')"
+        )
+        existing = {row[0] for row in cursor.fetchall()}
+
+    for col in ("latitude", "longitude"):
+        if col in existing:
+            schema_editor.execute(
+                f"ALTER TABLE `gpslog_gpspoint` MODIFY COLUMN `{col}` DOUBLE NULL"
+            )
+        else:
+            schema_editor.execute(
+                f"ALTER TABLE `gpslog_gpspoint` ADD COLUMN `{col}` DOUBLE NULL"
+            )
+
+
+def _reverse(apps, schema_editor):
+    if schema_editor.connection.vendor != "mysql":
+        GPSPoint = apps.get_model("gpslog", "GPSPoint")
+        for col in ("latitude", "longitude"):
+            old_field = models.FloatField(blank=True, null=True)
+            old_field.set_attributes_from_name(col)
+            new_field = models.FloatField()
+            new_field.set_attributes_from_name(col)
+            schema_editor.alter_field(GPSPoint, old_field, new_field)
+        return
+
+    for col in ("latitude", "longitude"):
+        schema_editor.execute(
+            f"ALTER TABLE `gpslog_gpspoint` MODIFY COLUMN `{col}` DOUBLE NOT NULL"
+        )
+
+
 class Migration(migrations.Migration):
+    atomic = False
+
     dependencies = [
         ("gpslog", "0003_gpspoint_encrypted_payload"),
     ]
 
     operations = [
-        migrations.AlterField(
-            model_name="gpspoint",
-            name="latitude",
-            field=models.FloatField(blank=True, null=True),
-        ),
-        migrations.AlterField(
-            model_name="gpspoint",
-            name="longitude",
-            field=models.FloatField(blank=True, null=True),
+        migrations.SeparateDatabaseAndState(
+            database_operations=[
+                migrations.RunPython(_forward, _reverse),
+            ],
+            state_operations=[
+                migrations.AlterField(
+                    model_name="gpspoint",
+                    name="latitude",
+                    field=models.FloatField(blank=True, null=True),
+                ),
+                migrations.AlterField(
+                    model_name="gpspoint",
+                    name="longitude",
+                    field=models.FloatField(blank=True, null=True),
+                ),
+            ],
         ),
     ]
