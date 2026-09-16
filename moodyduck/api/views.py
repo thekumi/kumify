@@ -23,6 +23,7 @@ from moodyduck.health.models import (
     BasicMedicalInfo,
     HealthLog,
     HealthParameter,
+    HealthRecord,
     Medication,
     Vaccination,
 )
@@ -165,6 +166,13 @@ class StagingView(APIView):
             )[:_STAGING_BATCH],
             many=True,
         ).data
+        result["health_records"] = list(
+            HealthRecord.objects.filter(
+                log__user=request.user,
+                encrypted_payload__isnull=True,
+                value__isnull=False,
+            ).values("id", "value")[:_STAGING_BATCH]
+        )
         result["status_media"] = [
             {"id": m.pk, "url": m.file.url}
             for m in StatusMedia.objects.filter(
@@ -207,6 +215,19 @@ class StagingView(APIView):
                 updated += rows
             else:
                 errors.append({"model": "vaccination_upgrades", "id": pk, "error": "Not found"})
+
+        for item in request.data.get("health_records", []):
+            pk = item.get("id")
+            payload = item.get("encrypted_payload")
+            if not pk or not payload:
+                continue
+            rows = HealthRecord.objects.filter(
+                log__user=request.user, pk=pk
+            ).update(encrypted_payload=payload, value=None)
+            if rows:
+                updated += rows
+            else:
+                errors.append({"model": "health_records", "id": pk, "error": "Not found"})
 
         resp = {"updated": updated}
         if errors:

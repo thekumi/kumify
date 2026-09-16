@@ -58,6 +58,7 @@ import TopBar from '@/components/TopBar.vue'
 import BottomNav from '@/components/BottomNav.vue'
 import { getLogs } from '@/api/health'
 import { useKeystoreStore } from '@/stores/keystore'
+import { decryptPayload } from '@/keystore/fields'
 
 const ks = useKeystoreStore()
 const logs = ref([])
@@ -69,7 +70,18 @@ const hasMore = ref(false)
 
 const fmtDate = (ts) => new Date(ts).toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 
-async function applyDecryption() { logs.value = await ks.decryptAll(rawLogs.value) }
+async function applyDecryption() {
+  const decrypted = await ks.decryptAll(rawLogs.value)
+  logs.value = await Promise.all(decrypted.map(async (log) => {
+    if (!ks.dataKey || !log.records?.length) return log
+    const records = await Promise.all(log.records.map(async (r) => {
+      if (!r.encrypted_payload) return r
+      const dec = await decryptPayload(ks.dataKey, r.encrypted_payload).catch(() => ({}))
+      return { ...r, ...dec }
+    }))
+    return { ...log, records }
+  }))
+}
 
 async function load(p = 1) {
   const res = await getLogs(p)

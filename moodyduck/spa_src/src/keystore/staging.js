@@ -1,4 +1,4 @@
-import { apiFetch } from './util.js'
+import { apiFetch, b64encode } from './util.js'
 import { encryptPayload, decryptPayload } from './fields.js'
 
 const MODEL_FIELDS = {
@@ -10,6 +10,26 @@ const MODEL_FIELDS = {
   health_logs:  ['notes'],
   vaccinations: ['name', 'target_disease', 'administered_on', 'next_due', 'provider', 'batch_number', 'notes'],
   people: ['name', 'nickname', 'birthday', 'email', 'phone', 'relationship', 'address', 'notes', 'last_contact'],
+}
+
+const MEDIA_ENDPOINTS = [
+  ['status_media', id => `/api/media/status/${id}/`],
+  ['dream_media',  id => `/api/media/dream/${id}/`],
+]
+
+async function encryptMediaItem(dataKey, url, endpoint) {
+  const fileRes = await fetch(url)
+  const bytes = await fileRes.arrayBuffer()
+  const mime = fileRes.headers.get('content-type') || 'application/octet-stream'
+  const iv = crypto.getRandomValues(new Uint8Array(12))
+  const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, dataKey, bytes)
+  const ep = { v: 1, iv: b64encode(iv), mime }
+  const fname = url.split('/').pop() || 'file'
+  const form = new FormData()
+  form.append('file', new Blob([ct], { type: 'application/octet-stream' }), fname)
+  form.append('encrypted_payload', JSON.stringify(ep))
+  const r = await apiFetch('PATCH', endpoint, form)
+  return r.ok
 }
 
 // Encrypts all plaintext records in batches of _STAGING_BATCH (server-side page size).
@@ -25,10 +45,14 @@ export async function runStaging(dataKey) {
     }
     const staging = await res.json()
 
-    // Count total fetched across all models; stop when server returns nothing.
     const upgrades = staging['vaccination_upgrades'] ?? []
+    const healthRecords = staging['health_records'] ?? []
+    const mediaItems = MEDIA_ENDPOINTS.flatMap(([key]) => staging[key] ?? [])
     const totalFetched = Object.keys(MODEL_FIELDS)
-      .reduce((n, key) => n + (staging[key]?.length ?? 0), 0) + upgrades.length
+      .reduce((n, key) => n + (staging[key]?.length ?? 0), 0)
+      + upgrades.length
+      + healthRecords.length
+      + mediaItems.length
     if (totalFetched === 0) break
 
     const patch = {}
@@ -71,14 +95,43 @@ export async function runStaging(dataKey) {
       }
     }
 
-    if (batchCount === 0) break  // All fetched records had empty fields — nothing to do.
-
-    const patchRes = await apiFetch('PATCH', '/api/staging/', patch)
-    if (!patchRes.ok && patchRes.status !== 207) {
-      console.warn('[staging] PATCH failed:', patchRes.status)
-      break
+    // Health record values: each record's value is encrypted and the plaintext cleared.
+    if (healthRecords.length) {
+      patch['health_records'] = []
+      for (const record of healthRecords) {
+        patch['health_records'].push({
+          id: record.id,
+          encrypted_payload: await encryptPayload(dataKey, { value: String(record.value) }),
+        })
+        batchCount++
+      }
     }
-    totalUpdated += (await patchRes.json()).updated ?? 0
+
+    // Media encryption: each file is fetched, AES-GCM encrypted, and PATCHed individually.
+    let mediaCount = 0
+    for (const [key, makeEndpoint] of MEDIA_ENDPOINTS) {
+      for (const item of (staging[key] ?? [])) {
+        try {
+          const ok = await encryptMediaItem(dataKey, item.url, makeEndpoint(item.id))
+          if (ok) mediaCount++
+        } catch (e) {
+          console.warn('[staging] media encryption failed for', key, item.id, e)
+        }
+      }
+    }
+
+    if (batchCount === 0 && mediaCount === 0) break
+
+    let stagingUpdated = 0
+    if (batchCount > 0) {
+      const patchRes = await apiFetch('PATCH', '/api/staging/', patch)
+      if (!patchRes.ok && patchRes.status !== 207) {
+        console.warn('[staging] PATCH failed:', patchRes.status)
+        break
+      }
+      stagingUpdated = (await patchRes.json()).updated ?? 0
+    }
+    totalUpdated += stagingUpdated + mediaCount
   }
 
   return totalUpdated

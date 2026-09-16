@@ -217,7 +217,7 @@ class HealthRecordSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = HealthRecord
-        fields = ["id", "parameter", "value"]
+        fields = ["id", "parameter", "value", "encrypted_payload"]
         read_only_fields = ["id"]
 
 
@@ -225,7 +225,8 @@ class HealthRecordWriteSerializer(serializers.Serializer):
     parameter = serializers.PrimaryKeyRelatedField(
         queryset=HealthParameter.objects.none()
     )
-    value = serializers.DecimalField(max_digits=12, decimal_places=6)
+    value = serializers.DecimalField(max_digits=12, decimal_places=6, required=False, allow_null=True)
+    encrypted_payload = serializers.JSONField(required=False, allow_null=True)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -289,10 +290,13 @@ class HealthLogWriteSerializer(serializers.ModelSerializer):
 
         for record_data in records_data:
             parameter = record_data["parameter"]
+            ep = record_data.get("encrypted_payload")
+            if ep:
+                defaults = {"encrypted_payload": ep, "value": None}
+            else:
+                defaults = {"value": record_data.get("value"), "encrypted_payload": None}
             HealthRecord.objects.update_or_create(
-                log=log,
-                parameter=parameter,
-                defaults={"value": record_data["value"]},
+                log=log, parameter=parameter, defaults=defaults
             )
             parameter_ids.append(parameter.pk)
 

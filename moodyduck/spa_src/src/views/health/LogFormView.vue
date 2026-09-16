@@ -66,6 +66,7 @@ import BottomNav from '@/components/BottomNav.vue'
 import { getLog, createLog, updateLog, deleteLog, getParameters } from '@/api/health'
 import { useKeystoreStore } from '@/stores/keystore'
 import { saveEncrypted } from '@/keystore/saveEncrypted'
+import { decryptPayload } from '@/keystore/fields'
 
 const ks = useKeystoreStore()
 const route = useRoute()
@@ -89,11 +90,17 @@ watch(() => ks.dataKey, async (key) => { if (key && rawLog) await fillNotes(rawL
 async function save() {
   saving.value = true; error.value = ''
   try {
+    const recordEntries = Object.entries(records.value)
+      .filter(([, v]) => v !== null && v !== '' && v !== undefined)
+    const encryptedRecords = await Promise.all(
+      recordEntries.map(async ([parameter, value]) => ({
+        parameter: Number(parameter),
+        encrypted_payload: await ks.encryptPayload({ value: String(value) }),
+      }))
+    )
     const payload = {
       notes: form.value.notes || null,
-      records: Object.entries(records.value)
-        .filter(([, v]) => v !== null && v !== '' && v !== undefined)
-        .map(([parameter, value]) => ({ parameter: Number(parameter), value })),
+      records: encryptedRecords,
     }
     if (id) await saveEncrypted(updateLog, id, payload, ['notes'], rawLog, ks)
     else await createLog(payload)
@@ -114,7 +121,12 @@ onMounted(async () => {
     rawLog = await getLog(id)
     await fillNotes(rawLog)
     for (const r of rawLog.records ?? []) {
-      records.value[r.parameter.id] = r.value
+      if (r.encrypted_payload && ks.dataKey) {
+        const dec = await decryptPayload(ks.dataKey, r.encrypted_payload).catch(() => ({}))
+        records.value[r.parameter.id] = dec.value ?? null
+      } else {
+        records.value[r.parameter.id] = r.value
+      }
     }
   }
   loading.value = false
