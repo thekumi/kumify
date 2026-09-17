@@ -18,6 +18,7 @@ from rest_framework.views import APIView
 from moodyduck.cbt.models import ThoughtRecord
 from moodyduck.common.helpers import get_upload_path
 from moodyduck.dreams.models import Dream, DreamMedia, Theme
+from moodyduck.gpslog.models import GPSPoint
 from moodyduck.friends.models import Person
 from moodyduck.health.models import (
     BasicMedicalInfo,
@@ -27,6 +28,7 @@ from moodyduck.health.models import (
     Medication,
     Vaccination,
 )
+from moodyduck.keystore.crypto import encrypt_for_user
 from moodyduck.keystore.models import UserDevice, UserKeyBackup, UserKeyPair
 from moodyduck.mood.models import Activity, Mood, Status, StatusActivity, StatusMedia
 from moodyduck.profiles.models import EmergencyAccessLog
@@ -167,6 +169,11 @@ class StagingView(APIView):
             )[:_STAGING_BATCH],
             many=True,
         ).data
+        result["gps_pending"] = GPSPoint.objects.filter(
+            track__user=request.user,
+            encrypted_payload__isnull=True,
+            latitude__isnull=False,
+        ).count()
         result["health_records"] = list(
             HealthRecord.objects.filter(
                 log__user=request.user,
@@ -229,6 +236,30 @@ class StagingView(APIView):
                 updated += rows
             else:
                 errors.append({"model": "health_records", "id": pk, "error": "Not found"})
+
+        if request.data.get("encrypt_gps"):
+            key_pair = UserKeyPair.objects.filter(user=request.user).first()
+            if key_pair:
+                _GPS_FIELDS = ("latitude", "longitude", "altitude", "speed", "bearing")
+                points = GPSPoint.objects.filter(
+                    track__user=request.user,
+                    encrypted_payload__isnull=True,
+                    latitude__isnull=False,
+                )[:_STAGING_BATCH]
+                for point in points:
+                    fields = {
+                        f: getattr(point, f)
+                        for f in _GPS_FIELDS
+                        if getattr(point, f) is not None
+                    }
+                    point.encrypted_payload = encrypt_for_user(key_pair.public_key, fields)
+                    point.latitude = None
+                    point.longitude = None
+                    point.altitude = None
+                    point.speed = None
+                    point.bearing = None
+                    point.save()
+                    updated += 1
 
         resp = {"updated": updated}
         if errors:

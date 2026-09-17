@@ -48,11 +48,13 @@ export async function runStaging(dataKey) {
 
     const upgrades = staging['vaccination_upgrades'] ?? []
     const healthRecords = staging['health_records'] ?? []
+    const gpsPending = staging['gps_pending'] ?? 0
     const mediaItems = MEDIA_ENDPOINTS.flatMap(([key]) => staging[key] ?? [])
     const totalFetched = Object.keys(MODEL_FIELDS)
       .reduce((n, key) => n + (staging[key]?.length ?? 0), 0)
       + upgrades.length
       + healthRecords.length
+      + gpsPending
       + mediaItems.length
     if (totalFetched === 0) break
 
@@ -106,6 +108,12 @@ export async function runStaging(dataKey) {
         })
         batchCount++
       }
+    }
+
+    // GPS points: server-side encryption triggered by flag (server holds user's public key).
+    if (gpsPending > 0) {
+      patch['encrypt_gps'] = true
+      batchCount += gpsPending
     }
 
     // Media encryption: each file is fetched, AES-GCM encrypted, and PATCHed individually.
