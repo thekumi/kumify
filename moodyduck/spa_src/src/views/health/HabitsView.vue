@@ -2,7 +2,7 @@
   <div class="pb-nav">
     <TopBar title="Habits" :back="true">
       <template #actions>
-        <button @click="showNew = true" class="w-8 h-8 flex items-center justify-center rounded-full bg-amber-100 hover:bg-amber-200 transition-colors">
+        <button @click="openNew" class="w-8 h-8 flex items-center justify-center rounded-full bg-amber-100 hover:bg-amber-200 transition-colors">
           <i class="ph ph-plus text-amber-700"></i>
         </button>
       </template>
@@ -15,7 +15,7 @@
     <div v-else-if="!habits.length" class="flex flex-col items-center py-20 text-center px-6">
       <i class="ph ph-check-circle text-6xl text-stone-300 mb-4"></i>
       <p class="text-stone-500 font-medium">No habits defined yet</p>
-      <button @click="showNew = true" class="mt-4 px-5 py-2.5 bg-amber-600 text-white rounded-xl text-sm font-medium hover:bg-amber-700 transition-colors">
+      <button @click="openNew" class="mt-4 px-5 py-2.5 bg-amber-600 text-white rounded-xl text-sm font-medium hover:bg-amber-700 transition-colors">
         Add habit
       </button>
     </div>
@@ -29,25 +29,39 @@
              class="text-xl"></i>
         </div>
         <div class="flex-1 min-w-0">
-          <p class="font-medium text-stone-800 truncate">{{ h.name }}</p>
+          <p class="font-medium text-stone-800 truncate">{{ h.name || '—' }}</p>
           <p v-if="h.description" class="text-xs text-stone-400 truncate">{{ h.description }}</p>
         </div>
-        <button @click="logHabit(h)"
-          class="px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 text-sm font-medium hover:bg-amber-100 transition-colors">
-          ✓ Log
+        <button @click="logHabit(h)" title="Log"
+          class="w-8 h-8 flex items-center justify-center rounded-full bg-amber-50 border border-amber-200 text-amber-700 hover:bg-amber-100 transition-colors text-sm font-bold shrink-0">
+          ✓
+        </button>
+        <button @click="openEdit(h)" title="Edit"
+          class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-stone-100 transition-colors shrink-0">
+          <i class="ph ph-pencil-simple text-stone-400"></i>
         </button>
       </li>
     </ul>
 
-    <!-- New habit inline form -->
-    <div v-if="showNew" class="fixed inset-0 bg-black/30 z-50 flex items-end" @click.self="showNew = false">
+    <!-- New / Edit habit sheet -->
+    <div v-if="sheet" class="fixed inset-0 bg-black/30 z-50 flex items-end" @click.self="sheet = null">
       <div class="bg-white w-full rounded-t-3xl p-6 space-y-4">
-        <h2 class="text-lg font-semibold text-stone-800">New Habit</h2>
-        <input v-model="newHabit.name" type="text" placeholder="Habit name" autofocus
+        <h2 class="text-lg font-semibold text-stone-800">{{ sheet.id ? 'Edit Habit' : 'New Habit' }}</h2>
+        <input v-model="sheet.name" type="text" placeholder="Habit name" autofocus
           class="w-full px-3 py-2.5 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-amber-400 text-stone-800 bg-stone-50 text-sm" />
+        <textarea v-model="sheet.description" rows="2" placeholder="Description (optional)"
+          class="w-full px-3 py-2.5 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-amber-400 text-stone-800 bg-stone-50 text-sm resize-none"></textarea>
+        <p v-if="sheetError" class="text-sm text-red-600 bg-red-50 rounded-xl px-3 py-2">{{ sheetError }}</p>
         <div class="flex gap-3">
-          <button @click="showNew = false" class="flex-1 py-3 rounded-xl border border-stone-200 text-stone-600 text-sm font-medium hover:bg-stone-50 transition-colors">Cancel</button>
-          <button @click="createHabit" :disabled="!newHabit.name" class="flex-1 py-3 rounded-xl bg-amber-600 text-white text-sm font-medium hover:bg-amber-700 transition-colors disabled:opacity-50">Create</button>
+          <button v-if="sheet.id" @click="removeHabit(sheet)" type="button"
+            class="py-3 px-4 rounded-xl border border-red-100 bg-red-50 text-red-600 text-sm font-medium hover:bg-red-100 transition-colors">
+            Delete
+          </button>
+          <button @click="sheet = null" class="flex-1 py-3 rounded-xl border border-stone-200 text-stone-600 text-sm font-medium hover:bg-stone-50 transition-colors">Cancel</button>
+          <button @click="saveHabit" :disabled="!sheet.name || sheetSaving"
+            class="flex-1 py-3 rounded-xl bg-amber-600 text-white text-sm font-medium hover:bg-amber-700 transition-colors disabled:opacity-50">
+            {{ sheetSaving ? 'Saving…' : (sheet.id ? 'Save' : 'Create') }}
+          </button>
         </div>
       </div>
     </div>
@@ -57,27 +71,68 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import TopBar from '@/components/TopBar.vue'
 import BottomNav from '@/components/BottomNav.vue'
-import { getHabits, createHabit as apiCreate, createHabitLog } from '@/api/habits'
+import { getHabits, createHabit, updateHabit, deleteHabit, createHabitLog } from '@/api/habits'
+import { useKeystoreStore } from '@/stores/keystore'
+import { saveEncrypted } from '@/keystore/saveEncrypted'
 
+const ks = useKeystoreStore()
 const habits = ref([])
+const raw = ref([])
 const loading = ref(true)
-const showNew = ref(false)
-const newHabit = ref({ name: '' })
+const sheet = ref(null)
+const sheetSaving = ref(false)
+const sheetError = ref('')
+
+const ENCRYPTED_FIELDS = ['name', 'description']
+
+async function applyDecryption() { habits.value = await ks.decryptAll(raw.value) }
+watch(() => ks.dataKey, (key) => { if (key) applyDecryption() })
+
+function openNew() { sheet.value = { name: '', description: '' }; sheetError.value = '' }
+
+function openEdit(h) {
+  const rawHabit = raw.value.find(r => r.id === h.id)
+  sheet.value = { id: h.id, _raw: rawHabit, name: h.name ?? '', description: h.description ?? '' }
+  sheetError.value = ''
+}
+
+async function saveHabit() {
+  if (!sheet.value.name) return
+  sheetSaving.value = true; sheetError.value = ''
+  try {
+    if (sheet.value.id) {
+      await saveEncrypted(updateHabit, sheet.value.id, { name: sheet.value.name, description: sheet.value.description }, ENCRYPTED_FIELDS, sheet.value._raw, ks)
+    } else {
+      const toEncrypt = { name: sheet.value.name }
+      if (sheet.value.description) toEncrypt.description = sheet.value.description
+      const encrypted_payload = await ks.encryptPayload(toEncrypt)
+      await createHabit({ encrypted_payload })
+    }
+    sheet.value = null
+    raw.value = await getHabits()
+    await applyDecryption()
+  } catch { sheetError.value = 'Could not save.' }
+  finally { sheetSaving.value = false }
+}
+
+async function removeHabit(h) {
+  if (!confirm('Delete this habit?')) return
+  await deleteHabit(h.id)
+  sheet.value = null
+  raw.value = await getHabits()
+  await applyDecryption()
+}
 
 async function logHabit(h) {
   await createHabitLog({ habit: h.id })
-  alert(`Logged: ${h.name}`)
 }
 
-async function createHabit() {
-  await apiCreate({ name: newHabit.value.name })
-  newHabit.value.name = ''
-  showNew.value = false
-  habits.value = await getHabits()
-}
-
-onMounted(async () => { habits.value = await getHabits(); loading.value = false })
+onMounted(async () => {
+  raw.value = await getHabits()
+  await applyDecryption()
+  loading.value = false
+})
 </script>

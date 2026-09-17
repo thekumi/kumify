@@ -12,16 +12,17 @@ from moodyduck.common.fields import DayOfMonthField, WeekdayField
 
 class Habit(models.Model):
     class Meta:
-        ordering = ["name"]
+        ordering = ["-pk"]
 
     user = models.ForeignKey(get_user_model(), models.CASCADE)
-    name = models.CharField(max_length=64)
+    name = models.CharField(max_length=64, null=True, blank=True)
     icon = models.CharField(default="ph ph-user-gear", max_length=64)
     color = ColorField(default="#000000")
     description = models.TextField(null=True, blank=True)
+    encrypted_payload = models.JSONField(null=True, blank=True)
 
     def __str__(self):
-        return self.name
+        return self.name or str(self.pk)
 
 
 class HabitSchedule(PolymorphicModel):
@@ -93,6 +94,7 @@ class HabitLog(models.Model):
     habit = models.ForeignKey(Habit, models.CASCADE)
     date = models.DateField(default=date.today)
     note = models.TextField(null=True, blank=True)
+    encrypted_payload = models.JSONField(null=True, blank=True)
 
     def __str__(self):
-        return f"{self.habit.name} – {self.date}"
+        return f"{self.habit} – {self.date}"

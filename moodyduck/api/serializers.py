@@ -186,7 +186,7 @@ class ActivitySerializer(serializers.ModelSerializer):
 class HabitSerializer(serializers.ModelSerializer):
     class Meta:
         model = Habit
-        fields = ["id", "name", "icon", "color", "description"]
+        fields = ["id", "name", "icon", "color", "description", "encrypted_payload"]
         read_only_fields = ["id"]
 
 
@@ -195,7 +195,7 @@ class HabitLogSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = HabitLog
-        fields = ["id", "habit", "date", "note"]
+        fields = ["id", "habit", "date", "note", "encrypted_payload"]
         read_only_fields = ["id"]
 
     def __init__(self, *args, **kwargs):

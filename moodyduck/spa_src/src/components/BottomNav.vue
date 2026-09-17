@@ -32,6 +32,7 @@ const tabs = [
   { to: '/mood',    label: 'Mood',    icon: 'ph ph-smiley' },
   { to: '/journal', label: 'Journal', icon: 'ph ph-book-open' },
   { to: '/health',  label: 'Health',  icon: 'ph ph-heartbeat' },
+  { to: '/people',  label: 'People',  icon: 'ph ph-users' },
   { to: '/me',      label: 'Me',      icon: 'ph ph-user-circle' },
 ]
 

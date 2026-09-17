@@ -16,6 +16,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from moodyduck.cbt.models import ThoughtRecord
+from moodyduck.habits.models import Habit, HabitLog
 from moodyduck.common.helpers import get_upload_path
 from moodyduck.dreams.models import Dream, DreamMedia, Theme
 from moodyduck.gpslog.models import GPSPoint
@@ -133,6 +134,8 @@ _STAGING_MODELS = {
     "vaccinations": (Vaccination, "user", VaccinationSerializer),
     "people": (Person, "user", PersonSerializer),
     "medications": (Medication, "user", MedicationSerializer),
+    "habits": (Habit, "user", HabitSerializer),
+    "habit_logs": (HabitLog, "habit__user", HabitLogSerializer),
 }
 
 
