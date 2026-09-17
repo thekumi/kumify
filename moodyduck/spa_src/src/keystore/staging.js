@@ -49,12 +49,14 @@ export async function runStaging(dataKey) {
     }
     const staging = await res.json()
 
+    const statusUpgrades = staging['status_upgrades'] ?? []
     const upgrades = staging['vaccination_upgrades'] ?? []
     const healthRecords = staging['health_records'] ?? []
     const gpsPending = staging['gps_pending'] ?? 0
     const mediaItems = MEDIA_ENDPOINTS.flatMap(([key]) => staging[key] ?? [])
     const totalFetched = Object.keys(MODEL_FIELDS)
       .reduce((n, key) => n + (staging[key]?.length ?? 0), 0)
+      + statusUpgrades.length
       + upgrades.length
       + healthRecords.length
       + gpsPending
@@ -80,6 +82,23 @@ export async function runStaging(dataKey) {
         patch[key].push({
           id: record.id,
           encrypted_payload: await encryptPayload(dataKey, plain),
+        })
+        batchCount++
+      }
+    }
+
+    // Status upgrade pass: merge plaintext mood FK and activity associations into encrypted payload.
+    if (statusUpgrades.length) {
+      patch['status_upgrades'] = []
+      for (const record of statusUpgrades) {
+        if (!record.encrypted_payload) continue
+        const existing = await decryptPayload(dataKey, record.encrypted_payload).catch(() => ({}))
+        if (record.mood != null) existing['mood_id'] = String(record.mood)
+        const actIds = (record.activities ?? []).map(a => a.id)
+        if (actIds.length) existing['activity_ids'] = JSON.stringify(actIds)
+        patch['status_upgrades'].push({
+          id: record.id,
+          encrypted_payload: await encryptPayload(dataKey, existing),
         })
         batchCount++
       }

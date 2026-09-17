@@ -85,7 +85,6 @@ import BottomNav from '@/components/BottomNav.vue'
 import { getMoods, getActivities, getStatus, createStatus, updateStatus } from '@/api/mood'
 import { useKeystoreStore } from '@/stores/keystore'
 import { useOfflineStore } from '@/stores/offline'
-import { saveEncrypted } from '@/keystore/saveEncrypted'
 
 const ks = useKeystoreStore()
 const offline = useOfflineStore()
@@ -112,12 +111,20 @@ function toggleActivity(id) {
 }
 
 async function applyDecryption() {
-  moods.value = await ks.decryptAll(rawMoods.value)
+  const dm = await ks.decryptAll(rawMoods.value)
+  dm.sort((a, b) => (Number(b.value) || 0) - (Number(a.value) || 0))
+  moods.value = dm
   activities.value = await ks.decryptAll(rawActivities.value)
   if (rawStatus && isEdit) {
     const s = await ks.decrypt(rawStatus)
     form.value.title = s.title ?? ''
     form.value.text = s.text ?? ''
+    form.value.mood = s.mood_id != null ? Number(s.mood_id) : (rawStatus.mood ?? null)
+    selectedActivities.value = new Set(
+      s.activity_ids != null
+        ? JSON.parse(s.activity_ids)
+        : (rawStatus.activities?.map(a => a.id) ?? [])
+    )
   }
 }
 
@@ -127,20 +134,21 @@ async function save() {
   saving.value = true
   error.value = ''
   try {
+    const toEncrypt = {}
+    if (form.value.title) toEncrypt.title = form.value.title
+    if (form.value.text) toEncrypt.text = form.value.text
+    if (form.value.mood != null) toEncrypt.mood_id = String(form.value.mood)
+    const actIds = [...selectedActivities.value]
+    if (actIds.length) toEncrypt.activity_ids = JSON.stringify(actIds)
+
     if (isEdit) {
-      const result = await saveEncrypted(updateStatus, id,
-        { mood: form.value.mood, title: form.value.title || null, text: form.value.text || null, activity_ids: [...selectedActivities.value] },
-        ['title', 'text'], rawStatus, ks)
+      const encrypted_payload = await ks.encryptPayload(toEncrypt)
+      const result = await updateStatus(id, { encrypted_payload, mood: null, activity_ids: [] })
       router.push(`/mood/${result.id}`)
     } else {
-      const toEncrypt = {}
-      if (form.value.title) toEncrypt.title = form.value.title
-      if (form.value.text) toEncrypt.text = form.value.text
-      const createPayload = {
-        mood: form.value.mood,
-        activity_ids: [...selectedActivities.value],
-        ...(Object.keys(toEncrypt).length ? { encrypted_payload: await ks.encryptPayload(toEncrypt) } : {}),
-      }
+      const createPayload = Object.keys(toEncrypt).length
+        ? { encrypted_payload: await ks.encryptPayload(toEncrypt) }
+        : {}
       if (!navigator.onLine) {
         await offline.enqueue({ endpoint: '/statuses/', payload: createPayload })
         router.push('/mood')
@@ -170,11 +178,7 @@ onMounted(async () => {
 
   if (isEdit) {
     rawStatus = await getStatus(id)
-    form.value.mood = rawStatus.mood
-    selectedActivities.value = new Set(rawStatus.activities?.map(a => a.id) ?? [])
-    const s = await ks.decrypt(rawStatus)
-    form.value.title = s.title ?? ''
-    form.value.text = s.text ?? ''
+    await applyDecryption()
   }
   loading.value = false
 })

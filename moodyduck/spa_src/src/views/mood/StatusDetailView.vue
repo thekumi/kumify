@@ -31,7 +31,7 @@
         <p v-if="status.text" class="text-stone-600 text-sm whitespace-pre-wrap leading-relaxed">{{ status.text }}</p>
       </div>
 
-      <div v-if="status.activities?.length" class="bg-white rounded-2xl border border-stone-100 shadow-sm p-5">
+      <div v-if="decryptedActivities.length" class="bg-white rounded-2xl border border-stone-100 shadow-sm p-5">
         <p class="text-xs font-semibold text-stone-400 uppercase tracking-wider mb-3">Activities</p>
         <div class="flex flex-wrap gap-2">
           <span v-for="a in decryptedActivities" :key="a.id"
@@ -57,7 +57,7 @@ import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import TopBar from '@/components/TopBar.vue'
 import BottomNav from '@/components/BottomNav.vue'
-import { getStatus, deleteStatus, getMoods } from '@/api/mood'
+import { getStatus, deleteStatus, getMoods, getActivities } from '@/api/mood'
 import { useKeystoreStore } from '@/stores/keystore'
 
 const ks = useKeystoreStore()
@@ -66,11 +66,15 @@ const router = useRouter()
 const id = route.params.id
 const status = ref(null)
 const rawMoods = ref([])
+const rawActivities = ref([])
 const decryptedMoods = ref([])
 const decryptedActivities = ref([])
 const loading = ref(true)
 
-const mood = computed(() => decryptedMoods.value.find(m => m.id === status.value?.mood) ?? null)
+const mood = computed(() => {
+  const id = status.value?.mood_id != null ? Number(status.value.mood_id) : status.value?.mood
+  return decryptedMoods.value.find(m => m.id === id) ?? null
+})
 
 function fmtDate(ts) {
   return new Date(ts).toLocaleString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })
@@ -81,11 +85,14 @@ async function applyDecryption() {
   const [ds, dm, da] = await Promise.all([
     ks.decrypt(status.value),
     ks.decryptAll(rawMoods.value),
-    ks.decryptAll(status.value.activities ?? []),
+    ks.decryptAll(rawActivities.value),
   ])
   status.value = ds
   decryptedMoods.value = dm
-  decryptedActivities.value = da
+  const ids = ds.activity_ids != null
+    ? JSON.parse(ds.activity_ids).map(Number)
+    : (status.value.activities ?? []).map(a => a.id)
+  decryptedActivities.value = da.filter(a => ids.includes(a.id))
 }
 
 async function remove() {
@@ -97,9 +104,10 @@ async function remove() {
 watch(() => ks.dataKey, (key) => { if (key) applyDecryption() })
 
 onMounted(async () => {
-  const [s, m] = await Promise.all([getStatus(id), getMoods()])
+  const [s, m, a] = await Promise.all([getStatus(id), getMoods(), getActivities()])
   status.value = s
   rawMoods.value = m
+  rawActivities.value = a
   await applyDecryption()
   loading.value = false
 })

@@ -164,6 +164,23 @@ class StagingView(APIView):
             result[key] = serializer_cls(
                 qs[:_STAGING_BATCH], many=True, context={"request": request}
             ).data
+        result["status_upgrades"] = StatusSerializer(
+            Status.objects.filter(
+                user=request.user,
+                encrypted_payload__isnull=False,
+            ).filter(
+                Q(mood__isnull=False) | Q(statusactivity__isnull=False)
+            ).distinct()
+            .select_related("mood")
+            .prefetch_related(
+                Prefetch(
+                    "statusactivity_set",
+                    queryset=StatusActivity.objects.select_related("activity"),
+                ),
+            )[:_STAGING_BATCH],
+            many=True,
+            context={"request": request},
+        ).data
         result["vaccination_upgrades"] = VaccinationSerializer(
             Vaccination.objects.filter(
                 user=request.user,
@@ -215,6 +232,20 @@ class StagingView(APIView):
                     updated += rows
                 else:
                     errors.append({"model": key, "id": pk, "error": "Not found"})
+        for item in request.data.get("status_upgrades", []):
+            pk = item.get("id")
+            payload = item.get("encrypted_payload")
+            if not pk or not payload:
+                continue
+            rows = Status.objects.filter(user=request.user, pk=pk).update(
+                encrypted_payload=payload, mood=None
+            )
+            if rows:
+                StatusActivity.objects.filter(status_id=pk).delete()
+                updated += rows
+            else:
+                errors.append({"model": "status_upgrades", "id": pk, "error": "Not found"})
+
         for item in request.data.get("vaccination_upgrades", []):
             pk = item.get("id")
             payload = item.get("encrypted_payload")

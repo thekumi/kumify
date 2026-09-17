@@ -29,14 +29,14 @@
         <li v-for="s in statuses" :key="s.id">
           <RouterLink :to="`/mood/${s.id}`" class="flex items-center gap-3 px-4 py-4 hover:bg-stone-50 transition-colors">
             <div class="w-11 h-11 rounded-full flex items-center justify-center shrink-0"
-                 :style="moodFor(s.mood)?.color ? `background:${moodFor(s.mood).color}22` : 'background:#f5f5f4'">
-              <i :class="moodFor(s.mood)?.icon || 'ph ph-smiley'"
-                 :style="moodFor(s.mood)?.color ? `color:${moodFor(s.mood).color}` : 'color:#a8a29e'"
+                 :style="moodFor(s)?.color ? `background:${moodFor(s).color}22` : 'background:#f5f5f4'">
+              <i :class="moodFor(s)?.icon || 'ph ph-smiley'"
+                 :style="moodFor(s)?.color ? `color:${moodFor(s).color}` : 'color:#a8a29e'"
                  class="text-xl"></i>
             </div>
             <div class="flex-1 min-w-0">
               <p class="text-sm font-semibold text-stone-800 leading-snug truncate">
-                {{ moodFor(s.mood)?.name || '—' }}
+                {{ moodFor(s)?.name || '—' }}
               </p>
               <p class="text-xs text-stone-400 mt-0.5">{{ fmtDate(s.timestamp) }}</p>
               <p v-if="s.title" class="text-xs text-stone-500 truncate mt-0.5">{{ s.title }}</p>
@@ -75,7 +75,10 @@ const loadingMore = ref(false)
 const page = ref(1)
 const hasMore = ref(false)
 
-function moodFor(id) { return moodMap.value[id] ?? null }
+function moodFor(s) {
+  const id = s.mood_id != null ? Number(s.mood_id) : s.mood
+  return moodMap.value[id] ?? null
+}
 function fmtDate(ts) {
   return new Date(ts).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
