@@ -47,20 +47,33 @@ import { useRoute, useRouter } from 'vue-router'
 import TopBar from '@/components/TopBar.vue'
 import BottomNav from '@/components/BottomNav.vue'
 import { getParameters, createParameter, updateParameter, deleteParameter } from '@/api/health'
+import { useKeystoreStore } from '@/stores/keystore'
+import { saveEncrypted } from '@/keystore/saveEncrypted'
 
+const ks = useKeystoreStore()
 const route = useRoute()
 const router = useRouter()
 const id = route.params.id
 const form = ref({ name: '', unit: '', icon: 'ph ph-heart' })
 const saving = ref(false)
 const error = ref('')
+let rawParam = null
+
+const ENCRYPTED_FIELDS = ['name', 'unit', 'icon']
 
 async function save() {
   saving.value = true; error.value = ''
   try {
-    const payload = { name: form.value.name, unit: form.value.unit || null, icon: form.value.icon || 'ph ph-heart' }
-    if (id) await updateParameter(id, payload)
-    else await createParameter(payload)
+    if (id) {
+      await saveEncrypted(updateParameter, id,
+        { name: form.value.name, unit: form.value.unit || null, icon: form.value.icon || 'ph ph-heart' },
+        ENCRYPTED_FIELDS, rawParam, ks)
+    } else {
+      const toEncrypt = { name: form.value.name, icon: form.value.icon || 'ph ph-heart' }
+      if (form.value.unit) toEncrypt.unit = form.value.unit
+      const encrypted_payload = await ks.encryptPayload(toEncrypt)
+      await createParameter({ encrypted_payload })
+    }
     router.push('/health/parameters')
   } catch { error.value = 'Could not save.' }
   finally { saving.value = false }
@@ -76,7 +89,11 @@ onMounted(async () => {
   if (id) {
     const all = await getParameters()
     const p = all.find(p => String(p.id) === String(id))
-    if (p) form.value = { name: p.name, unit: p.unit ?? '', icon: p.icon || 'ph ph-heart' }
+    if (p) {
+      rawParam = p
+      const dec = p.encrypted_payload ? await ks.decrypt(p) : p
+      form.value = { name: dec.name ?? '', unit: dec.unit ?? '', icon: dec.icon || 'ph ph-heart' }
+    }
   }
 })
 </script>

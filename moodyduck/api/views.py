@@ -134,6 +134,7 @@ _STAGING_MODELS = {
     "vaccinations": (Vaccination, "user", VaccinationSerializer),
     "people": (Person, "user", PersonSerializer),
     "medications": (Medication, "user", MedicationSerializer),
+    "health_parameters": (HealthParameter, "user", HealthParameterSerializer),
     "habits": (Habit, "user", HabitSerializer),
     "habit_logs": (HabitLog, "habit__user", HabitLogSerializer),
 }

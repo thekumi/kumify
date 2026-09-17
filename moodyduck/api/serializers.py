@@ -208,7 +208,7 @@ class HabitLogSerializer(serializers.ModelSerializer):
 class HealthParameterSerializer(serializers.ModelSerializer):
     class Meta:
         model = HealthParameter
-        fields = ["id", "name", "unit", "icon"]
+        fields = ["id", "name", "unit", "icon", "encrypted_payload"]
         read_only_fields = ["id"]
 
 

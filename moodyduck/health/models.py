@@ -115,12 +115,13 @@ class HealthParameter(models.Model):
         ordering = ["name"]
 
     user = models.ForeignKey(get_user_model(), models.CASCADE)
-    name = models.CharField(max_length=128)
+    name = models.CharField(max_length=128, null=True, blank=True)
     icon = models.CharField(max_length=64, default="ph ph-heart")
     unit = models.CharField(max_length=12, null=True, blank=True)
+    encrypted_payload = models.JSONField(null=True, blank=True)
 
     def __str__(self):
-        return self.name
+        return self.name or str(self.pk)
 
 
 class BasicMedicalInfo(models.Model):

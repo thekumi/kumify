@@ -79,13 +79,22 @@ const loading = ref(true)
 const saving = ref(false)
 const error = ref('')
 let rawLog = null
+let rawParams = []
 
 async function fillNotes(l) {
   const dec = await ks.decrypt(l)
   form.value.notes = dec.notes ?? ''
 }
 
-watch(() => ks.dataKey, async (key) => { if (key && rawLog) await fillNotes(rawLog) })
+async function applyParamDecryption() {
+  parameters.value = await ks.decryptAll(rawParams)
+}
+
+watch(() => ks.dataKey, async (key) => {
+  if (!key) return
+  await applyParamDecryption()
+  if (rawLog) await fillNotes(rawLog)
+})
 
 async function save() {
   saving.value = true; error.value = ''
@@ -116,7 +125,8 @@ async function remove() {
 }
 
 onMounted(async () => {
-  parameters.value = await getParameters()
+  rawParams = await getParameters()
+  await applyParamDecryption()
   if (id) {
     rawLog = await getLog(id)
     await fillNotes(rawLog)

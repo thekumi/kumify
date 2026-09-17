@@ -10,8 +10,9 @@ const MODEL_FIELDS = {
   health_logs:  ['notes'],
   vaccinations: ['name', 'target_disease', 'administered_on', 'next_due', 'provider', 'batch_number', 'notes'],
   people:       ['name', 'nickname', 'birthday', 'email', 'phone', 'relationship', 'address', 'notes', 'last_contact'],
-  medications:  ['name', 'remarks'],
-  habits:       ['name', 'description'],
+  medications:        ['name', 'remarks'],
+  health_parameters:  ['name', 'unit', 'icon'],
+  habits:             ['name', 'description'],
   habit_logs:   ['note'],
 }
 

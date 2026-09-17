@@ -27,7 +27,7 @@
           <i :class="p.icon || 'ph ph-heart'" class="text-green-600 text-xl"></i>
         </div>
         <div class="flex-1 min-w-0">
-          <p class="font-medium text-stone-800 truncate">{{ p.name }}</p>
+          <p class="font-medium text-stone-800 truncate">{{ p.name || '—' }}</p>
           <p v-if="p.unit" class="text-xs text-stone-400 mt-0.5">Unit: {{ p.unit }}</p>
         </div>
         <RouterLink :to="`/health/parameters/${p.id}/edit`"
@@ -42,16 +42,23 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import TopBar from '@/components/TopBar.vue'
 import BottomNav from '@/components/BottomNav.vue'
 import { getParameters } from '@/api/health'
+import { useKeystoreStore } from '@/stores/keystore'
 
+const ks = useKeystoreStore()
 const params = ref([])
+const raw = ref([])
 const loading = ref(true)
 
+async function applyDecryption() { params.value = await ks.decryptAll(raw.value) }
+watch(() => ks.dataKey, (key) => { if (key) applyDecryption() })
+
 onMounted(async () => {
-  params.value = await getParameters()
+  raw.value = await getParameters()
+  await applyDecryption()
   loading.value = false
 })
 </script>

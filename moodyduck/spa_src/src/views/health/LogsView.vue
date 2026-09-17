@@ -75,9 +75,13 @@ async function applyDecryption() {
   logs.value = await Promise.all(decrypted.map(async (log) => {
     if (!ks.dataKey || !log.records?.length) return log
     const records = await Promise.all(log.records.map(async (r) => {
-      if (!r.encrypted_payload) return r
-      const dec = await decryptPayload(ks.dataKey, r.encrypted_payload).catch(() => ({}))
-      return { ...r, ...dec }
+      const recDec = r.encrypted_payload
+        ? await decryptPayload(ks.dataKey, r.encrypted_payload).catch(() => ({}))
+        : {}
+      const paramDec = r.parameter?.encrypted_payload
+        ? await decryptPayload(ks.dataKey, r.parameter.encrypted_payload).catch(() => ({}))
+        : {}
+      return { ...r, ...recDec, parameter: { ...r.parameter, ...paramDec } }
     }))
     return { ...log, records }
   }))
