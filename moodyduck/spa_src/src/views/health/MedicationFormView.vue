@@ -70,8 +70,15 @@ watch(() => ks.dataKey, async (key) => { if (key && rawMedication) await fillFor
 async function save() {
   saving.value = true; error.value = ''
   try {
-    if (id) await saveEncrypted(updateMedication, id, form.value, ['name', 'remarks'], rawMedication, ks)
-    else await createMedication(form.value)
+    if (id) {
+      await saveEncrypted(updateMedication, id, form.value, ['name', 'remarks'], rawMedication, ks)
+    } else {
+      const toEncrypt = {}
+      if (form.value.name) toEncrypt.name = form.value.name
+      if (form.value.remarks) toEncrypt.remarks = form.value.remarks
+      const encrypted_payload = await ks.encryptPayload(toEncrypt)
+      await createMedication({ supply: form.value.supply, prn: form.value.prn, encrypted_payload })
+    }
     router.push('/health/medications')
   } catch { error.value = 'Could not save.' }
   finally { saving.value = false }
