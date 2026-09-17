@@ -147,21 +147,33 @@ async function fillForm(d) {
 async function save() {
   saving.value = true; error.value = ''
   try {
-    const payload = { ...form.value, theme_ids: [...selectedThemes.value] }
     if (id) {
-      const result = await saveEncrypted(updateDream, id, payload, ['title', 'content'], rawDream, ks)
+      const result = await saveEncrypted(updateDream, id, { ...form.value, theme_ids: [...selectedThemes.value] }, ['title', 'content'], rawDream, ks)
       router.push(`/journal/dreams/${result.id}`)
-    } else if (!navigator.onLine) {
-      await offline.enqueue({ endpoint: '/dreams/', payload })
-      router.push('/journal/dreams')
     } else {
-      try {
-        const result = await createDream(payload)
-        router.push(`/journal/dreams/${result.id}`)
-      } catch (e) {
-        if (!(e instanceof TypeError)) throw e
-        await offline.enqueue({ endpoint: '/dreams/', payload })
+      const toEncrypt = {}
+      if (form.value.title) toEncrypt.title = form.value.title
+      if (form.value.content) toEncrypt.content = form.value.content
+      const createPayload = {
+        type: form.value.type,
+        lucid: form.value.lucid,
+        wet: form.value.wet,
+        mood: form.value.mood,
+        theme_ids: [...selectedThemes.value],
+        ...(Object.keys(toEncrypt).length ? { encrypted_payload: await ks.encryptPayload(toEncrypt) } : {}),
+      }
+      if (!navigator.onLine) {
+        await offline.enqueue({ endpoint: '/dreams/', payload: createPayload })
         router.push('/journal/dreams')
+      } else {
+        try {
+          const result = await createDream(createPayload)
+          router.push(`/journal/dreams/${result.id}`)
+        } catch (e) {
+          if (!(e instanceof TypeError)) throw e
+          await offline.enqueue({ endpoint: '/dreams/', payload: createPayload })
+          router.push('/journal/dreams')
+        }
       }
     }
   } catch { error.value = 'Could not save.' }

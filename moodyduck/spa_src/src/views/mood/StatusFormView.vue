@@ -127,26 +127,32 @@ async function save() {
   saving.value = true
   error.value = ''
   try {
-    const payload = {
-      mood: form.value.mood,
-      title: form.value.title || null,
-      text: form.value.text || null,
-      activity_ids: [...selectedActivities.value],
-    }
     if (isEdit) {
-      const result = await saveEncrypted(updateStatus, id, payload, ['title', 'text'], rawStatus, ks)
+      const result = await saveEncrypted(updateStatus, id,
+        { mood: form.value.mood, title: form.value.title || null, text: form.value.text || null, activity_ids: [...selectedActivities.value] },
+        ['title', 'text'], rawStatus, ks)
       router.push(`/mood/${result.id}`)
-    } else if (!navigator.onLine) {
-      await offline.enqueue({ endpoint: '/statuses/', payload })
-      router.push('/mood')
     } else {
-      try {
-        const result = await createStatus(payload)
-        router.push(`/mood/${result.id}`)
-      } catch (e) {
-        if (!(e instanceof TypeError)) throw e
-        await offline.enqueue({ endpoint: '/statuses/', payload })
+      const toEncrypt = {}
+      if (form.value.title) toEncrypt.title = form.value.title
+      if (form.value.text) toEncrypt.text = form.value.text
+      const createPayload = {
+        mood: form.value.mood,
+        activity_ids: [...selectedActivities.value],
+        ...(Object.keys(toEncrypt).length ? { encrypted_payload: await ks.encryptPayload(toEncrypt) } : {}),
+      }
+      if (!navigator.onLine) {
+        await offline.enqueue({ endpoint: '/statuses/', payload: createPayload })
         router.push('/mood')
+      } else {
+        try {
+          const result = await createStatus(createPayload)
+          router.push(`/mood/${result.id}`)
+        } catch (e) {
+          if (!(e instanceof TypeError)) throw e
+          await offline.enqueue({ endpoint: '/statuses/', payload: createPayload })
+          router.push('/mood')
+        }
       }
     }
   } catch {

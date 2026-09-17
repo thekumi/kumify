@@ -72,8 +72,12 @@ watch(() => ks.dataKey, async (key) => { if (key && rawActivity) await fillForm(
 async function save() {
   saving.value = true; error.value = ''
   try {
-    if (id) await saveEncrypted(updateActivity, id, form.value, ['name', 'icon'], rawActivity, ks)
-    else await createActivity(form.value)
+    if (id) {
+      await saveEncrypted(updateActivity, id, form.value, ['name', 'icon'], rawActivity, ks)
+    } else {
+      const encrypted_payload = await ks.encryptPayload({ name: form.value.name, icon: form.value.icon || 'ph ph-check' })
+      await createActivity({ color: form.value.color || null, encrypted_payload })
+    }
     router.push('/mood/settings/activities')
   } catch { error.value = 'Could not save.' }
   finally { saving.value = false }

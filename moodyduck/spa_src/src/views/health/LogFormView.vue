@@ -107,12 +107,13 @@ async function save() {
         encrypted_payload: await ks.encryptPayload({ value: String(value) }),
       }))
     )
-    const payload = {
-      notes: form.value.notes || null,
-      records: encryptedRecords,
+    if (id) {
+      await saveEncrypted(updateLog, id, { notes: form.value.notes || null, records: encryptedRecords }, ['notes'], rawLog, ks)
+    } else {
+      const createPayload = { records: encryptedRecords }
+      if (form.value.notes) createPayload.encrypted_payload = await ks.encryptPayload({ notes: form.value.notes })
+      await createLog(createPayload)
     }
-    if (id) await saveEncrypted(updateLog, id, payload, ['notes'], rawLog, ks)
-    else await createLog(payload)
     router.push('/health/logs')
   } catch { error.value = 'Could not save.' }
   finally { saving.value = false }

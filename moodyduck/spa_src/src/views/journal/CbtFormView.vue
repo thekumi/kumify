@@ -70,17 +70,26 @@ async function save() {
     if (id) {
       const result = await saveEncrypted(updateRecord, id, { ...form.value, ...hiddenFields }, ALL_ENCRYPTED_FIELDS, rawRecord, ks)
       router.push(`/journal/cbt/${result.id}`)
-    } else if (!navigator.onLine) {
-      await offline.enqueue({ endpoint: '/cbt/records/', payload: form.value })
-      router.push('/journal/cbt')
     } else {
-      try {
-        const result = await createRecord(form.value)
-        router.push(`/journal/cbt/${result.id}`)
-      } catch (e) {
-        if (!(e instanceof TypeError)) throw e
-        await offline.enqueue({ endpoint: '/cbt/records/', payload: form.value })
+      const toEncrypt = {}
+      if (form.value.title) toEncrypt.title = form.value.title
+      if (form.value.situation) toEncrypt.situation = form.value.situation
+      if (form.value.thoughts) toEncrypt.thoughts = form.value.thoughts
+      const createPayload = Object.keys(toEncrypt).length
+        ? { encrypted_payload: await ks.encryptPayload(toEncrypt) }
+        : {}
+      if (!navigator.onLine) {
+        await offline.enqueue({ endpoint: '/cbt/records/', payload: createPayload })
         router.push('/journal/cbt')
+      } else {
+        try {
+          const result = await createRecord(createPayload)
+          router.push(`/journal/cbt/${result.id}`)
+        } catch (e) {
+          if (!(e instanceof TypeError)) throw e
+          await offline.enqueue({ endpoint: '/cbt/records/', payload: createPayload })
+          router.push('/journal/cbt')
+        }
       }
     }
   } catch { error.value = 'Could not save.' }

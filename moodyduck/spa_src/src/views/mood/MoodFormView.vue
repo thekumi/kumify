@@ -78,8 +78,14 @@ async function save() {
   saving.value = true
   error.value = ''
   try {
-    if (id) await saveEncrypted(updateMood, id, form.value, ['name', 'icon', 'color', 'value'], rawMood, ks)
-    else await createMood(form.value)
+    if (id) {
+      await saveEncrypted(updateMood, id, form.value, ['name', 'icon', 'color', 'value'], rawMood, ks)
+    } else {
+      const toEncrypt = { name: form.value.name, icon: form.value.icon || 'ph ph-smiley' }
+      if (form.value.color) toEncrypt.color = form.value.color
+      if (form.value.value != null) toEncrypt.value = String(form.value.value)
+      await createMood({ encrypted_payload: await ks.encryptPayload(toEncrypt) })
+    }
     router.push('/mood/settings/moods')
   } catch { error.value = 'Could not save.' }
   finally { saving.value = false }
