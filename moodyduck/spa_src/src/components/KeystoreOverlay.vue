@@ -113,9 +113,17 @@
 
     <!-- Waiting banner -->
     <div v-if="ks.status === 'waiting'"
-         class="fixed top-0 inset-x-0 z-40 bg-amber-50 border-b border-amber-200 px-4 py-2.5 flex items-center gap-2 text-sm text-amber-800">
-      <i class="ph ph-hourglass text-amber-600 text-base shrink-0"></i>
-      <span><strong>Waiting for authorisation.</strong> Log in on a paired device to grant this device access to your encrypted data.</span>
+         class="fixed top-0 inset-x-0 z-40 bg-amber-50 border-b border-amber-200 px-4 py-3 text-sm text-amber-800">
+      <div class="flex items-start gap-2">
+        <i class="ph ph-hourglass text-amber-600 text-base shrink-0 mt-0.5"></i>
+        <div>
+          <p><strong>Waiting for authorisation.</strong> On a trusted device, go to Devices &amp; Keys and grant access to this device.</p>
+          <p v-if="ks.myFingerprint" class="mt-1.5">
+            Verify this device shows the code:
+            <span class="font-mono font-bold tracking-widest ml-1">{{ ks.myFingerprint }}</span>
+          </p>
+        </div>
+      </div>
     </div>
   </Teleport>
 </template>

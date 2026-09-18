@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { getDeviceRecord, putDeviceRecord, clearDeviceRecord } from '@/keystore/db'
-import { generateDeviceKeyPair, exportPublicKey, importPublicKey } from '@/keystore/device'
+import { generateDeviceKeyPair, exportPublicKey, importPublicKey, computeDeviceFingerprint } from '@/keystore/device'
 import { generateDataKey, wrapDataKey, unwrapDataKey } from '@/keystore/datakey'
 import { unwrapDataKeyFromBackup } from '@/keystore/backup'
 import { decryptPayload, encryptPayload } from '@/keystore/fields'
@@ -21,6 +21,7 @@ export const useKeystoreStore = defineStore('keystore', () => {
   const dataKey = ref(null)
   const userPrivateKey = ref(null)
   const myDeviceId = ref(null)
+  const myFingerprint = ref(null)
   // idle | booting | needs_passphrase | waiting | ready | failed | locked
   const status = ref('idle')
   // Set when status === 'needs_passphrase'; holds { encrypted_data_key, kdf_salt }
@@ -91,6 +92,23 @@ export const useKeystoreStore = defineStore('keystore', () => {
       )
       if (othersWithKey.length > 0) {
         status.value = 'waiting'
+        // Poll every 5 s until another device grants the key, then re-boot.
+        ;(async function pollForKey() {
+          await new Promise(r => setTimeout(r, 5000))
+          if (status.value !== 'waiting') return
+          try {
+            const r = await apiFetch('GET', `/api/devices/${record.device_id}/`)
+            if (r.ok) {
+              const { encrypted_data_key } = await r.json()
+              if (encrypted_data_key) {
+                status.value = 'idle'
+                boot()
+                return
+              }
+            }
+          } catch {}
+          pollForKey()
+        })()
         return null
       }
     }
@@ -107,6 +125,11 @@ export const useKeystoreStore = defineStore('keystore', () => {
       let record = await getDeviceRecord()
       if (!record) record = await _registerDevice()
       myDeviceId.value = record.device_id
+      if (!myFingerprint.value && record.public_key_b64) {
+        computeDeviceFingerprint(record.public_key_b64)
+          .then(f => { myFingerprint.value = f })
+          .catch(() => {})
+      }
 
       // If a PIN-wrapped key exists, don't proceed — require PIN to unlock.
       if (record.lock_wrapped) {
@@ -205,23 +228,6 @@ export const useKeystoreStore = defineStore('keystore', () => {
         }
         userPrivateKey.value = userKey
 
-        // Distribute key to any pending devices
-        const devRes = await apiFetch('GET', '/api/devices/')
-        if (devRes.ok) {
-          const { results: devices } = await devRes.json()
-          for (const device of devices) {
-            if (device.device_id === record.device_id || device.has_data_key) continue
-            try {
-              const recipientKey = await importPublicKey(device.public_key)
-              const wrapped = await wrapDataKey(key, recipientKey)
-              await apiFetch('PATCH', `/api/devices/${device.device_id}/key/`, {
-                encrypted_data_key: wrapped,
-              })
-            } catch (e) {
-              console.warn(`[keystore] Could not distribute key to ${device.device_id}:`, e)
-            }
-          }
-        }
       }
 
       if (status.value === 'booting') {
@@ -348,6 +354,7 @@ export const useKeystoreStore = defineStore('keystore', () => {
     dataKey,
     userPrivateKey,
     myDeviceId,
+    myFingerprint,
     status,
     backupPayload,
     lockConfigured,

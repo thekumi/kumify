@@ -18,3 +18,14 @@ export async function exportPublicKey(publicKey) {
 export async function importPublicKey(spkiBase64) {
   return crypto.subtle.importKey("spki", b64decode(spkiBase64), ALGO, false, []);
 }
+
+// Short human-readable fingerprint of a device's public key for out-of-band verification.
+// Format: XXXX-XXXX-XXXX (first 6 bytes of SHA-256, uppercase hex, hyphen-separated).
+export async function computeDeviceFingerprint(spkiBase64) {
+  const bytes = b64decode(spkiBase64)
+  const hash = await crypto.subtle.digest('SHA-256', bytes)
+  const hex = Array.from(new Uint8Array(hash))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('')
+  return `${hex.slice(0, 4).toUpperCase()}-${hex.slice(4, 8).toUpperCase()}-${hex.slice(8, 12).toUpperCase()}`
+}

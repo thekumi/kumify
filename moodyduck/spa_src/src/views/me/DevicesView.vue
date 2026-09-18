@@ -36,11 +36,33 @@
             </div>
           </div>
 
-          <div v-if="!d.has_data_key && ks.dataKey" class="mt-3 flex gap-2">
-            <button @click="grantKey(d)" :disabled="granting === d.device_id"
-              class="flex-1 py-2 text-xs font-medium rounded-xl bg-green-50 text-green-700 hover:bg-green-100 disabled:opacity-60 transition-colors border border-green-200">
-              {{ granting === d.device_id ? 'Granting…' : 'Grant encryption access' }}
-            </button>
+          <div v-if="!d.has_data_key && ks.dataKey" class="mt-3">
+            <div v-if="verifying !== d.device_id">
+              <button @click="startVerify(d)"
+                class="w-full py-2 text-xs font-medium rounded-xl bg-green-50 text-green-700 hover:bg-green-100 transition-colors border border-green-200">
+                Verify &amp; grant access
+              </button>
+            </div>
+            <div v-else class="bg-amber-50 rounded-xl border border-amber-200 p-3 space-y-2">
+              <p class="text-xs font-semibold text-amber-800">Device verification</p>
+              <p class="text-xs text-amber-700">
+                Check that <strong>{{ d.label || 'the other device' }}</strong> shows this code:
+              </p>
+              <p class="font-mono text-xl font-bold text-amber-900 tracking-widest text-center py-1">
+                {{ fingerprints[d.device_id] || '…' }}
+              </p>
+              <p class="text-xs text-amber-600">Only grant access if the code matches exactly.</p>
+              <div class="flex gap-2 pt-1">
+                <button @click="cancelVerify"
+                  class="flex-1 py-2 text-xs font-medium rounded-xl border border-stone-200 text-stone-600 hover:bg-stone-50 transition-colors">
+                  Cancel
+                </button>
+                <button @click="confirmGrant(d)" :disabled="granting === d.device_id"
+                  class="flex-1 py-2 text-xs font-medium rounded-xl bg-green-600 text-white hover:bg-green-700 disabled:opacity-60 transition-colors">
+                  {{ granting === d.device_id ? 'Granting…' : 'Codes match — Grant' }}
+                </button>
+              </div>
+            </div>
           </div>
 
           <div v-if="d.device_id !== ks.myDeviceId" class="mt-2">
@@ -65,22 +87,37 @@ import TopBar from '@/components/TopBar.vue'
 import BottomNav from '@/components/BottomNav.vue'
 import { getDevices, deleteDevice } from '@/api/profile'
 import { useKeystoreStore } from '@/stores/keystore'
+import { computeDeviceFingerprint } from '@/keystore/device'
 
 const ks = useKeystoreStore()
 const devices = ref([])
 const loading = ref(true)
 const granting = ref(null)
 const removing = ref(null)
+const verifying = ref(null)
+const fingerprints = ref({})
 const error = ref('')
 
 const fmtDate = (ts) => new Date(ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
 
-async function grantKey(device) {
+async function startVerify(device) {
+  verifying.value = device.device_id
+  if (!fingerprints.value[device.device_id] && device.public_key) {
+    fingerprints.value[device.device_id] = await computeDeviceFingerprint(device.public_key)
+  }
+}
+
+function cancelVerify() {
+  verifying.value = null
+}
+
+async function confirmGrant(device) {
   granting.value = device.device_id
   error.value = ''
   try {
     await ks.grantKey(device)
     device.has_data_key = true
+    verifying.value = null
   } catch {
     error.value = 'Could not grant key. Try again.'
   } finally {
