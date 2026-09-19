@@ -45,10 +45,24 @@ export async function runScrub(dataKey) {
         }
       }
 
-      patch[key].push({
-        id: record.id,
-        encrypted_payload: await encryptPayload(dataKey, existing),
-      })
+      const newPayload = await encryptPayload(dataKey, existing)
+
+      // Verify the payload round-trips before we commit to nulling the plaintext.
+      const verified = await decryptPayload(dataKey, newPayload).catch(() => null)
+      if (!verified) {
+        console.warn('[scrub] payload verification failed for', key, record.id, '— skipping')
+        continue
+      }
+      const plaintextFields = Object.keys(record).filter(
+        f => f !== 'id' && f !== 'encrypted_payload' && record[f] !== null && record[f] !== undefined
+      )
+      const missing = plaintextFields.filter(f => !(f in verified))
+      if (missing.length) {
+        console.warn('[scrub] payload missing fields', missing, 'for', key, record.id, '— skipping')
+        continue
+      }
+
+      patch[key].push({ id: record.id, encrypted_payload: newPayload })
       mergeCount++
     }
   }
