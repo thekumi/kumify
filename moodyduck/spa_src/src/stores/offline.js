@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { api } from '@/api/client'
 
-const DB_NAME = 'kumify-offline'
+const DB_NAME = 'moodyduck-offline'
 const STORE_NAME = 'queue'
 let _db = null
 
