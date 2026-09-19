@@ -118,6 +118,14 @@ export const useKeystoreStore = defineStore('keystore', () => {
     return key
   }
 
+  function _triggerStaging(key) {
+    if (!key || sessionStorage.getItem('ks:staged')) return
+    sessionStorage.setItem('ks:staged', '1')
+    runStaging(key)
+      .then(n => { if (n > 0) console.info(`[staging] Encrypted ${n} record(s)`) })
+      .catch(e => console.warn('[staging] failed:', e))
+  }
+
   async function boot() {
     if (status.value !== 'idle') return
     status.value = 'booting'
@@ -191,16 +199,7 @@ export const useKeystoreStore = defineStore('keystore', () => {
       }
 
       dataKey.value = key
-
-      // Backfill plaintext records that predate client-side encryption.
-      // Runs in the background once per browser session; loops in batches of
-      // 200 until the server reports no remaining unencrypted records.
-      if (key && !sessionStorage.getItem('ks:staged')) {
-        sessionStorage.setItem('ks:staged', '1')
-        runStaging(key)
-          .then(n => { if (n > 0) console.info(`[staging] Encrypted ${n} record(s)`) })
-          .catch(e => console.warn('[staging] failed:', e))
-      }
+      _triggerStaging(key)
 
       if (key) {
         let userKey
@@ -286,6 +285,7 @@ export const useKeystoreStore = defineStore('keystore', () => {
       if (record.user_private_key) userPrivateKey.value = record.user_private_key
       _setupAutoLock()
       status.value = 'ready'
+      _triggerStaging(key)
     } else {
       status.value = 'idle'
       await boot()
