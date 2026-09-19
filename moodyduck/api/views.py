@@ -32,10 +32,11 @@ from moodyduck.health.models import (
 from moodyduck.keystore.crypto import encrypt_for_user
 from moodyduck.keystore.models import UserDevice, UserKeyBackup, UserKeyPair
 from moodyduck.mood.models import Activity, Mood, Status, StatusActivity, StatusMedia
-from moodyduck.profiles.models import EmergencyAccessLog
+from moodyduck.profiles.models import EmergencyAccessLog, UserProfile
 
 from .serializers import (
     ActivitySerializer,
+    BasicMedicalInfoSerializer,
     CBTRecordSerializer,
     DreamMediaSerializer,
     DreamSerializer,
@@ -214,6 +215,22 @@ class StagingView(APIView):
                 dream__user=request.user, encrypted_payload__isnull=True
             )
         ]
+        profile = request.user.userprofile
+        if not profile.encrypted_payload and any([
+            profile.legal_name, profile.phone, profile.address, profile.date_of_birth
+        ]):
+            result["profile_upgrade"] = UserProfileSerializer(profile).data
+        else:
+            result["profile_upgrade"] = None
+        medical_info = BasicMedicalInfo.objects.filter(
+            user=request.user, encrypted_payload__isnull=True
+        ).first()
+        if medical_info and any([
+            medical_info.blood_type, medical_info.allergies, medical_info.medical_notes
+        ]):
+            result["medical_info_upgrade"] = BasicMedicalInfoSerializer(medical_info).data
+        else:
+            result["medical_info_upgrade"] = None
         return Response(result)
 
     def patch(self, request):
@@ -295,6 +312,33 @@ class StagingView(APIView):
                     point.bearing = None
                     point.save()
                     updated += 1
+
+        profile_upgrade = request.data.get("profile_upgrade")
+        if profile_upgrade:
+            pk = profile_upgrade.get("id")
+            payload = profile_upgrade.get("encrypted_payload")
+            if pk and payload:
+                rows = UserProfile.objects.filter(user=request.user, pk=pk).update(
+                    encrypted_payload=payload,
+                    legal_name=None,
+                    date_of_birth=None,
+                    phone=None,
+                    address=None,
+                )
+                updated += rows
+
+        medical_info_upgrade = request.data.get("medical_info_upgrade")
+        if medical_info_upgrade:
+            pk = medical_info_upgrade.get("id")
+            payload = medical_info_upgrade.get("encrypted_payload")
+            if pk and payload:
+                rows = BasicMedicalInfo.objects.filter(user=request.user, pk=pk).update(
+                    encrypted_payload=payload,
+                    blood_type=None,
+                    allergies=None,
+                    medical_notes=None,
+                )
+                updated += rows
 
         resp = {"updated": updated}
         if errors:

@@ -54,6 +54,8 @@ export async function runStaging(dataKey) {
     const healthRecords = staging['health_records'] ?? []
     const gpsPending = staging['gps_pending'] ?? 0
     const mediaItems = MEDIA_ENDPOINTS.flatMap(([key]) => staging[key] ?? [])
+    const profileUpgrade = staging['profile_upgrade'] ?? null
+    const medicalInfoUpgrade = staging['medical_info_upgrade'] ?? null
     const totalFetched = Object.keys(MODEL_FIELDS)
       .reduce((n, key) => n + (staging[key]?.length ?? 0), 0)
       + statusUpgrades.length
@@ -61,6 +63,8 @@ export async function runStaging(dataKey) {
       + healthRecords.length
       + gpsPending
       + mediaItems.length
+      + (profileUpgrade ? 1 : 0)
+      + (medicalInfoUpgrade ? 1 : 0)
     if (totalFetched === 0) break
 
     const patch = {}
@@ -128,6 +132,36 @@ export async function runStaging(dataKey) {
           id: record.id,
           encrypted_payload: await encryptPayload(dataKey, { value: String(record.value) }),
         })
+        batchCount++
+      }
+    }
+
+    if (profileUpgrade) {
+      const plain = {}
+      for (const field of ['legal_name', 'phone', 'address', 'date_of_birth']) {
+        const v = profileUpgrade[field]
+        if (v !== null && v !== undefined && v !== '') plain[field] = String(v)
+      }
+      if (Object.keys(plain).length) {
+        patch.profile_upgrade = {
+          id: profileUpgrade.id,
+          encrypted_payload: await encryptPayload(dataKey, plain),
+        }
+        batchCount++
+      }
+    }
+
+    if (medicalInfoUpgrade) {
+      const plain = {}
+      for (const field of ['blood_type', 'allergies', 'medical_notes']) {
+        const v = medicalInfoUpgrade[field]
+        if (v !== null && v !== undefined && v !== '') plain[field] = String(v)
+      }
+      if (Object.keys(plain).length) {
+        patch.medical_info_upgrade = {
+          id: medicalInfoUpgrade.id,
+          encrypted_payload: await encryptPayload(dataKey, plain),
+        }
         batchCount++
       }
     }

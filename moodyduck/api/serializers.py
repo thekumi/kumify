@@ -100,6 +100,10 @@ class MoodSerializer(serializers.ModelSerializer):
         model = Mood
         fields = ["id", "name", "value", "icon", "color", "encrypted_payload"]
         read_only_fields = ["id"]
+        extra_kwargs = {
+            "name": {"required": False, "allow_null": True, "allow_blank": True},
+            "value": {"required": False, "allow_null": True},
+        }
 
 
 class StatusSerializer(serializers.ModelSerializer):
@@ -134,6 +138,10 @@ class StatusSerializer(serializers.ModelSerializer):
             "attachments",
         ]
         read_only_fields = ["id"]
+        extra_kwargs = {
+            "title": {"required": False, "allow_null": True, "allow_blank": True},
+            "text": {"required": False, "allow_null": True, "allow_blank": True},
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -181,6 +189,9 @@ class ActivitySerializer(serializers.ModelSerializer):
         model = Activity
         fields = ["id", "name", "icon", "color", "encrypted_payload"]
         read_only_fields = ["id"]
+        extra_kwargs = {
+            "name": {"required": False, "allow_null": True, "allow_blank": True},
+        }
 
 
 class HabitSerializer(serializers.ModelSerializer):
@@ -188,6 +199,10 @@ class HabitSerializer(serializers.ModelSerializer):
         model = Habit
         fields = ["id", "name", "icon", "color", "description", "encrypted_payload"]
         read_only_fields = ["id"]
+        extra_kwargs = {
+            "name": {"required": False, "allow_null": True, "allow_blank": True},
+            "description": {"required": False, "allow_null": True, "allow_blank": True},
+        }
 
 
 class HabitLogSerializer(serializers.ModelSerializer):
@@ -197,6 +212,9 @@ class HabitLogSerializer(serializers.ModelSerializer):
         model = HabitLog
         fields = ["id", "habit", "date", "note", "encrypted_payload"]
         read_only_fields = ["id"]
+        extra_kwargs = {
+            "note": {"required": False, "allow_null": True, "allow_blank": True},
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -210,6 +228,10 @@ class HealthParameterSerializer(serializers.ModelSerializer):
         model = HealthParameter
         fields = ["id", "name", "unit", "icon", "encrypted_payload"]
         read_only_fields = ["id"]
+        extra_kwargs = {
+            "name": {"required": False, "allow_null": True, "allow_blank": True},
+            "unit": {"required": False, "allow_null": True, "allow_blank": True},
+        }
 
 
 class HealthRecordSerializer(serializers.ModelSerializer):
@@ -310,6 +332,11 @@ class MedicationSerializer(serializers.ModelSerializer):
         model = Medication
         fields = ["id", "name", "icon", "supply", "prn", "remarks", "encrypted_payload"]
         read_only_fields = ["id"]
+        extra_kwargs = {
+            "name": {"required": False, "allow_null": True, "allow_blank": True},
+            "supply": {"required": False, "allow_null": True},
+            "remarks": {"required": False, "allow_null": True, "allow_blank": True},
+        }
 
 
 class VaccinationSerializer(serializers.ModelSerializer):
@@ -327,6 +354,15 @@ class VaccinationSerializer(serializers.ModelSerializer):
             "encrypted_payload",
         ]
         read_only_fields = ["id"]
+        extra_kwargs = {
+            "name": {"required": False, "allow_null": True, "allow_blank": True},
+            "target_disease": {"required": False, "allow_null": True, "allow_blank": True},
+            "administered_on": {"required": False, "allow_null": True},
+            "provider": {"required": False, "allow_null": True, "allow_blank": True},
+            "batch_number": {"required": False, "allow_null": True, "allow_blank": True},
+            "next_due": {"required": False, "allow_null": True},
+            "notes": {"required": False, "allow_null": True, "allow_blank": True},
+        }
 
 
 class CBTRecordSerializer(serializers.ModelSerializer):
@@ -334,7 +370,15 @@ class CBTRecordSerializer(serializers.ModelSerializer):
         model = ThoughtRecord
         fields = "__all__"
         read_only_fields = ["id", "user"]
-        # encrypted_payload is included via __all__
+        extra_kwargs = {
+            "title": {"required": False, "allow_null": True, "allow_blank": True},
+            "situation": {"required": False, "allow_null": True, "allow_blank": True},
+            "thoughts": {"required": False, "allow_null": True, "allow_blank": True},
+            "pro_facts": {"required": False, "allow_null": True, "allow_blank": True},
+            "con_facts": {"required": False, "allow_null": True, "allow_blank": True},
+            "realistic": {"required": False, "allow_null": True, "allow_blank": True},
+            "outcome": {"required": False, "allow_null": True, "allow_blank": True},
+        }
 
 
 class DreamMediaSerializer(serializers.ModelSerializer):
@@ -427,12 +471,17 @@ class DreamSerializer(serializers.ModelSerializer):
             "attachments",
         ]
         read_only_fields = ["id", "user"]
+        extra_kwargs = {
+            "title": {"required": False, "allow_null": True, "allow_blank": True},
+            "content": {"required": False, "allow_null": True, "allow_blank": True},
+        }
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
         fields = [
+            "id",
             "display_name",
             "timezone",
             "pgp_key",
@@ -442,12 +491,27 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "date_of_birth",
             "encrypted_payload",
         ]
+        read_only_fields = ["id"]
+        extra_kwargs = {
+            "display_name": {"required": False, "allow_null": True, "allow_blank": True},
+            "timezone": {"required": False, "allow_null": True, "allow_blank": True},
+            "legal_name": {"required": False, "allow_null": True, "allow_blank": True},
+            "phone": {"required": False, "allow_null": True, "allow_blank": True},
+            "address": {"required": False, "allow_null": True, "allow_blank": True},
+            "date_of_birth": {"required": False, "allow_null": True},
+        }
 
 
 class BasicMedicalInfoSerializer(serializers.ModelSerializer):
     class Meta:
         model = BasicMedicalInfo
-        fields = ["blood_type", "allergies", "medical_notes", "encrypted_payload"]
+        fields = ["id", "blood_type", "allergies", "medical_notes", "encrypted_payload"]
+        read_only_fields = ["id"]
+        extra_kwargs = {
+            "blood_type": {"required": False, "allow_null": True, "allow_blank": True},
+            "allergies": {"required": False, "allow_null": True, "allow_blank": True},
+            "medical_notes": {"required": False, "allow_null": True, "allow_blank": True},
+        }
 
 
 class EmergencyContactSerializer(serializers.ModelSerializer):
@@ -475,6 +539,17 @@ class PersonSerializer(serializers.ModelSerializer):
             "encrypted_payload",
         ]
         read_only_fields = ["id"]
+        extra_kwargs = {
+            "name": {"required": False, "allow_null": True, "allow_blank": True},
+            "nickname": {"required": False, "allow_null": True, "allow_blank": True},
+            "birthday": {"required": False, "allow_null": True},
+            "email": {"required": False, "allow_null": True, "allow_blank": True},
+            "phone": {"required": False, "allow_null": True, "allow_blank": True},
+            "relationship": {"required": False, "allow_null": True, "allow_blank": True},
+            "address": {"required": False, "allow_null": True, "allow_blank": True},
+            "notes": {"required": False, "allow_null": True, "allow_blank": True},
+            "last_contact": {"required": False, "allow_null": True},
+        }
 
 
 class EmergencyVaccinationSerializer(serializers.Serializer):
