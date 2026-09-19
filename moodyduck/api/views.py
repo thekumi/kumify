@@ -125,6 +125,32 @@ class UserKeyBackupView(APIView):
         return Response(UserKeyBackupSerializer(backup).data)
 
 
+_SCRUB_FIELDS = {
+    "statuses":           (Status,          "user",        ["mood", "title", "text"]),
+    "moods":              (Mood,             "user",        ["name", "value", "color", "icon"]),
+    "activities":         (Activity,         "user",        ["name", "icon"]),
+    "dreams":             (Dream,            "user",        ["title", "content"]),
+    "cbt_records":        (ThoughtRecord,    "user",        ["title", "situation", "thoughts", "pro_facts", "con_facts", "realistic", "outcome"]),
+    "health_logs":        (HealthLog,        "user",        ["notes"]),
+    "vaccinations":       (Vaccination,      "user",        ["name", "target_disease", "administered_on", "provider", "batch_number", "next_due", "notes"]),
+    "people":             (Person,           "user",        ["name", "nickname", "birthday", "email", "phone", "relationship", "address", "notes", "last_contact"]),
+    "medications":        (Medication,       "user",        ["name", "remarks"]),
+    "health_parameters":  (HealthParameter,  "user",        ["name", "unit", "icon"]),
+    "habits":             (Habit,            "user",        ["name", "description"]),
+    "habit_logs":         (HabitLog,         "habit__user", ["note"]),
+    "health_records":     (HealthRecord,     "log__user",   ["value"]),
+    "user_profile":       (UserProfile,      "user",        ["legal_name", "phone", "address", "date_of_birth"]),
+    "basic_medical_info": (BasicMedicalInfo, "user",        ["blood_type", "allergies", "medical_notes"]),
+}
+
+
+def _any_plaintext_q(fields):
+    q = Q()
+    for f in fields:
+        q |= Q(**{f"{f}__isnull": False})
+    return q
+
+
 _STAGING_MODELS = {
     "statuses": (Status, "user", StatusSerializer),
     "moods": (Mood, "user", MoodSerializer),
@@ -341,6 +367,57 @@ class StagingView(APIView):
                 updated += rows
 
         resp = {"updated": updated}
+        if errors:
+            resp["errors"] = errors
+        return Response(
+            resp, status=status.HTTP_207_MULTI_STATUS if errors else status.HTTP_200_OK
+        )
+
+
+class ScrubView(APIView):
+    """
+    GET  — returns records that are encrypted but still have plaintext fields, grouped by
+           model key. Each record includes id, encrypted_payload, and the non-null plaintext
+           fields so the client can decrypt, merge, and re-encrypt.
+    PATCH — accepts {model_key: [{id, encrypted_payload}]} from the client after it has
+            merged any missing plaintext into the payload; updates encrypted_payload and
+            nulls the plaintext fields atomically.
+    """
+
+    def get(self, request):
+        result = {}
+        for key, (model, user_field, fields) in _SCRUB_FIELDS.items():
+            q = (
+                Q(**{user_field: request.user})
+                & Q(encrypted_payload__isnull=False)
+                & _any_plaintext_q(fields)
+            )
+            records = list(model.objects.filter(q).values("id", "encrypted_payload", *fields))
+            if records:
+                result[key] = records
+        return Response(result)
+
+    def patch(self, request):
+        total = 0
+        errors = []
+        for key, records in request.data.items():
+            if key not in _SCRUB_FIELDS:
+                continue
+            model, user_field, fields = _SCRUB_FIELDS[key]
+            null_kwargs = {f: None for f in fields}
+            for record in records:
+                pk = record.get("id")
+                payload = record.get("encrypted_payload")
+                if not pk or not payload:
+                    continue
+                try:
+                    rows = model.objects.filter(
+                        pk=pk, **{user_field: request.user}
+                    ).update(encrypted_payload=payload, **null_kwargs)
+                    total += rows
+                except (ValueError, TypeError) as e:
+                    errors.append({"id": pk, "model": key, "error": str(e)})
+        resp = {"scrubbed": total}
         if errors:
             resp["errors"] = errors
         return Response(

@@ -18,6 +18,7 @@ from .views import (
     MeView,
     MoodViewSet,
     PersonViewSet,
+    ScrubView,
     StagingView,
     StatusCheckView,
     StatusMediaEncryptView,
@@ -63,6 +64,7 @@ urlpatterns = [
     ),
     path("status/", StatusCheckView.as_view(), name="status"),
     path("staging/", StagingView.as_view(), name="staging"),
+    path("scrub/", ScrubView.as_view(), name="scrub"),
     path(
         "media/status/<int:pk>/", StatusMediaEncryptView.as_view(), name="media-status"
     ),

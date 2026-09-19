@@ -100,6 +100,47 @@
         </div>
       </div>
 
+      <!-- Encryption health check -->
+      <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4 space-y-3">
+        <div class="flex items-center gap-2 mb-1">
+          <i class="ph ph-shield-check text-stone-400 text-lg"></i>
+          <p class="text-sm font-semibold text-stone-700">Encryption health</p>
+        </div>
+        <p class="text-xs text-stone-400 leading-relaxed">
+          Scans all your data for records that are encrypted but still retain readable plaintext
+          fields, then wipes those leftover values.
+        </p>
+
+        <div v-if="scrubResult" class="text-xs rounded-xl px-3 py-2"
+          :class="scrubResult.ok ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'">
+          {{ scrubResult.message }}
+        </div>
+
+        <div v-if="scrubCounts && !scrubBusy" class="space-y-1">
+          <p class="text-xs font-medium text-stone-500">Records with residual plaintext:</p>
+          <ul class="text-xs text-stone-500 space-y-0.5">
+            <li v-for="(count, key) in scrubCounts" :key="key" v-show="count > 0"
+              class="flex justify-between">
+              <span>{{ key.replace(/_/g, ' ') }}</span>
+              <span class="font-semibold text-amber-600">{{ count }}</span>
+            </li>
+            <li v-if="!Object.values(scrubCounts).some(c => c > 0)"
+              class="text-green-600 font-medium">All clean — no residual plaintext found.</li>
+          </ul>
+        </div>
+
+        <div class="flex gap-2">
+          <button @click="doCheckScrub" :disabled="scrubBusy || !ks.dataKey"
+            class="flex-1 py-2.5 rounded-xl border border-stone-200 text-stone-600 text-sm font-medium hover:bg-stone-50 disabled:opacity-50 transition-colors">
+            {{ scrubBusy ? 'Checking…' : 'Check' }}
+          </button>
+          <button @click="doRunScrub" :disabled="scrubBusy || !ks.dataKey"
+            class="flex-1 py-2.5 bg-clay-600 hover:bg-clay-700 disabled:opacity-50 text-white text-sm font-semibold rounded-xl transition-colors">
+            {{ scrubBusy ? 'Running…' : 'Fix & clean' }}
+          </button>
+        </div>
+      </div>
+
     </div>
 
     <BottomNav />
@@ -111,6 +152,7 @@ import { ref } from 'vue'
 import TopBar from '@/components/TopBar.vue'
 import BottomNav from '@/components/BottomNav.vue'
 import { useKeystoreStore } from '@/stores/keystore'
+import { checkScrub, runScrub } from '@/keystore/scrub.js'
 
 const ks = useKeystoreStore()
 
@@ -155,6 +197,42 @@ async function doRemovePin() {
     mode.value = 'idle'
   } catch { formError.value = 'Incorrect PIN.' }
   finally { busy.value = false }
+}
+
+// Encryption scrub
+const scrubBusy = ref(false)
+const scrubCounts = ref(null)
+const scrubResult = ref(null)
+
+async function doCheckScrub() {
+  scrubBusy.value = true
+  scrubResult.value = null
+  try {
+    scrubCounts.value = await checkScrub()
+  } finally {
+    scrubBusy.value = false
+  }
+}
+
+async function doRunScrub() {
+  scrubBusy.value = true
+  scrubResult.value = null
+  scrubCounts.value = null
+  try {
+    const { staged, scrubbed } = await runScrub(ks.dataKey)
+    const total = staged + scrubbed
+    scrubResult.value = {
+      ok: true,
+      message: total === 0
+        ? 'Nothing to clean — all records are already tidy.'
+        : `Done. Encrypted ${staged} record${staged !== 1 ? 's' : ''}, wiped plaintext from ${scrubbed} record${scrubbed !== 1 ? 's' : ''}.`,
+    }
+    scrubCounts.value = await checkScrub()
+  } catch {
+    scrubResult.value = { ok: false, message: 'Scrub failed. Please try again.' }
+  } finally {
+    scrubBusy.value = false
+  }
 }
 
 // Auto-lock
