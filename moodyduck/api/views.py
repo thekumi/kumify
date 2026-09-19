@@ -192,10 +192,7 @@ class StagingView(APIView):
                 qs[:_STAGING_BATCH], many=True, context={"request": request}
             ).data
         result["status_upgrades"] = StatusSerializer(
-            Status.objects.filter(
-                user=request.user,
-                encrypted_payload__isnull=False,
-            ).filter(
+            Status.objects.filter(user=request.user).filter(
                 Q(mood__isnull=False) | Q(statusactivity__isnull=False)
             ).distinct()
             .select_related("mood")
@@ -281,7 +278,7 @@ class StagingView(APIView):
             if not pk or not payload:
                 continue
             rows = Status.objects.filter(user=request.user, pk=pk).update(
-                encrypted_payload=payload, mood=None
+                encrypted_payload=payload, mood=None, title=None, text=None
             )
             if rows:
                 StatusActivity.objects.filter(status_id=pk).delete()

@@ -70,12 +70,19 @@ export async function runStaging(dataKey) {
     const patch = {}
     let batchCount = 0
 
+    // Statuses that have mood/activity associations are handled entirely by the
+    // status_upgrades pass below (which now covers both encrypted and unencrypted
+    // records). Skip them here to avoid a conflicting double-write.
+    const statusUpgradeIds = new Set(statusUpgrades.map(r => r.id))
+
     for (const [key, fields] of Object.entries(MODEL_FIELDS)) {
       const records = staging[key] ?? []
       if (!records.length) continue
 
       patch[key] = []
       for (const record of records) {
+        if (key === 'statuses' && statusUpgradeIds.has(record.id)) continue
+
         const plain = {}
         for (const field of fields) {
           const v = record[field]
@@ -91,15 +98,23 @@ export async function runStaging(dataKey) {
       }
     }
 
-    // Status upgrade pass: merge plaintext mood FK and activity associations into encrypted payload.
+    // Status upgrade pass: handles ALL statuses that still have a plaintext mood FK
+    // or activity associations, whether or not they already have an encrypted_payload.
     if (statusUpgrades.length) {
       patch['status_upgrades'] = []
       for (const record of statusUpgrades) {
-        if (!record.encrypted_payload) continue
-        const existing = await decryptPayload(dataKey, record.encrypted_payload).catch(() => ({}))
+        const existing = record.encrypted_payload
+          ? await decryptPayload(dataKey, record.encrypted_payload).catch(() => ({}))
+          : {}
+        // Merge title/text in case this record was never through the main pass.
+        for (const field of ['title', 'text']) {
+          const v = record[field]
+          if (v != null && v !== '' && !(field in existing)) existing[field] = String(v)
+        }
         if (record.mood != null) existing['mood_id'] = String(record.mood)
         const actIds = (record.activities ?? []).map(a => a.id)
         if (actIds.length) existing['activity_ids'] = JSON.stringify(actIds)
+        if (!Object.keys(existing).length) continue
         patch['status_upgrades'].push({
           id: record.id,
           encrypted_payload: await encryptPayload(dataKey, existing),
