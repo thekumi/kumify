@@ -76,7 +76,7 @@
                 ></i>
               </div>
               <div class="flex-1 min-w-0">
-                <p class="text-sm font-medium text-stone-800 truncate">{{ s.mood?.name || 'Encrypted entry' }}</p>
+                <p class="text-sm font-medium text-stone-800 truncate">{{ s.mood?.name || s.title || '—' }}</p>
                 <p class="text-xs text-stone-400">{{ fmtDate(s.timestamp) }}</p>
               </div>
               <i class="ph ph-caret-right text-stone-300"></i>
@@ -110,16 +110,17 @@ function fmtDate(ts) {
 }
 
 async function applyDecryption() {
-  const [decryptedMoods, decryptedActivities] = await Promise.all([
+  const [decryptedMoods, decryptedActivities, decryptedStatuses] = await Promise.all([
     ks.decryptAll(rawMoods.value),
     ks.decryptAll(rawActivities.value),
+    ks.decryptAll(rawStatuses.value),
   ])
   const moodMap = Object.fromEntries(decryptedMoods.map(m => [m.id, m]))
   const activityMap = Object.fromEntries(decryptedActivities.map(a => [a.id, a]))
 
-  recent.value = rawStatuses.value.slice(0, 5).map(st => ({
+  recent.value = decryptedStatuses.slice(0, 5).map(st => ({
     ...st,
-    mood: moodMap[st.mood] ?? null,
+    mood: moodMap[st.mood_id != null ? Number(st.mood_id) : st.mood] ?? null,
   }))
 
   if (rawStats.value) {
