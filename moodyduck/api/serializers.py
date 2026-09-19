@@ -108,7 +108,7 @@ class MoodSerializer(serializers.ModelSerializer):
 
 class StatusSerializer(serializers.ModelSerializer):
     mood = serializers.PrimaryKeyRelatedField(
-        queryset=Mood.objects.none(), allow_null=True
+        queryset=Mood.objects.none(), allow_null=True, required=False
     )
     timestamp = serializers.DateTimeField(required=False, format="iso-8601")
     activities = serializers.SerializerMethodField(read_only=True)
