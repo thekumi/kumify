@@ -64,6 +64,7 @@ export async function runStaging(dataKey) {
       + mediaItems.length
       + (profileUpgrade ? 1 : 0)
       + (medicalInfoUpgrade ? 1 : 0)
+    console.debug('[staging] fetched', { totalFetched, statusUpgrades: statusUpgrades.length })
     if (totalFetched === 0) break
 
     const patch = {}
@@ -192,6 +193,7 @@ export async function runStaging(dataKey) {
       }
     }
 
+    console.debug('[staging] batchCount', batchCount, 'patch keys', Object.keys(patch).map(k => `${k}:${patch[k]?.length ?? '?'}`))
     if (batchCount === 0 && mediaCount === 0) break
 
     let stagingUpdated = 0
