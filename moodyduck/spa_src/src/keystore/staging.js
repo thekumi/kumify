@@ -2,7 +2,6 @@ import { apiFetch, b64encode } from './util.js'
 import { encryptPayload, decryptPayload } from './fields.js'
 
 const MODEL_FIELDS = {
-  statuses:     ['title', 'text'],
   moods:        ['name', 'value', 'color', 'icon'],
   activities:   ['name', 'icon'],
   dreams:       ['title', 'content'],
@@ -70,19 +69,12 @@ export async function runStaging(dataKey) {
     const patch = {}
     let batchCount = 0
 
-    // Statuses that have mood/activity associations are handled entirely by the
-    // status_upgrades pass below (which now covers both encrypted and unencrypted
-    // records). Skip them here to avoid a conflicting double-write.
-    const statusUpgradeIds = new Set(statusUpgrades.map(r => r.id))
-
     for (const [key, fields] of Object.entries(MODEL_FIELDS)) {
       const records = staging[key] ?? []
       if (!records.length) continue
 
       patch[key] = []
       for (const record of records) {
-        if (key === 'statuses' && statusUpgradeIds.has(record.id)) continue
-
         const plain = {}
         for (const field of fields) {
           const v = record[field]

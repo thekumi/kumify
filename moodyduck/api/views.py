@@ -152,7 +152,6 @@ def _any_plaintext_q(fields):
 
 
 _STAGING_MODELS = {
-    "statuses": (Status, "user", StatusSerializer),
     "moods": (Mood, "user", MoodSerializer),
     "activities": (Activity, "user", ActivitySerializer),
     "dreams": (Dream, "user", DreamSerializer),
@@ -193,7 +192,9 @@ class StagingView(APIView):
             ).data
         result["status_upgrades"] = StatusSerializer(
             Status.objects.filter(user=request.user).filter(
-                Q(mood__isnull=False) | Q(statusactivity__isnull=False)
+                Q(encrypted_payload__isnull=True)
+                | Q(mood__isnull=False)
+                | Q(statusactivity__isnull=False)
             ).distinct()
             .select_related("mood")
             .prefetch_related(
