@@ -4,29 +4,28 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('habits', '0004_repair_legacy_schema'),
+        ("habits", "0004_repair_legacy_schema"),
     ]
 
     operations = [
         migrations.AlterModelOptions(
-            name='habit',
-            options={'ordering': ['-pk']},
+            name="habit",
+            options={"ordering": ["-pk"]},
         ),
         migrations.AddField(
-            model_name='habit',
-            name='encrypted_payload',
+            model_name="habit",
+            name="encrypted_payload",
             field=models.JSONField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='habitlog',
-            name='encrypted_payload',
+            model_name="habitlog",
+            name="encrypted_payload",
             field=models.JSONField(blank=True, null=True),
         ),
         migrations.AlterField(
-            model_name='habit',
-            name='name',
+            model_name="habit",
+            name="name",
             field=models.CharField(blank=True, max_length=64, null=True),
         ),
     ]

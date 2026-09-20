@@ -4,20 +4,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('health', '0008_alter_vaccination_administered_on_null'),
+        ("health", "0008_alter_vaccination_administered_on_null"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='healthparameter',
-            name='encrypted_payload',
+            model_name="healthparameter",
+            name="encrypted_payload",
             field=models.JSONField(blank=True, null=True),
         ),
         migrations.AlterField(
-            model_name='healthparameter',
-            name='name',
+            model_name="healthparameter",
+            name="name",
             field=models.CharField(blank=True, max_length=128, null=True),
         ),
     ]

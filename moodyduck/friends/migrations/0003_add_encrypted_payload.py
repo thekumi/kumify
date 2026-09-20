@@ -4,24 +4,23 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('friends', '0002_person_emergency_contact_person_relationship'),
+        ("friends", "0002_person_emergency_contact_person_relationship"),
     ]
 
     operations = [
         migrations.AlterModelOptions(
-            name='person',
-            options={'ordering': ['-pk']},
+            name="person",
+            options={"ordering": ["-pk"]},
         ),
         migrations.AddField(
-            model_name='person',
-            name='encrypted_payload',
+            model_name="person",
+            name="encrypted_payload",
             field=models.JSONField(blank=True, null=True),
         ),
         migrations.AlterField(
-            model_name='person',
-            name='name',
+            model_name="person",
+            name="name",
             field=models.CharField(blank=True, max_length=128, null=True),
         ),
     ]

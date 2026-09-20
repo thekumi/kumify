@@ -16,11 +16,11 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from moodyduck.cbt.models import ThoughtRecord
-from moodyduck.habits.models import Habit, HabitLog
 from moodyduck.common.helpers import get_upload_path
 from moodyduck.dreams.models import Dream, DreamMedia, Theme
-from moodyduck.gpslog.models import GPSPoint
 from moodyduck.friends.models import Person
+from moodyduck.gpslog.models import GPSPoint
+from moodyduck.habits.models import Habit, HabitLog
 from moodyduck.health.models import (
     BasicMedicalInfo,
     HealthLog,
@@ -126,21 +126,67 @@ class UserKeyBackupView(APIView):
 
 
 _SCRUB_FIELDS = {
-    "statuses":           (Status,          "user",        ["mood", "title", "text"]),
-    "moods":              (Mood,             "user",        ["name", "value", "color", "icon"]),
-    "activities":         (Activity,         "user",        ["name", "icon"]),
-    "dreams":             (Dream,            "user",        ["title", "content"]),
-    "cbt_records":        (ThoughtRecord,    "user",        ["title", "situation", "thoughts", "pro_facts", "con_facts", "realistic", "outcome"]),
-    "health_logs":        (HealthLog,        "user",        ["notes"]),
-    "vaccinations":       (Vaccination,      "user",        ["name", "target_disease", "administered_on", "provider", "batch_number", "next_due", "notes"]),
-    "people":             (Person,           "user",        ["name", "nickname", "birthday", "email", "phone", "relationship", "address", "notes", "last_contact"]),
-    "medications":        (Medication,       "user",        ["name", "remarks"]),
-    "health_parameters":  (HealthParameter,  "user",        ["name", "unit", "icon"]),
-    "habits":             (Habit,            "user",        ["name", "description"]),
-    "habit_logs":         (HabitLog,         "habit__user", ["note"]),
-    "health_records":     (HealthRecord,     "log__user",   ["value"]),
-    "user_profile":       (UserProfile,      "user",        ["legal_name", "phone", "address", "date_of_birth"]),
-    "basic_medical_info": (BasicMedicalInfo, "user",        ["blood_type", "allergies", "medical_notes"]),
+    "statuses": (Status, "user", ["mood", "title", "text"]),
+    "moods": (Mood, "user", ["name", "value", "color", "icon"]),
+    "activities": (Activity, "user", ["name", "icon"]),
+    "dreams": (Dream, "user", ["title", "content"]),
+    "cbt_records": (
+        ThoughtRecord,
+        "user",
+        [
+            "title",
+            "situation",
+            "thoughts",
+            "pro_facts",
+            "con_facts",
+            "realistic",
+            "outcome",
+        ],
+    ),
+    "health_logs": (HealthLog, "user", ["notes"]),
+    "vaccinations": (
+        Vaccination,
+        "user",
+        [
+            "name",
+            "target_disease",
+            "administered_on",
+            "provider",
+            "batch_number",
+            "next_due",
+            "notes",
+        ],
+    ),
+    "people": (
+        Person,
+        "user",
+        [
+            "name",
+            "nickname",
+            "birthday",
+            "email",
+            "phone",
+            "relationship",
+            "address",
+            "notes",
+            "last_contact",
+        ],
+    ),
+    "medications": (Medication, "user", ["name", "remarks"]),
+    "health_parameters": (HealthParameter, "user", ["name", "unit", "icon"]),
+    "habits": (Habit, "user", ["name", "description"]),
+    "habit_logs": (HabitLog, "habit__user", ["note"]),
+    "health_records": (HealthRecord, "log__user", ["value"]),
+    "user_profile": (
+        UserProfile,
+        "user",
+        ["legal_name", "phone", "address", "date_of_birth"],
+    ),
+    "basic_medical_info": (
+        BasicMedicalInfo,
+        "user",
+        ["blood_type", "allergies", "medical_notes"],
+    ),
 }
 
 
@@ -191,11 +237,13 @@ class StagingView(APIView):
                 qs[:_STAGING_BATCH], many=True, context={"request": request}
             ).data
         result["status_upgrades"] = StatusSerializer(
-            Status.objects.filter(user=request.user).filter(
+            Status.objects.filter(user=request.user)
+            .filter(
                 Q(encrypted_payload__isnull=True)
                 | Q(mood__isnull=False)
                 | Q(statusactivity__isnull=False)
-            ).distinct()
+            )
+            .distinct()
             .select_related("mood")
             .prefetch_related(
                 Prefetch(
@@ -210,9 +258,9 @@ class StagingView(APIView):
             Vaccination.objects.filter(
                 user=request.user,
                 encrypted_payload__isnull=False,
-            ).filter(
-                Q(administered_on__isnull=False) | Q(next_due__isnull=False)
-            )[:_STAGING_BATCH],
+            ).filter(Q(administered_on__isnull=False) | Q(next_due__isnull=False))[
+                :_STAGING_BATCH
+            ],
             many=True,
         ).data
         result["gps_pending"] = GPSPoint.objects.filter(
@@ -240,19 +288,25 @@ class StagingView(APIView):
             )
         ]
         profile = request.user.userprofile
-        if not profile.encrypted_payload and any([
-            profile.legal_name, profile.phone, profile.address, profile.date_of_birth
-        ]):
+        if not profile.encrypted_payload and any(
+            [profile.legal_name, profile.phone, profile.address, profile.date_of_birth]
+        ):
             result["profile_upgrade"] = UserProfileSerializer(profile).data
         else:
             result["profile_upgrade"] = None
         medical_info = BasicMedicalInfo.objects.filter(
             user=request.user, encrypted_payload__isnull=True
         ).first()
-        if medical_info and any([
-            medical_info.blood_type, medical_info.allergies, medical_info.medical_notes
-        ]):
-            result["medical_info_upgrade"] = BasicMedicalInfoSerializer(medical_info).data
+        if medical_info and any(
+            [
+                medical_info.blood_type,
+                medical_info.allergies,
+                medical_info.medical_notes,
+            ]
+        ):
+            result["medical_info_upgrade"] = BasicMedicalInfoSerializer(
+                medical_info
+            ).data
         else:
             result["medical_info_upgrade"] = None
         return Response(result)
@@ -285,33 +339,39 @@ class StagingView(APIView):
                 StatusActivity.objects.filter(status_id=pk).delete()
                 updated += rows
             else:
-                errors.append({"model": "status_upgrades", "id": pk, "error": "Not found"})
+                errors.append(
+                    {"model": "status_upgrades", "id": pk, "error": "Not found"}
+                )
 
         for item in request.data.get("vaccination_upgrades", []):
             pk = item.get("id")
             payload = item.get("encrypted_payload")
             if not pk or not payload:
                 continue
-            rows = Vaccination.objects.filter(
-                user=request.user, pk=pk
-            ).update(encrypted_payload=payload, administered_on=None, next_due=None)
+            rows = Vaccination.objects.filter(user=request.user, pk=pk).update(
+                encrypted_payload=payload, administered_on=None, next_due=None
+            )
             if rows:
                 updated += rows
             else:
-                errors.append({"model": "vaccination_upgrades", "id": pk, "error": "Not found"})
+                errors.append(
+                    {"model": "vaccination_upgrades", "id": pk, "error": "Not found"}
+                )
 
         for item in request.data.get("health_records", []):
             pk = item.get("id")
             payload = item.get("encrypted_payload")
             if not pk or not payload:
                 continue
-            rows = HealthRecord.objects.filter(
-                log__user=request.user, pk=pk
-            ).update(encrypted_payload=payload, value=None)
+            rows = HealthRecord.objects.filter(log__user=request.user, pk=pk).update(
+                encrypted_payload=payload, value=None
+            )
             if rows:
                 updated += rows
             else:
-                errors.append({"model": "health_records", "id": pk, "error": "Not found"})
+                errors.append(
+                    {"model": "health_records", "id": pk, "error": "Not found"}
+                )
 
         if request.data.get("encrypt_gps"):
             key_pair = UserKeyPair.objects.filter(user=request.user).first()
@@ -328,7 +388,9 @@ class StagingView(APIView):
                         for f in _GPS_FIELDS
                         if getattr(point, f) is not None
                     }
-                    point.encrypted_payload = encrypt_for_user(key_pair.public_key, fields)
+                    point.encrypted_payload = encrypt_for_user(
+                        key_pair.public_key, fields
+                    )
                     point.latitude = None
                     point.longitude = None
                     point.altitude = None
@@ -390,7 +452,9 @@ class ScrubView(APIView):
                 & Q(encrypted_payload__isnull=False)
                 & _any_plaintext_q(fields)
             )
-            records = list(model.objects.filter(q).values("id", "encrypted_payload", *fields))
+            records = list(
+                model.objects.filter(q).values("id", "encrypted_payload", *fields)
+            )
             if records:
                 result[key] = records
         return Response(result)

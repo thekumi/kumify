@@ -4,19 +4,18 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('health', '0007_alter_medication_name_alter_vaccination_name'),
+        ("health", "0007_alter_medication_name_alter_vaccination_name"),
     ]
 
     operations = [
         migrations.AlterModelOptions(
-            name='vaccination',
-            options={'ordering': ['-pk']},
+            name="vaccination",
+            options={"ordering": ["-pk"]},
         ),
         migrations.AlterField(
-            model_name='vaccination',
-            name='administered_on',
+            model_name="vaccination",
+            name="administered_on",
             field=models.DateField(blank=True, null=True),
         ),
     ]

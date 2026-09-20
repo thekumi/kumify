@@ -247,7 +247,9 @@ class HealthRecordWriteSerializer(serializers.Serializer):
     parameter = serializers.PrimaryKeyRelatedField(
         queryset=HealthParameter.objects.none()
     )
-    value = serializers.DecimalField(max_digits=12, decimal_places=6, required=False, allow_null=True)
+    value = serializers.DecimalField(
+        max_digits=12, decimal_places=6, required=False, allow_null=True
+    )
     encrypted_payload = serializers.JSONField(required=False, allow_null=True)
 
     def __init__(self, *args, **kwargs):
@@ -316,7 +318,10 @@ class HealthLogWriteSerializer(serializers.ModelSerializer):
             if ep:
                 defaults = {"encrypted_payload": ep, "value": None}
             else:
-                defaults = {"value": record_data.get("value"), "encrypted_payload": None}
+                defaults = {
+                    "value": record_data.get("value"),
+                    "encrypted_payload": None,
+                }
             HealthRecord.objects.update_or_create(
                 log=log, parameter=parameter, defaults=defaults
             )
@@ -356,10 +361,18 @@ class VaccinationSerializer(serializers.ModelSerializer):
         read_only_fields = ["id"]
         extra_kwargs = {
             "name": {"required": False, "allow_null": True, "allow_blank": True},
-            "target_disease": {"required": False, "allow_null": True, "allow_blank": True},
+            "target_disease": {
+                "required": False,
+                "allow_null": True,
+                "allow_blank": True,
+            },
             "administered_on": {"required": False, "allow_null": True},
             "provider": {"required": False, "allow_null": True, "allow_blank": True},
-            "batch_number": {"required": False, "allow_null": True, "allow_blank": True},
+            "batch_number": {
+                "required": False,
+                "allow_null": True,
+                "allow_blank": True,
+            },
             "next_due": {"required": False, "allow_null": True},
             "notes": {"required": False, "allow_null": True, "allow_blank": True},
         }
@@ -493,7 +506,11 @@ class UserProfileSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ["id"]
         extra_kwargs = {
-            "display_name": {"required": False, "allow_null": True, "allow_blank": True},
+            "display_name": {
+                "required": False,
+                "allow_null": True,
+                "allow_blank": True,
+            },
             "timezone": {"required": False, "allow_null": True, "allow_blank": True},
             "legal_name": {"required": False, "allow_null": True, "allow_blank": True},
             "phone": {"required": False, "allow_null": True, "allow_blank": True},
@@ -510,7 +527,11 @@ class BasicMedicalInfoSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             "blood_type": {"required": False, "allow_null": True, "allow_blank": True},
             "allergies": {"required": False, "allow_null": True, "allow_blank": True},
-            "medical_notes": {"required": False, "allow_null": True, "allow_blank": True},
+            "medical_notes": {
+                "required": False,
+                "allow_null": True,
+                "allow_blank": True,
+            },
         }
 
 
@@ -545,7 +566,11 @@ class PersonSerializer(serializers.ModelSerializer):
             "birthday": {"required": False, "allow_null": True},
             "email": {"required": False, "allow_null": True, "allow_blank": True},
             "phone": {"required": False, "allow_null": True, "allow_blank": True},
-            "relationship": {"required": False, "allow_null": True, "allow_blank": True},
+            "relationship": {
+                "required": False,
+                "allow_null": True,
+                "allow_blank": True,
+            },
             "address": {"required": False, "allow_null": True, "allow_blank": True},
             "notes": {"required": False, "allow_null": True, "allow_blank": True},
             "last_contact": {"required": False, "allow_null": True},

@@ -10,7 +10,10 @@ def add_log_id(apps, schema_editor):
     hl_table = HealthLog._meta.db_table
 
     with connection.cursor() as cursor:
-        existing = {c.name for c in connection.introspection.get_table_description(cursor, hr_table)}
+        existing = {
+            c.name
+            for c in connection.introspection.get_table_description(cursor, hr_table)
+        }
 
     if "log_id" in existing:
         return
@@ -35,6 +38,7 @@ def add_log_id(apps, schema_editor):
 
         if rows:
             from django.utils.timezone import now
+
             ts = now()
             for record_id, user_id in rows:
                 cursor.execute(
