@@ -45,6 +45,11 @@
         <p v-if="dream.content" class="text-stone-600 text-sm whitespace-pre-wrap leading-relaxed">{{ dream.content }}</p>
       </div>
 
+      <div v-if="dream.attachments?.length" class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
+        <p class="text-xs font-semibold text-stone-400 uppercase tracking-wider mb-3">Attachments</p>
+        <MediaGallery :attachments="dream.attachments" :dataKey="ks.dataKey" :showPrivate="true" />
+      </div>
+
       <button @click="remove" class="w-full py-3 rounded-xl border border-red-100 bg-red-50 text-red-600 text-sm font-medium hover:bg-red-100 transition-colors">
         Delete dream
       </button>
@@ -59,6 +64,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import TopBar from '@/components/TopBar.vue'
 import BottomNav from '@/components/BottomNav.vue'
+import MediaGallery from '@/components/MediaGallery.vue'
 import { getDream, deleteDream } from '@/api/dreams'
 import { getMoods } from '@/api/mood'
 import { useKeystoreStore } from '@/stores/keystore'

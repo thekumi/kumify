@@ -12,6 +12,7 @@ export const updateActivity  = (id, d)  => api.patch(`/activities/${id}/`, d)
 export const deleteActivity  = (id)     => api.delete(`/activities/${id}/`)
 
 export const getStatuses     = (page=1) => api.get(`/statuses/?page=${page}`)
+export const getAllStatuses   = ()       => api.getAll('/statuses/')
 export const getStatus       = (id)     => api.get(`/statuses/${id}/`)
 export const createStatus    = (d)      => api.post('/statuses/', d)
 export const updateStatus    = (id, d)  => api.patch(`/statuses/${id}/`, d)

@@ -44,7 +44,8 @@ export const api = {
       const data = await res.json()
       if (Array.isArray(data)) { results.push(...data); break }
       results.push(...(data.results ?? []))
-      url = data.next
+      // Use only the path+query to avoid mixed-content issues with absolute next URLs.
+      url = data.next ? new URL(data.next, window.location.origin).pathname + new URL(data.next, window.location.origin).search : null
     }
     return results
   },

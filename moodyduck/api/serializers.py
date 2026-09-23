@@ -398,18 +398,16 @@ class DreamMediaSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = DreamMedia
-        fields = ["id", "name", "url"]
-        read_only_fields = ["id", "name", "url"]
+        fields = ["id", "name", "url", "encrypted_payload"]
+        read_only_fields = ["id", "name", "url", "encrypted_payload"]
 
     def get_name(self, obj):
         return obj.basename
 
     def get_url(self, obj):
-        request = self.context.get("request")
         if not obj.media:
             return None
-        url = obj.media.url
-        return request.build_absolute_uri(url) if request else url
+        return obj.media.url
 
 
 class ThemeSerializer(serializers.ModelSerializer):

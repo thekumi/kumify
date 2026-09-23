@@ -6,6 +6,7 @@ export const updateParameter    = (id, d) => api.patch(`/health/parameters/${id}
 export const deleteParameter    = (id)    => api.delete(`/health/parameters/${id}/`)
 
 export const getLogs            = (page=1) => api.get(`/health/logs/?page=${page}`)
+export const getAllLogs         = ()       => api.getAll('/health/logs/')
 export const getLog             = (id)    => api.get(`/health/logs/${id}/`)
 export const createLog          = (d)     => api.post('/health/logs/', d)
 export const updateLog          = (id, d) => api.patch(`/health/logs/${id}/`, d)

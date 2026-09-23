@@ -758,26 +758,24 @@ class DreamViewSet(viewsets.ModelViewSet):
     )
     def upload_attachments(self, request, pk=None):
         dream = self.get_object()
-        uploads = request.FILES.getlist("file") or request.FILES.getlist("uploads")
-        if not uploads:
+        upload = request.FILES.get("file")
+        if not upload:
             return Response(
-                {"file": ["Upload at least one attachment."]},
+                {"file": ["No file provided."]},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        attachments = []
-        for upload in uploads:
-            attachment = DreamMedia(dream=dream)
-            attachment.media.save(get_upload_path(dream, upload.name), upload)
-            attachment.save()
-            attachments.append(attachment)
+        ep_raw = request.data.get("encrypted_payload")
+        ep = json.loads(ep_raw) if ep_raw else None
 
-        serializer = DreamMediaSerializer(
-            attachments,
-            many=True,
-            context={"request": request},
+        attachment = DreamMedia(dream=dream, encrypted_payload=ep)
+        attachment.media.save(get_upload_path(dream, upload.name), upload)
+        attachment.save()
+
+        return Response(
+            DreamMediaSerializer(attachment, context={"request": request}).data,
+            status=201,
         )
-        return Response(serializer.data, status=201)
 
     @action(
         detail=True,

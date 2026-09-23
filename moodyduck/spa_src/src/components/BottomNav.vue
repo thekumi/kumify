@@ -29,7 +29,6 @@ const route = useRoute()
 
 const tabs = [
   { to: '/',        label: 'Home',    icon: 'ph ph-house' },
-  { to: '/mood',    label: 'Mood',    icon: 'ph ph-smiley' },
   { to: '/journal', label: 'Journal', icon: 'ph ph-book-open' },
   { to: '/health',  label: 'Health',  icon: 'ph ph-heartbeat' },
   { to: '/people',  label: 'People',  icon: 'ph ph-users' },
@@ -38,6 +37,7 @@ const tabs = [
 
 function isActive(item) {
   if (item.to === '/') return route.path === '/'
+  if (item.to === '/journal') return route.path.startsWith('/journal') || route.path.startsWith('/mood')
   return route.path.startsWith(item.to)
 }
 </script>

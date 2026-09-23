@@ -31,6 +31,11 @@ const routes = [
   { path: '/journal/cbt/:id',   component: () => import('@/views/journal/CbtDetailView.vue') },
   { path: '/journal/cbt/:id/edit', component: () => import('@/views/journal/CbtFormView.vue') },
 
+  { path: '/journal/history',          component: () => import('@/views/history/HistoryView.vue') },
+  { path: '/journal/history/stats',    component: () => import('@/views/history/StatsView.vue') },
+  { path: '/journal/history/gallery',  component: () => import('@/views/history/GalleryView.vue') },
+  { path: '/journal/history/memories', component: () => import('@/views/history/MemoriesView.vue') },
+
   { path: '/health',                     component: () => import('@/views/health/HealthView.vue') },
   { path: '/health/logs',                component: () => import('@/views/health/LogsView.vue') },
   { path: '/health/logs/new',            component: () => import('@/views/health/LogFormView.vue') },
