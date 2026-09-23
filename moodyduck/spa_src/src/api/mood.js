@@ -24,7 +24,7 @@ export async function uploadAttachment(statusId, file, dataKey, isPrivate = fals
   const fileIv = crypto.getRandomValues(new Uint8Array(12))
   const encryptedFile = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: fileIv }, dataKey, fileBytes)
 
-  const metaBytes = new TextEncoder().encode(JSON.stringify({ mime: file.type || 'application/octet-stream', private: isPrivate }))
+  const metaBytes = new TextEncoder().encode(JSON.stringify({ mime: file.type || 'application/octet-stream', private: isPrivate, name: file.name }))
   const metaIv = crypto.getRandomValues(new Uint8Array(12))
   const encryptedMeta = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: metaIv }, dataKey, metaBytes)
 

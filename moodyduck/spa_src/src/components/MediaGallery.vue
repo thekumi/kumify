@@ -34,9 +34,9 @@
         <a
           v-if="loaded[item.id]"
           :href="loaded[item.id].blobUrl"
-          :download="item.name"
+          :download="loaded[item.id].name ?? item.name"
           class="text-sm text-clay-600 hover:underline truncate flex-1"
-        >{{ item.name }}</a>
+        >{{ loaded[item.id].name ?? item.name }}</a>
         <span v-else class="text-sm text-stone-400 truncate flex-1">{{ item.name }}</span>
         <button
           v-if="canDelete"
@@ -131,7 +131,7 @@ async function loadItem(item) {
       const blob = new Blob([decrypted], { type: meta.mime })
       const blobUrl = URL.createObjectURL(blob)
       blobsToRevoke.push(blobUrl)
-      loaded.value = { ...loaded.value, [item.id]: { blobUrl, mime: meta.mime, private: meta.private } }
+      loaded.value = { ...loaded.value, [item.id]: { blobUrl, mime: meta.mime, private: meta.private, name: meta.name ?? item.name } }
     } else if (item.url) {
       loaded.value = { ...loaded.value, [item.id]: { blobUrl: item.url, mime: guessMime(item.name), private: false } }
     }
