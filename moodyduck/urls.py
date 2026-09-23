@@ -1,5 +1,7 @@
+from django.conf import settings
 from django.contrib import admin
 from django.urls import include, path, re_path
+from django.views.static import serve
 
 from moodyduck.frontend.views import ServiceWorkerView, SpaView
 
@@ -14,5 +16,6 @@ urlpatterns = [
     path("i18n/", include("django.conf.urls.i18n")),
     path("api/", include("moodyduck.api.urls")),
     path("sw.js", ServiceWorkerView.as_view(), name="service-worker"),
+    re_path(r"^usermedia/(?P<path>.*)$", serve, {"document_root": settings.MEDIA_ROOT / "usermedia"}),
     re_path(r"^.*$", SpaView.as_view(), name="spa"),
 ]
