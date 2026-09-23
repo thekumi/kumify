@@ -88,11 +88,9 @@ class StatusMediaSerializer(serializers.ModelSerializer):
         return obj.basename
 
     def get_url(self, obj):
-        request = self.context.get("request")
         if not obj.file:
             return None
-        url = obj.file.url
-        return request.build_absolute_uri(url) if request else url
+        return obj.file.url
 
 
 class MoodSerializer(serializers.ModelSerializer):
