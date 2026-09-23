@@ -58,7 +58,7 @@ export function activityFrequency(statuses, activityMap, days = 0) {
     const ids = s.activity_ids ? tryParseIds(s.activity_ids) : (s.activities ?? []).map(a => a.id)
     for (const aid of ids) counts[aid] = (counts[aid] || 0) + 1
   }
-  const entries = Object.entries(counts).sort(([, a], [, b]) => b - a).slice(0, 20)
+  const entries = Object.entries(counts).sort(([, a], [, b]) => b - a).slice(0, 10)
   return {
     labels: entries.map(([aid]) => activityMap[aid]?.name ?? '?'),
     data: entries.map(([, c]) => c),

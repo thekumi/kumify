@@ -83,36 +83,33 @@
         </div>
       </div>
 
-      <!-- ── Mood ──────────────────────────────────────────────────── -->
       <template v-if="moodLinePoints.length || moodDistRaw.labels.length">
         <p class="text-xs font-semibold text-stone-400 uppercase tracking-wider pt-1">Mood</p>
 
         <div v-if="moodLinePoints.length" class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
           <p class="text-sm font-semibold text-stone-700 mb-3">Over time</p>
-          <Line :data="moodLineData" :options="lineOptions" class="max-h-48" />
+          <div class="h-40"><Line :data="moodLineData" :options="lineOptions" /></div>
         </div>
 
         <div class="grid grid-cols-2 gap-3">
           <div v-if="moodDistRaw.labels.length" class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
             <p class="text-sm font-semibold text-stone-700 mb-3">Mix</p>
-            <Doughnut :data="moodDistData" :options="doughnutOptions" />
+            <div class="h-44"><Doughnut :data="moodDistData" :options="doughnutOptions" /></div>
           </div>
           <div v-if="timeOfDayRaw.data.some(v => v > 0)" class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
             <p class="text-sm font-semibold text-stone-700 mb-3">Time of day</p>
-            <Bar :data="timeOfDayChartData" :options="barOptions" />
+            <div class="h-44"><Bar :data="timeOfDayChartData" :options="barOptions" /></div>
           </div>
         </div>
       </template>
 
-      <!-- ── Activities ───────────────────────────────────────────── -->
       <template v-if="activityData.labels.length">
         <p class="text-xs font-semibold text-stone-400 uppercase tracking-wider pt-1">Activities</p>
         <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
-          <Bar :data="activityChartData" :options="hBarOptions" />
+          <div class="h-52"><Bar :data="activityChartData" :options="hBarOptions" /></div>
         </div>
       </template>
 
-      <!-- ── Dreams ───────────────────────────────────────────────── -->
       <template v-if="allDreams.length">
         <p class="text-xs font-semibold text-stone-400 uppercase tracking-wider pt-1">Dreams</p>
 
@@ -131,18 +128,18 @@
           </div>
         </div>
 
-        <div v-if="dreamFreqData.data.length > 1" class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
-          <p class="text-sm font-semibold text-stone-700 mb-3">Frequency</p>
-          <Bar :data="dreamFreqChartData" :options="dreamBarOptions" class="max-h-40" />
-        </div>
-
-        <div v-if="dreamMoodDistRaw.labels.length" class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
-          <p class="text-sm font-semibold text-stone-700 mb-3">Mood</p>
-          <Doughnut :data="dreamMoodDistData" :options="doughnutOptions" class="max-h-48" />
+        <div class="grid grid-cols-2 gap-3">
+          <div v-if="dreamFreqData.data.length > 1" class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
+            <p class="text-sm font-semibold text-stone-700 mb-3">Frequency</p>
+            <div class="h-44"><Bar :data="dreamFreqChartData" :options="dreamBarOptions" /></div>
+          </div>
+          <div v-if="dreamMoodDistRaw.labels.length" class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
+            <p class="text-sm font-semibold text-stone-700 mb-3">Mood</p>
+            <div class="h-44"><Doughnut :data="dreamMoodDistData" :options="doughnutOptions" /></div>
+          </div>
         </div>
       </template>
 
-      <!-- ── Habits ────────────────────────────────────────────────── -->
       <template v-if="habitData.length">
         <p class="text-xs font-semibold text-stone-400 uppercase tracking-wider pt-1">Habits</p>
         <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
@@ -205,7 +202,7 @@ const calendarWeeks = buildCalendarWeeks(52)
 const rawHabitLogs  = ref([])
 const rawHabits     = ref([])
 
-// ── Calendar month labels ────────────────────────────────────────────────────
+// Calendar month labels
 
 const calendarMonthLabels = computed(() => {
   const labels = {}
@@ -217,7 +214,7 @@ const calendarMonthLabels = computed(() => {
   return labels
 })
 
-// ── Summary ──────────────────────────────────────────────────────────────────
+// Summary
 
 const filteredStatuses = computed(() => filterByDays(allStatuses.value, rangeDays.value))
 const filteredDreams   = computed(() => filterByDays(allDreams.value, rangeDays.value))
@@ -227,7 +224,7 @@ const totalDreams  = computed(() => filteredDreams.value.length)
 const activeDays   = computed(() => new Set(filteredStatuses.value.map(s => s.timestamp.slice(0, 10))).size)
 const streak       = computed(() => currentStreak(allStatuses.value))
 
-// ── Calendar ─────────────────────────────────────────────────────────────────
+// Calendar
 
 const maxCount = computed(() => Math.max(1, ...Object.values(calData.value).map(d => d.count)))
 
@@ -264,7 +261,7 @@ function calDayTitle(day) {
   return `${day}: ${d.count} entr${d.count === 1 ? 'y' : 'ies'}${d.avgMood ? `, avg mood ${d.avgMood.toFixed(1)}` : ''}`
 }
 
-// ── Mood charts ───────────────────────────────────────────────────────────────
+// Mood charts
 
 const moodLinePoints = computed(() => moodOverTime(allStatuses.value, moodMap.value, rangeDays.value))
 const moodLineData   = computed(() => ({
@@ -292,7 +289,7 @@ const timeOfDayChartData = computed(() => ({
   datasets: [{ data: timeOfDayRaw.value.data, backgroundColor: '#7c3aed66', borderRadius: 4 }],
 }))
 
-// ── Activity charts ───────────────────────────────────────────────────────────
+// Activity charts
 
 const activityData      = computed(() => activityFrequency(allStatuses.value, activityMap.value, rangeDays.value))
 const activityChartData = computed(() => ({
@@ -300,7 +297,7 @@ const activityChartData = computed(() => ({
   datasets: [{ data: activityData.value.data, backgroundColor: '#0d9488aa', borderRadius: 4 }],
 }))
 
-// ── Dream charts ──────────────────────────────────────────────────────────────
+// Dream charts
 
 const dreamFreqData      = computed(() => dreamFrequency(allDreams.value, rangeDays.value))
 const dreamFreqChartData = computed(() => ({
@@ -332,23 +329,23 @@ const avgDreamWords = computed(() => {
   return Math.round(total / filtered.length)
 })
 
-// ── Habits ────────────────────────────────────────────────────────────────────
+// Habits
 
 const habitData = computed(() => habitCompletionRates(rawHabitLogs.value, rawHabits.value, rangeDays.value))
 
-// ── Chart options ─────────────────────────────────────────────────────────────
+// Chart options
 
 const lineOptions = {
-  responsive: true,
+  responsive: true, maintainAspectRatio: false,
   plugins: { legend: { display: false } },
   scales: { x: { display: false }, y: { grid: { color: '#f5f5f4' }, ticks: { precision: 1 } } },
 }
 const doughnutOptions = {
-  responsive: true,
+  responsive: true, maintainAspectRatio: false,
   plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 8, font: { size: 11 } } } },
 }
 const barOptions = {
-  responsive: true,
+  responsive: true, maintainAspectRatio: false,
   plugins: { legend: { display: false } },
   scales: {
     x: { grid: { display: false } },
@@ -357,7 +354,7 @@ const barOptions = {
 }
 const hBarOptions = {
   indexAxis: 'y',
-  responsive: true,
+  responsive: true, maintainAspectRatio: false,
   plugins: { legend: { display: false } },
   scales: {
     x: { grid: { color: '#f5f5f4' }, ticks: { precision: 0 } },
@@ -365,7 +362,7 @@ const hBarOptions = {
   },
 }
 const dreamBarOptions = {
-  responsive: true,
+  responsive: true, maintainAspectRatio: false,
   plugins: { legend: { display: false } },
   scales: {
     x: { grid: { display: false }, ticks: { font: { size: 10 } } },
@@ -373,7 +370,7 @@ const dreamBarOptions = {
   },
 }
 
-// ── Data loading ──────────────────────────────────────────────────────────────
+// Data loading
 
 async function load() {
   if (!ks.dataKey) return
