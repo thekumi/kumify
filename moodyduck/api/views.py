@@ -632,26 +632,24 @@ class StatusViewSet(viewsets.ModelViewSet):
     )
     def upload_attachments(self, request, pk=None):
         status_obj = self.get_object()
-        uploads = request.FILES.getlist("file") or request.FILES.getlist("uploads")
-        if not uploads:
+        upload = request.FILES.get("file")
+        if not upload:
             return Response(
-                {"file": ["Upload at least one attachment."]},
+                {"file": ["No file provided."]},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        attachments = []
-        for upload in uploads:
-            attachment = StatusMedia(status=status_obj)
-            attachment.file.save(get_upload_path(status_obj, upload.name), upload)
-            attachment.save()
-            attachments.append(attachment)
+        ep_raw = request.data.get("encrypted_payload")
+        ep = json.loads(ep_raw) if ep_raw else None
 
-        serializer = StatusMediaSerializer(
-            attachments,
-            many=True,
-            context={"request": request},
+        attachment = StatusMedia(status=status_obj, encrypted_payload=ep)
+        attachment.file.save(get_upload_path(status_obj, upload.name), upload)
+        attachment.save()
+
+        return Response(
+            StatusMediaSerializer(attachment, context={"request": request}).data,
+            status=201,
         )
-        return Response(serializer.data, status=201)
 
     @action(
         detail=True,

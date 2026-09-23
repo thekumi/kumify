@@ -65,6 +65,49 @@
         </div>
       </div>
 
+      <!-- Attachments -->
+      <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
+        <p class="text-sm font-semibold text-stone-500 mb-3">Attachments</p>
+
+        <!-- Existing attachments (edit mode) -->
+        <div v-if="existingAttachments.length" class="mb-3">
+          <MediaGallery
+            :attachments="existingAttachments"
+            :dataKey="ks.dataKey"
+            :canDelete="true"
+            :showPrivate="true"
+            @delete="removeExistingAttachment"
+          />
+        </div>
+
+        <!-- Pending new files -->
+        <div v-if="pendingFiles.length" class="space-y-2 mb-3">
+          <div v-for="(pf, i) in pendingFiles" :key="i"
+               class="flex items-center gap-2 bg-stone-50 rounded-xl px-3 py-2">
+            <img v-if="pf.previewUrl" :src="pf.previewUrl"
+                 class="w-10 h-10 rounded-lg object-cover shrink-0" />
+            <i v-else class="ph ph-file text-stone-400 text-xl shrink-0"></i>
+            <span class="text-sm text-stone-700 truncate flex-1">{{ pf.file.name }}</span>
+            <button type="button" @click="pf.private = !pf.private"
+              class="shrink-0 flex items-center gap-1 text-xs px-2 py-1 rounded-lg transition-colors"
+              :class="pf.private ? 'bg-amber-50 text-amber-600' : 'text-stone-400 hover:text-stone-600'">
+              <i :class="pf.private ? 'ph ph-lock-simple' : 'ph ph-lock-simple-open'" class="text-sm"></i>
+              {{ pf.private ? 'Private' : 'Visible' }}
+            </button>
+            <button type="button" @click="removePending(i)"
+              class="text-stone-300 hover:text-red-400 transition-colors shrink-0">
+              <i class="ph ph-x text-sm"></i>
+            </button>
+          </div>
+        </div>
+
+        <label class="inline-flex items-center gap-1.5 text-sm text-clay-600 hover:text-clay-700 cursor-pointer">
+          <i class="ph ph-paperclip text-base"></i>
+          Add files
+          <input type="file" multiple class="hidden" @change="addFiles" />
+        </label>
+      </div>
+
       <p v-if="error" class="text-sm text-red-600 bg-red-50 rounded-xl px-4 py-3">{{ error }}</p>
 
       <button type="submit" :disabled="saving"
@@ -82,7 +125,8 @@ import { ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import TopBar from '@/components/TopBar.vue'
 import BottomNav from '@/components/BottomNav.vue'
-import { getMoods, getActivities, getStatus, createStatus, updateStatus } from '@/api/mood'
+import MediaGallery from '@/components/MediaGallery.vue'
+import { getMoods, getActivities, getStatus, createStatus, updateStatus, uploadAttachment, deleteAttachment } from '@/api/mood'
 import { useKeystoreStore } from '@/stores/keystore'
 import { useOfflineStore } from '@/stores/offline'
 
@@ -99,10 +143,36 @@ const rawMoods = ref([])
 const rawActivities = ref([])
 const form = ref({ mood: null, title: '', text: '' })
 const selectedActivities = ref(new Set())
+const existingAttachments = ref([])
+const pendingFiles = ref([])
 const loading = ref(true)
 const saving = ref(false)
 const error = ref('')
 let rawStatus = null
+
+function addFiles(e) {
+  for (const file of e.target.files) {
+    const previewUrl = file.type.startsWith('image/') ? URL.createObjectURL(file) : null
+    pendingFiles.value.push({ file, previewUrl, private: false })
+  }
+  e.target.value = ''
+}
+
+function removePending(i) {
+  const pf = pendingFiles.value[i]
+  if (pf.previewUrl) URL.revokeObjectURL(pf.previewUrl)
+  pendingFiles.value.splice(i, 1)
+}
+
+async function removeExistingAttachment(attachmentId) {
+  if (!confirm('Remove this attachment?')) return
+  try {
+    await deleteAttachment(id, attachmentId)
+    existingAttachments.value = existingAttachments.value.filter(a => a.id !== attachmentId)
+  } catch {
+    error.value = 'Could not remove attachment.'
+  }
+}
 
 function toggleActivity(id) {
   selectedActivities.value.has(id)
@@ -130,6 +200,16 @@ async function applyDecryption() {
 
 watch(() => ks.dataKey, (key) => { if (key) applyDecryption() })
 
+async function uploadPending(statusId) {
+  for (const pf of pendingFiles.value) {
+    try {
+      await uploadAttachment(statusId, pf.file, ks.dataKey, pf.private)
+    } catch (e) {
+      console.warn('[form] attachment upload failed:', pf.file.name, e)
+    }
+  }
+}
+
 async function save() {
   saving.value = true
   error.value = ''
@@ -144,6 +224,7 @@ async function save() {
     if (isEdit) {
       const encrypted_payload = await ks.encryptPayload(toEncrypt)
       const result = await updateStatus(id, { encrypted_payload, mood: null, activity_ids: [] })
+      await uploadPending(result.id)
       router.push(`/mood/${result.id}`)
     } else {
       const createPayload = Object.keys(toEncrypt).length
@@ -155,6 +236,7 @@ async function save() {
       } else {
         try {
           const result = await createStatus(createPayload)
+          await uploadPending(result.id)
           router.push(`/mood/${result.id}`)
         } catch (e) {
           if (!(e instanceof TypeError)) throw e
@@ -178,6 +260,7 @@ onMounted(async () => {
 
   if (isEdit) {
     rawStatus = await getStatus(id)
+    existingAttachments.value = rawStatus.attachments ?? []
     await applyDecryption()
   }
   loading.value = false

@@ -81,8 +81,8 @@ class StatusMediaSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = StatusMedia
-        fields = ["id", "name", "url"]
-        read_only_fields = ["id", "name", "url"]
+        fields = ["id", "name", "url", "encrypted_payload"]
+        read_only_fields = ["id", "name", "url", "encrypted_payload"]
 
     def get_name(self, obj):
         return obj.basename

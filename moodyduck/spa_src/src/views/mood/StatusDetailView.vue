@@ -42,6 +42,11 @@
         </div>
       </div>
 
+      <div v-if="status.attachments?.length" class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
+        <p class="text-xs font-semibold text-stone-400 uppercase tracking-wider mb-3">Attachments</p>
+        <MediaGallery :attachments="status.attachments" :dataKey="ks.dataKey" :showPrivate="true" />
+      </div>
+
       <button @click="remove"
         class="w-full py-3 rounded-xl border border-red-100 bg-red-50 text-red-600 text-sm font-medium hover:bg-red-100 transition-colors mt-2">
         Delete entry
@@ -57,6 +62,7 @@ import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import TopBar from '@/components/TopBar.vue'
 import BottomNav from '@/components/BottomNav.vue'
+import MediaGallery from '@/components/MediaGallery.vue'
 import { getStatus, deleteStatus, getMoods, getActivities } from '@/api/mood'
 import { useKeystoreStore } from '@/stores/keystore'
 

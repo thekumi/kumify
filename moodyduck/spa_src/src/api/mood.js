@@ -1,4 +1,5 @@
 import { api } from './client'
+import { b64encode } from '@/keystore/util'
 
 export const getMoods        = ()       => api.getAll('/moods/')
 export const createMood      = (d)      => api.post('/moods/', d)
@@ -17,3 +18,30 @@ export const updateStatus    = (id, d)  => api.patch(`/statuses/${id}/`, d)
 export const deleteStatus    = (id)     => api.delete(`/statuses/${id}/`)
 
 export const getDashboard    = ()       => api.get('/stats/dashboard/')
+
+export async function uploadAttachment(statusId, file, dataKey, isPrivate = false) {
+  const fileBytes = await file.arrayBuffer()
+  const fileIv = crypto.getRandomValues(new Uint8Array(12))
+  const encryptedFile = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: fileIv }, dataKey, fileBytes)
+
+  const metaBytes = new TextEncoder().encode(JSON.stringify({ mime: file.type || 'application/octet-stream', private: isPrivate }))
+  const metaIv = crypto.getRandomValues(new Uint8Array(12))
+  const encryptedMeta = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: metaIv }, dataKey, metaBytes)
+
+  const ep = { v: 2, iv: b64encode(fileIv), meta_iv: b64encode(metaIv), meta_ct: b64encode(encryptedMeta) }
+
+  const token = localStorage.getItem('authToken')
+  const form = new FormData()
+  form.append('file', new Blob([encryptedFile], { type: 'application/octet-stream' }), file.name)
+  form.append('encrypted_payload', JSON.stringify(ep))
+  const res = await fetch(`/api/statuses/${statusId}/attachments/`, {
+    method: 'POST',
+    headers: token ? { Authorization: `Token ${token}` } : {},
+    body: form,
+  })
+  if (!res.ok) throw new Error('Upload failed')
+  return res.json()
+}
+
+export const deleteAttachment = (statusId, attachmentId) =>
+  api.delete(`/statuses/${statusId}/attachments/${attachmentId}/`)
