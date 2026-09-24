@@ -27,6 +27,18 @@
           <i class="ph ph-caret-right text-stone-300"></i>
         </RouterLink>
       </li>
+      <li>
+        <RouterLink to="/mood/settings/habits" class="flex items-center gap-3 px-4 py-4 hover:bg-stone-50 transition-colors">
+          <div class="w-9 h-9 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+            <i class="ph ph-check-circle text-amber-600 text-lg"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-medium text-stone-800">Habits</p>
+            <p class="text-xs text-stone-400 mt-0.5">Track recurring activities as habits</p>
+          </div>
+          <i class="ph ph-caret-right text-stone-300"></i>
+        </RouterLink>
+      </li>
     </ul>
 
     <BottomNav />

@@ -17,6 +17,7 @@ const routes = [
   { path: '/mood/settings/activities',          component: () => import('@/views/mood/ActivitiesView.vue') },
   { path: '/mood/settings/activities/new',      component: () => import('@/views/mood/ActivityFormView.vue') },
   { path: '/mood/settings/activities/:id/edit', component: () => import('@/views/mood/ActivityFormView.vue') },
+  { path: '/mood/settings/habits',              component: () => import('@/views/mood/HabitsView.vue') },
 
   { path: '/journal',           component: () => import('@/views/journal/JournalView.vue') },
   { path: '/journal/dreams',         component: () => import('@/views/journal/DreamListView.vue') },
@@ -46,7 +47,6 @@ const routes = [
   { path: '/health/vaccinations',        component: () => import('@/views/health/VaccinationsView.vue') },
   { path: '/health/vaccinations/new',    component: () => import('@/views/health/VaccinationFormView.vue') },
   { path: '/health/vaccinations/:id/edit',component: () => import('@/views/health/VaccinationFormView.vue') },
-  { path: '/health/habits',                       component: () => import('@/views/health/HabitsView.vue') },
   { path: '/health/parameters',                   component: () => import('@/views/health/ParametersView.vue') },
   { path: '/health/parameters/new',               component: () => import('@/views/health/ParameterFormView.vue') },
   { path: '/health/parameters/:id/edit',          component: () => import('@/views/health/ParameterFormView.vue') },

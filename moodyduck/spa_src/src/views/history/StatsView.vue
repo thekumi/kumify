@@ -437,8 +437,11 @@ async function load() {
     moodMap.value      = Object.fromEntries(moods.map(m => [m.id, m]))
     activityMap.value  = Object.fromEntries(activities.map(a => [a.id, a]))
     calData.value      = calendarData(statuses, moodMap.value)
-    rawHabitLogs.value = habitLogs
-    rawHabits.value    = habits
+    rawHabitLogs.value  = habitLogs
+    rawHabits.value     = habits.map(h => ({
+      ...h,
+      name: activityMap.value[h.activity_id]?.name ?? h.name ?? '?',
+    }))
     allProperties.value = props
   } finally {
     loading.value = false
