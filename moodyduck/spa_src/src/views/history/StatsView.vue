@@ -148,11 +148,19 @@
               <span class="text-sm text-stone-600 w-28 truncate shrink-0">{{ h.name }}</span>
               <div class="flex-1 bg-stone-100 rounded-full h-2">
                 <div class="bg-emerald-500 h-2 rounded-full transition-all"
-                     :style="`width:${Math.min(100, h.count / h.totalDays * 100)}%`"></div>
+                     :style="`width:${Math.min(100, h.count / h.expected * 100)}%`"></div>
               </div>
-              <span class="text-xs text-stone-400 shrink-0 text-right w-16">{{ h.count }}/{{ h.totalDays }}d</span>
+              <span class="text-xs text-stone-400 shrink-0 text-right w-16">{{ h.count }}/{{ h.expected }}</span>
             </div>
           </div>
+        </div>
+      </template>
+
+      <template v-if="propertyCharts.length">
+        <p class="text-xs font-semibold text-stone-400 uppercase tracking-wider pt-1">Custom</p>
+        <div v-for="pc in propertyCharts" :key="pc.id" class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
+          <p class="text-sm font-semibold text-stone-700 mb-3">{{ pc.name }}</p>
+          <div class="h-40"><Line :data="pc.chartData" :options="lineOptions" /></div>
         </div>
       </template>
 
@@ -179,11 +187,12 @@ import { useKeystoreStore } from '@/stores/keystore'
 import { getAllStatuses, getMoods, getActivities } from '@/api/mood'
 import { getAllDreams } from '@/api/dreams'
 import { getAllHabitLogs, getHabits } from '@/api/habits'
+import { getProperties } from '@/api/properties'
 import {
   filterByDays,
   moodOverTime, moodDistribution, activityFrequency,
   entryCountByTimeOfDay, calendarData, habitCompletionRates,
-  buildCalendarWeeks, dreamFrequency, currentStreak,
+  buildCalendarWeeks, dreamFrequency, currentStreak, propertyOverTime,
 } from '@/history/stats.js'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, ArcElement, BarElement, Title, Tooltip, Legend, Filler)
@@ -201,6 +210,7 @@ const calData     = ref({})
 const calendarWeeks = buildCalendarWeeks(52)
 const rawHabitLogs  = ref([])
 const rawHabits     = ref([])
+const allProperties = ref([])
 
 // Calendar month labels
 
@@ -333,6 +343,34 @@ const avgDreamWords = computed(() => {
 
 const habitData = computed(() => habitCompletionRates(rawHabitLogs.value, rawHabits.value, rangeDays.value))
 
+// Properties
+
+const propertyCharts = computed(() =>
+  allProperties.value
+    .filter(p => p.type === 'scale')
+    .map(p => ({
+      id: p.id,
+      name: p.name ?? '?',
+      points: propertyOverTime(allStatuses.value, String(p.id), rangeDays.value),
+    }))
+    .filter(pc => pc.points.length > 0)
+    .map(pc => ({
+      ...pc,
+      chartData: {
+        labels: pc.points.map(pt => pt.x),
+        datasets: [{
+          data: pc.points.map(pt => pt.y),
+          borderColor: '#7c3aed',
+          backgroundColor: 'rgba(124,58,237,0.08)',
+          tension: 0.3,
+          fill: true,
+          pointRadius: pc.points.length > 60 ? 0 : 3,
+          pointHoverRadius: 4,
+        }],
+      },
+    }))
+)
+
 // Chart options
 
 const lineOptions = {
@@ -376,20 +414,22 @@ async function load() {
   if (!ks.dataKey) return
   loading.value = true
   try {
-    const [rawStatuses, rawMoods, rawActivities, rawDreams, habitLogs, rawHabitsData] = await Promise.all([
+    const [rawStatuses, rawMoods, rawActivities, rawDreams, habitLogs, rawHabitsData, rawProps] = await Promise.all([
       getAllStatuses(),
       getMoods(),
       getActivities(),
       getAllDreams(),
       getAllHabitLogs(),
       getHabits(),
+      getProperties().catch(() => []),
     ])
-    const [statuses, moods, activities, dreams, habits] = await Promise.all([
+    const [statuses, moods, activities, dreams, habits, props] = await Promise.all([
       ks.decryptAll(rawStatuses),
       ks.decryptAll(rawMoods),
       ks.decryptAll(rawActivities),
       ks.decryptAll(rawDreams),
       ks.decryptAll(rawHabitsData),
+      ks.decryptAll(rawProps),
     ])
 
     allStatuses.value  = statuses
@@ -399,6 +439,7 @@ async function load() {
     calData.value      = calendarData(statuses, moodMap.value)
     rawHabitLogs.value = habitLogs
     rawHabits.value    = habits
+    allProperties.value = props
   } finally {
     loading.value = false
   }

@@ -60,7 +60,8 @@ const routes = [
   { path: '/me/devices',    component: () => import('@/views/me/DevicesView.vue') },
   { path: '/me/key-backup', component: () => import('@/views/me/KeyBackupView.vue') },
   { path: '/me/security',   component: () => import('@/views/me/SecurityView.vue') },
-  { path: '/me/emergency',  component: () => import('@/views/me/EmergencyView.vue') },
+  { path: '/me/emergency',   component: () => import('@/views/me/EmergencyView.vue') },
+  { path: '/me/properties', component: () => import('@/views/me/PropertiesView.vue') },
 ]
 
 const router = createRouter({

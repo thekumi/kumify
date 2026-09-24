@@ -52,6 +52,7 @@ const links = [
   { to: '/me/key-backup', label: 'Key Backup',           icon: 'ph ph-shield-check',        bg: 'bg-green-100',  color: 'text-green-600' },
   { to: '/me/security',   label: 'Privacy & Security',   icon: 'ph ph-lock',                bg: 'bg-amber-100',  color: 'text-amber-600' },
   { to: '/me/emergency',  label: 'Emergency Info',        icon: 'ph ph-first-aid',           bg: 'bg-red-100',    color: 'text-red-600' },
+  { to: '/me/properties', label: 'Custom Properties',     icon: 'ph ph-sliders-horizontal',  bg: 'bg-purple-100',  color: 'text-purple-600' },
   { to: '/people',        label: 'People',               icon: 'ph ph-users',               bg: 'bg-violet-100', color: 'text-violet-600' },
 ]
 

@@ -65,6 +65,42 @@
         </div>
       </div>
 
+      <!-- Custom properties -->
+      <div v-if="properties.length" class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
+        <p class="text-sm font-semibold text-stone-500 mb-3">Custom</p>
+        <div class="space-y-3">
+          <div v-for="p in properties" :key="p.id">
+            <p class="text-xs text-stone-500 mb-1.5">{{ p.name || '—' }}</p>
+            <button v-if="p.type === 'boolean'" type="button"
+              @click="toggleProperty(p.id)"
+              class="px-4 py-1.5 rounded-full border text-sm font-medium transition-all"
+              :class="form.properties[String(p.id)]
+                ? 'border-clay-300 bg-clay-50 text-clay-700'
+                : 'border-stone-200 text-stone-500 hover:border-stone-300'">
+              {{ form.properties[String(p.id)] ? 'Yes' : 'No' }}
+            </button>
+            <div v-else-if="(p.max_val - p.min_val) <= 9" class="flex gap-1 flex-wrap">
+              <button v-for="v in scaleRange(p)" :key="v" type="button"
+                @click="setProperty(p.id, v)"
+                class="w-8 h-8 rounded-lg border text-sm font-medium transition-all"
+                :class="form.properties[String(p.id)] === v
+                  ? 'border-clay-300 bg-clay-50 text-clay-700'
+                  : 'border-stone-200 text-stone-500 hover:border-stone-300'">
+                {{ v }}
+              </button>
+            </div>
+            <div v-else class="flex items-center gap-2">
+              <span class="text-xs text-stone-400 w-6 text-right">{{ p.min_val }}</span>
+              <input type="range" :min="p.min_val" :max="p.max_val" :step="1"
+                :value="form.properties[String(p.id)] ?? p.min_val"
+                @input="setProperty(p.id, Number($event.target.value))"
+                class="flex-1 accent-clay-600" />
+              <span class="text-xs text-stone-600 w-6">{{ form.properties[String(p.id)] ?? p.min_val }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Attachments -->
       <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
         <p class="text-sm font-semibold text-stone-500 mb-3">Attachments</p>
@@ -127,6 +163,7 @@ import TopBar from '@/components/TopBar.vue'
 import BottomNav from '@/components/BottomNav.vue'
 import MediaGallery from '@/components/MediaGallery.vue'
 import { getMoods, getActivities, getStatus, createStatus, updateStatus, uploadAttachment, deleteAttachment } from '@/api/mood'
+import { getProperties } from '@/api/properties'
 import { useKeystoreStore } from '@/stores/keystore'
 import { useOfflineStore } from '@/stores/offline'
 
@@ -139,9 +176,11 @@ const isEdit = !!id
 
 const moods = ref([])
 const activities = ref([])
+const properties = ref([])
 const rawMoods = ref([])
 const rawActivities = ref([])
-const form = ref({ mood: null, title: '', text: '' })
+const rawProperties = ref([])
+const form = ref({ mood: null, title: '', text: '', properties: {} })
 const selectedActivities = ref(new Set())
 const existingAttachments = ref([])
 const pendingFiles = ref([])
@@ -174,6 +213,21 @@ async function removeExistingAttachment(attachmentId) {
   }
 }
 
+function scaleRange(p) {
+  const result = []
+  for (let v = p.min_val; v <= p.max_val; v++) result.push(v)
+  return result
+}
+
+function toggleProperty(id) {
+  const key = String(id)
+  form.value.properties[key] = !form.value.properties[key]
+}
+
+function setProperty(id, v) {
+  form.value.properties[String(id)] = v
+}
+
 function toggleActivity(id) {
   selectedActivities.value.has(id)
     ? selectedActivities.value.delete(id)
@@ -185,6 +239,7 @@ async function applyDecryption() {
   dm.sort((a, b) => (Number(b.value) || 0) - (Number(a.value) || 0))
   moods.value = dm
   activities.value = await ks.decryptAll(rawActivities.value)
+  properties.value = await ks.decryptAll(rawProperties.value)
   if (rawStatus && isEdit) {
     const s = await ks.decrypt(rawStatus)
     form.value.title = s.title ?? ''
@@ -195,6 +250,7 @@ async function applyDecryption() {
         ? JSON.parse(s.activity_ids)
         : (rawStatus.activities?.map(a => a.id) ?? [])
     )
+    form.value.properties = (s.properties && typeof s.properties === 'object') ? s.properties : {}
   }
 }
 
@@ -220,6 +276,8 @@ async function save() {
     if (form.value.mood != null) toEncrypt.mood_id = String(form.value.mood)
     const actIds = [...selectedActivities.value]
     if (actIds.length) toEncrypt.activity_ids = JSON.stringify(actIds)
+    const propEntries = Object.entries(form.value.properties).filter(([, v]) => v != null)
+    if (propEntries.length) toEncrypt.properties = Object.fromEntries(propEntries)
 
     if (isEdit) {
       const encrypted_payload = await ks.encryptPayload(toEncrypt)
@@ -253,9 +311,10 @@ async function save() {
 }
 
 onMounted(async () => {
-  const [m, a] = await Promise.all([getMoods().catch(() => []), getActivities().catch(() => [])])
+  const [m, a, p] = await Promise.all([getMoods().catch(() => []), getActivities().catch(() => []), getProperties().catch(() => [])])
   rawMoods.value = m
   rawActivities.value = a
+  rawProperties.value = p
   await applyDecryption()
 
   if (isEdit) {

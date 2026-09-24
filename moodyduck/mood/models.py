@@ -119,3 +119,14 @@ class StatusAspectRating(models.Model):
     status = models.ForeignKey(Status, models.CASCADE)
     aspect_rating = models.ForeignKey(AspectRating, models.SET_NULL, null=True)
     comment = models.TextField(null=True, blank=True)
+
+
+class CustomProperty(models.Model):
+    class Meta:
+        ordering = ["id"]
+
+    user = models.ForeignKey(get_user_model(), models.CASCADE)
+    encrypted_payload = models.JSONField(null=True, blank=True)
+
+    def __str__(self):
+        return f"Property #{self.id}"

@@ -13,7 +13,7 @@ from moodyduck.health.models import (
     Vaccination,
 )
 from moodyduck.keystore.models import UserDevice, UserKeyBackup, UserKeyPair
-from moodyduck.mood.models import Activity, Mood, Status, StatusActivity, StatusMedia
+from moodyduck.mood.models import Activity, CustomProperty, Mood, Status, StatusActivity, StatusMedia
 from moodyduck.profiles.models import EmergencyAccessLog, UserProfile
 
 
@@ -190,6 +190,13 @@ class ActivitySerializer(serializers.ModelSerializer):
         extra_kwargs = {
             "name": {"required": False, "allow_null": True, "allow_blank": True},
         }
+
+
+class CustomPropertySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomProperty
+        fields = ["id", "encrypted_payload"]
+        read_only_fields = ["id"]
 
 
 class HabitSerializer(serializers.ModelSerializer):

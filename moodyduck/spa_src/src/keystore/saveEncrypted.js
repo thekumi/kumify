@@ -9,7 +9,7 @@ export async function saveEncrypted(updateFn, id, payload, encryptedFields, rawR
     const toEncrypt = {}
     for (const field of encryptedFields) {
       const v = payload[field]
-      if (v !== null && v !== undefined && v !== '') toEncrypt[field] = String(v)
+      if (v !== null && v !== undefined && v !== '') toEncrypt[field] = v
     }
     const encrypted_payload = await ks.encryptPayload(toEncrypt)
     const patched = { ...payload, encrypted_payload }

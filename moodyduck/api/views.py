@@ -31,11 +31,12 @@ from moodyduck.health.models import (
 )
 from moodyduck.keystore.crypto import encrypt_for_user
 from moodyduck.keystore.models import UserDevice, UserKeyBackup, UserKeyPair
-from moodyduck.mood.models import Activity, Mood, Status, StatusActivity, StatusMedia
+from moodyduck.mood.models import Activity, CustomProperty, Mood, Status, StatusActivity, StatusMedia
 from moodyduck.profiles.models import EmergencyAccessLog, UserProfile
 
 from .serializers import (
     ActivitySerializer,
+    CustomPropertySerializer,
     BasicMedicalInfoSerializer,
     CBTRecordSerializer,
     DreamMediaSerializer,
@@ -665,6 +666,17 @@ class StatusViewSet(viewsets.ModelViewSet):
         )
         attachment.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class CustomPropertyViewSet(viewsets.ModelViewSet):
+    serializer_class = CustomPropertySerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return CustomProperty.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
 
 
 class HabitViewSet(viewsets.ModelViewSet):

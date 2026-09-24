@@ -31,6 +31,7 @@
         <div class="flex-1 min-w-0">
           <p class="font-medium text-stone-800 truncate">{{ h.name || '—' }}</p>
           <p v-if="h.description" class="text-xs text-stone-400 truncate">{{ h.description }}</p>
+          <p v-if="h.goal" class="text-xs text-stone-300">{{ h.goal.target_count }}× {{ h.goal.period }}</p>
         </div>
         <button @click="logHabit(h)" title="Log"
           class="w-8 h-8 flex items-center justify-center rounded-full bg-amber-50 border border-amber-200 text-amber-700 hover:bg-amber-100 transition-colors text-sm font-bold shrink-0">
@@ -51,6 +52,25 @@
           class="w-full px-3 py-2.5 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-amber-400 text-stone-800 bg-stone-50 text-sm" />
         <textarea v-model="sheet.description" rows="2" placeholder="Description (optional)"
           class="w-full px-3 py-2.5 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-amber-400 text-stone-800 bg-stone-50 text-sm resize-none"></textarea>
+        <div class="space-y-2">
+          <label class="flex items-center gap-2 cursor-pointer select-none">
+            <input type="checkbox" v-model="sheet.goalEnabled" class="rounded accent-amber-600" />
+            <span class="text-sm text-stone-600">Set a goal</span>
+          </label>
+          <div v-if="sheet.goalEnabled" class="flex items-center gap-2">
+            <div class="flex gap-0.5 bg-stone-100 rounded-xl p-0.5">
+              <button v-for="p in ['daily','weekly','monthly']" :key="p"
+                @click="sheet.goalPeriod = p"
+                class="text-xs px-2.5 py-1.5 rounded-lg capitalize font-medium transition-colors"
+                :class="sheet.goalPeriod === p ? 'bg-white shadow-sm text-stone-800' : 'text-stone-400'">
+                {{ p }}
+              </button>
+            </div>
+            <input type="number" v-model.number="sheet.goalCount" min="1" max="99"
+              class="w-14 px-2 py-2 rounded-xl border border-stone-200 text-center text-sm text-stone-800 bg-stone-50 focus:outline-none focus:ring-2 focus:ring-amber-400" />
+            <span class="text-sm text-stone-400">× / {{ sheet.goalPeriod === 'daily' ? 'day' : sheet.goalPeriod === 'weekly' ? 'week' : 'month' }}</span>
+          </div>
+        </div>
         <p v-if="sheetError" class="text-sm text-red-600 bg-red-50 rounded-xl px-3 py-2">{{ sheetError }}</p>
         <div class="flex gap-3">
           <button v-if="sheet.id" @click="removeHabit(sheet)" type="button"
@@ -86,28 +106,39 @@ const sheet = ref(null)
 const sheetSaving = ref(false)
 const sheetError = ref('')
 
-const ENCRYPTED_FIELDS = ['name', 'description']
+const ENCRYPTED_FIELDS = ['name', 'description', 'goal']
 
 async function applyDecryption() { habits.value = await ks.decryptAll(raw.value) }
 watch(() => ks.dataKey, (key) => { if (key) applyDecryption() })
 
-function openNew() { sheet.value = { name: '', description: '' }; sheetError.value = '' }
+function openNew() {
+  sheet.value = { name: '', description: '', goalEnabled: false, goalPeriod: 'weekly', goalCount: 1 }
+  sheetError.value = ''
+}
 
 function openEdit(h) {
   const rawHabit = raw.value.find(r => r.id === h.id)
-  sheet.value = { id: h.id, _raw: rawHabit, name: h.name ?? '', description: h.description ?? '' }
+  sheet.value = {
+    id: h.id, _raw: rawHabit,
+    name: h.name ?? '', description: h.description ?? '',
+    goalEnabled: !!h.goal,
+    goalPeriod: h.goal?.period ?? 'weekly',
+    goalCount: h.goal?.target_count ?? 1,
+  }
   sheetError.value = ''
 }
 
 async function saveHabit() {
   if (!sheet.value.name) return
   sheetSaving.value = true; sheetError.value = ''
+  const goal = sheet.value.goalEnabled ? { target_count: sheet.value.goalCount, period: sheet.value.goalPeriod } : null
   try {
     if (sheet.value.id) {
-      await saveEncrypted(updateHabit, sheet.value.id, { name: sheet.value.name, description: sheet.value.description }, ENCRYPTED_FIELDS, sheet.value._raw, ks)
+      await saveEncrypted(updateHabit, sheet.value.id, { name: sheet.value.name, description: sheet.value.description, goal }, ENCRYPTED_FIELDS, sheet.value._raw, ks)
     } else {
       const toEncrypt = { name: sheet.value.name }
       if (sheet.value.description) toEncrypt.description = sheet.value.description
+      if (goal) toEncrypt.goal = goal
       const encrypted_payload = await ks.encryptPayload(toEncrypt)
       await createHabit({ encrypted_payload })
     }

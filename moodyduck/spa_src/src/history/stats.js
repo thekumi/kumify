@@ -116,10 +116,20 @@ export function habitCompletionRates(habitLogs, habits, days = 0) {
 
   const counts = {}
   for (const log of filtered) counts[log.habit] = (counts[log.habit] || 0) + 1
+
+  function expected(habit) {
+    const g = habit.goal
+    if (!g) return totalDays
+    if (g.period === 'daily')   return Math.max(1, Math.round(totalDays * g.target_count))
+    if (g.period === 'weekly')  return Math.max(1, Math.round(totalDays / 7 * g.target_count))
+    if (g.period === 'monthly') return Math.max(1, Math.round(totalDays / 30 * g.target_count))
+    return totalDays
+  }
+
   return habits
-    .map(h => ({ id: h.id, name: h.name ?? '?', count: counts[h.id] || 0, totalDays }))
+    .map(h => ({ id: h.id, name: h.name ?? '?', count: counts[h.id] || 0, expected: expected(h), totalDays }))
     .filter(h => h.count > 0)
-    .sort((a, b) => (b.count / b.totalDays) - (a.count / a.totalDays))
+    .sort((a, b) => (b.count / b.expected) - (a.count / a.expected))
 }
 
 export function dreamFrequency(dreams, days = 0) {
@@ -165,6 +175,21 @@ export function currentStreak(statuses) {
     checkDate.setDate(checkDate.getDate() - 1)
   }
   return streak
+}
+
+export function propertyOverTime(statuses, propertyId, days = 0) {
+  const filtered = filterByDays(statuses, days)
+  const byDay = {}
+  for (const s of filtered) {
+    const props = s.properties
+    if (!props || props[propertyId] == null) continue
+    const day = new Date(s.timestamp).toISOString().slice(0, 10)
+    if (!byDay[day]) byDay[day] = []
+    byDay[day].push(Number(props[propertyId]))
+  }
+  return Object.entries(byDay)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([day, vals]) => ({ x: day, y: vals.reduce((a, b) => a + b, 0) / vals.length }))
 }
 
 export function buildCalendarWeeks(weeks = 52) {

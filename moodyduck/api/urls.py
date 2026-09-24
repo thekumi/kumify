@@ -3,6 +3,7 @@ from rest_framework.routers import DefaultRouter
 
 from .views import (
     ActivityViewSet,
+    CustomPropertyViewSet,
     CBTRecordViewSet,
     CurrentEmergencyProfileView,
     CurrentProfileView,
@@ -32,6 +33,7 @@ from .views import (
 )
 
 router = DefaultRouter()
+router.register("properties", CustomPropertyViewSet, basename="property")
 router.register("moods", MoodViewSet, basename="mood")
 router.register("activities", ActivityViewSet, basename="activity")
 router.register("friends", PersonViewSet, basename="friend")
