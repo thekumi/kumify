@@ -13,15 +13,20 @@ function moodValue(s, moodMap) {
   return isNaN(v) || v === 0 ? null : v
 }
 
-export function filterByDays(items, days, getTs = i => i.timestamp) {
+export function filterByDays(items, days, getTs = i => i.timestamp, end = null) {
+  if (!days && !end) return items
+  const endDate = end ? new Date(end + 'T23:59:59.999') : new Date()
   if (!days) return items
-  const cutoff = new Date()
+  const cutoff = new Date(endDate)
   cutoff.setDate(cutoff.getDate() - days)
-  return items.filter(i => new Date(getTs(i)) >= cutoff)
+  return items.filter(i => {
+    const t = new Date(getTs(i))
+    return t >= cutoff && t <= endDate
+  })
 }
 
-export function moodOverTime(statuses, moodMap, days = 90) {
-  const filtered = filterByDays(statuses, days)
+export function moodOverTime(statuses, moodMap, days = 90, end = null) {
+  const filtered = filterByDays(statuses, days, s => s.timestamp, end)
   const byDay = {}
   for (const s of filtered) {
     const day = new Date(s.timestamp).toISOString().slice(0, 10)
@@ -35,8 +40,8 @@ export function moodOverTime(statuses, moodMap, days = 90) {
     .map(([day, vals]) => ({ x: day, y: vals.reduce((a, b) => a + b, 0) / vals.length }))
 }
 
-export function moodDistribution(statuses, moodMap, days = 0) {
-  const filtered = filterByDays(statuses, days)
+export function moodDistribution(statuses, moodMap, days = 0, end = null) {
+  const filtered = filterByDays(statuses, days, s => s.timestamp, end)
   const counts = {}
   for (const s of filtered) {
     const mid = moodId(s)
@@ -51,8 +56,8 @@ export function moodDistribution(statuses, moodMap, days = 0) {
   }
 }
 
-export function activityFrequency(statuses, activityMap, days = 0) {
-  const filtered = filterByDays(statuses, days)
+export function activityFrequency(statuses, activityMap, days = 0, end = null) {
+  const filtered = filterByDays(statuses, days, s => s.timestamp, end)
   const counts = {}
   for (const s of filtered) {
     const ids = s.activity_ids ? tryParseIds(s.activity_ids) : (s.activities ?? []).map(a => a.id)
@@ -65,8 +70,8 @@ export function activityFrequency(statuses, activityMap, days = 0) {
   }
 }
 
-export function entryCountByTimeOfDay(statuses, days = 0) {
-  const filtered = filterByDays(statuses, days)
+export function entryCountByTimeOfDay(statuses, days = 0, end = null) {
+  const filtered = filterByDays(statuses, days, s => s.timestamp, end)
   const labels = ['Night (0–6)', 'Morning (6–12)', 'Afternoon (12–18)', 'Evening (18–24)']
   const counts = [0, 0, 0, 0]
   for (const s of filtered) {
@@ -93,14 +98,16 @@ export function calendarData(statuses, moodMap) {
   )
 }
 
-export function habitCompletionRates(habitLogs, habits, days = 0) {
-  const now = new Date()
+export function habitCompletionRates(habitLogs, habits, days = 0, end = null) {
+  const now = end ? new Date(end + 'T23:59:59.999') : new Date()
   let cutoff = null
   if (days > 0) {
-    cutoff = new Date()
+    cutoff = new Date(now)
     cutoff.setDate(cutoff.getDate() - days)
   }
-  const filtered = cutoff ? habitLogs.filter(l => new Date(l.date) >= cutoff) : habitLogs
+  const filtered = cutoff
+    ? habitLogs.filter(l => { const d = new Date(l.date); return d >= cutoff && d <= now })
+    : habitLogs
 
   let totalDays
   if (days > 0) {
@@ -132,8 +139,8 @@ export function habitCompletionRates(habitLogs, habits, days = 0) {
     .sort((a, b) => (b.count / b.expected) - (a.count / a.expected))
 }
 
-export function dreamFrequency(dreams, days = 0) {
-  const filtered = filterByDays(dreams, days)
+export function dreamFrequency(dreams, days = 0, end = null) {
+  const filtered = filterByDays(dreams, days, d => d.timestamp, end)
   if (!filtered.length) return { labels: [], data: [] }
   const useMonths = days === 0 || days > 100
   const byPeriod = {}
@@ -177,8 +184,31 @@ export function currentStreak(statuses) {
   return streak
 }
 
-export function propertyOverTime(statuses, propertyId, days = 0) {
-  const filtered = filterByDays(statuses, days)
+export function weekdayStats(statuses, moodMap, days = 0, end = null) {
+  const filtered = filterByDays(statuses, days, s => s.timestamp, end)
+  const labels   = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+  const counts   = new Array(7).fill(0)
+  const moodSums = new Array(7).fill(0)
+  const moodN    = new Array(7).fill(0)
+  for (const s of filtered) {
+    const dow = new Date(s.timestamp).getDay()
+    const i = dow === 0 ? 6 : dow - 1
+    counts[i]++
+    const mid = s.mood_id != null ? Number(s.mood_id) : (s.mood != null ? Number(s.mood) : null)
+    if (mid != null) {
+      const v = Number(moodMap[mid]?.value)
+      if (!isNaN(v) && v !== 0) { moodSums[i] += v; moodN[i]++ }
+    }
+  }
+  return {
+    labels,
+    counts,
+    avgMoods: labels.map((_, i) => moodN[i] > 0 ? +(moodSums[i] / moodN[i]).toFixed(1) : null),
+  }
+}
+
+export function propertyOverTime(statuses, propertyId, days = 0, end = null) {
+  const filtered = filterByDays(statuses, days, s => s.timestamp, end)
   const byDay = {}
   for (const s of filtered) {
     const props = s.properties

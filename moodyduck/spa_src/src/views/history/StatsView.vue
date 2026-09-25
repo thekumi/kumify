@@ -11,11 +11,24 @@
 
       <!-- Global range selector -->
       <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-1 flex">
-        <button v-for="d in [30, 90, 365, 0]" :key="d"
+        <button v-for="d in [7, 30, 90, 365, 0]" :key="d"
           @click="rangeDays = d"
           class="flex-1 text-xs py-2 rounded-xl font-medium transition-colors"
           :class="rangeDays === d ? 'bg-violet-100 text-violet-700' : 'text-stone-400 hover:text-stone-600'">
-          {{ d === 0 ? 'All time' : d + ' days' }}
+          {{ d === 0 ? 'All' : d + 'd' }}
+        </button>
+      </div>
+
+      <!-- Time navigation -->
+      <div v-if="rangeDays" class="bg-white rounded-2xl border border-stone-100 shadow-sm px-3 py-2 flex items-center gap-2">
+        <button @click="goBack"
+          class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-stone-100 transition-colors shrink-0">
+          <i class="ph ph-caret-left text-stone-500 text-lg"></i>
+        </button>
+        <span class="flex-1 text-center text-sm font-medium text-stone-700">{{ rangeLabel }}</span>
+        <button @click="goForward" :disabled="!rangeEnd"
+          class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-stone-100 transition-colors disabled:opacity-30 shrink-0">
+          <i class="ph ph-caret-right text-stone-500 text-lg"></i>
         </button>
       </div>
 
@@ -110,6 +123,20 @@
         </div>
       </template>
 
+      <template v-if="totalEntries > 0">
+        <p class="text-xs font-semibold text-stone-400 uppercase tracking-wider pt-1">By weekday</p>
+        <div class="grid grid-cols-2 gap-3">
+          <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
+            <p class="text-sm font-semibold text-stone-700 mb-3">Entries</p>
+            <div class="h-44"><Bar :data="weekdayCountData" :options="barOptions" /></div>
+          </div>
+          <div v-if="weekdayRaw.avgMoods.some(v => v != null)" class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
+            <p class="text-sm font-semibold text-stone-700 mb-3">Avg mood</p>
+            <div class="h-44"><Bar :data="weekdayMoodData" :options="barOptions" /></div>
+          </div>
+        </div>
+      </template>
+
       <template v-if="allDreams.length">
         <p class="text-xs font-semibold text-stone-400 uppercase tracking-wider pt-1">Dreams</p>
 
@@ -178,9 +205,10 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { Line, Doughnut, Bar } from 'vue-chartjs'
 import {
-  Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement,
+  Chart as ChartJS, CategoryScale, LinearScale, TimeScale, PointElement, LineElement,
   ArcElement, BarElement, Title, Tooltip, Legend, Filler,
 } from 'chart.js'
+import 'chartjs-adapter-date-fns'
 import TopBar from '@/components/TopBar.vue'
 import BottomNav from '@/components/BottomNav.vue'
 import { useKeystoreStore } from '@/stores/keystore'
@@ -192,15 +220,43 @@ import {
   filterByDays,
   moodOverTime, moodDistribution, activityFrequency,
   entryCountByTimeOfDay, calendarData, habitCompletionRates,
-  buildCalendarWeeks, dreamFrequency, currentStreak, propertyOverTime,
+  buildCalendarWeeks, dreamFrequency, currentStreak, propertyOverTime, weekdayStats,
 } from '@/history/stats.js'
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, ArcElement, BarElement, Title, Tooltip, Legend, Filler)
+ChartJS.register(CategoryScale, LinearScale, TimeScale, PointElement, LineElement, ArcElement, BarElement, Title, Tooltip, Legend, Filler)
 
 const ks = useKeystoreStore()
 const loading = ref(true)
-const rangeDays = ref(90)
+const rangeDays = ref(30)
+const rangeEnd  = ref(null)
 const calMode = ref('activity')
+
+watch(rangeDays, () => { rangeEnd.value = null })
+
+function goBack() {
+  const base = rangeEnd.value ? new Date(rangeEnd.value + 'T12:00:00') : new Date()
+  base.setDate(base.getDate() - rangeDays.value)
+  rangeEnd.value = base.toISOString().slice(0, 10)
+}
+
+function goForward() {
+  if (!rangeEnd.value) return
+  const base = new Date(rangeEnd.value + 'T12:00:00')
+  base.setDate(base.getDate() + rangeDays.value)
+  const todayStr = new Date().toISOString().slice(0, 10)
+  rangeEnd.value = base.toISOString().slice(0, 10) >= todayStr ? null : base.toISOString().slice(0, 10)
+}
+
+const rangeLabel = computed(() => {
+  const end = rangeEnd.value ? new Date(rangeEnd.value + 'T12:00:00') : new Date()
+  const start = new Date(end)
+  start.setDate(start.getDate() - rangeDays.value + 1)
+  const fmt = (d) => d.toLocaleDateString(undefined, {
+    month: 'short', day: 'numeric',
+    ...(d.getFullYear() !== new Date().getFullYear() ? { year: 'numeric' } : {}),
+  })
+  return `${fmt(start)} – ${fmt(end)}`
+})
 
 const allStatuses = ref([])
 const allDreams   = ref([])
@@ -226,8 +282,8 @@ const calendarMonthLabels = computed(() => {
 
 // Summary
 
-const filteredStatuses = computed(() => filterByDays(allStatuses.value, rangeDays.value))
-const filteredDreams   = computed(() => filterByDays(allDreams.value, rangeDays.value))
+const filteredStatuses = computed(() => filterByDays(allStatuses.value, rangeDays.value, s => s.timestamp, rangeEnd.value))
+const filteredDreams   = computed(() => filterByDays(allDreams.value, rangeDays.value, d => d.timestamp, rangeEnd.value))
 
 const totalEntries = computed(() => filteredStatuses.value.length)
 const totalDreams  = computed(() => filteredDreams.value.length)
@@ -273,11 +329,10 @@ function calDayTitle(day) {
 
 // Mood charts
 
-const moodLinePoints = computed(() => moodOverTime(allStatuses.value, moodMap.value, rangeDays.value))
+const moodLinePoints = computed(() => moodOverTime(allStatuses.value, moodMap.value, rangeDays.value, rangeEnd.value))
 const moodLineData   = computed(() => ({
-  labels: moodLinePoints.value.map(p => p.x),
   datasets: [{
-    data: moodLinePoints.value.map(p => p.y),
+    data: moodLinePoints.value,
     borderColor: '#7c3aed',
     backgroundColor: 'rgba(124,58,237,0.08)',
     tension: 0.3,
@@ -287,13 +342,13 @@ const moodLineData   = computed(() => ({
   }],
 }))
 
-const moodDistRaw  = computed(() => moodDistribution(allStatuses.value, moodMap.value, rangeDays.value))
+const moodDistRaw  = computed(() => moodDistribution(allStatuses.value, moodMap.value, rangeDays.value, rangeEnd.value))
 const moodDistData = computed(() => ({
   labels: moodDistRaw.value.labels,
   datasets: [{ data: moodDistRaw.value.data, backgroundColor: moodDistRaw.value.colors, borderWidth: 0 }],
 }))
 
-const timeOfDayRaw      = computed(() => entryCountByTimeOfDay(allStatuses.value, rangeDays.value))
+const timeOfDayRaw      = computed(() => entryCountByTimeOfDay(allStatuses.value, rangeDays.value, rangeEnd.value))
 const timeOfDayChartData = computed(() => ({
   labels: timeOfDayRaw.value.labels.map(l => l.split(' ')[0]),
   datasets: [{ data: timeOfDayRaw.value.data, backgroundColor: '#7c3aed66', borderRadius: 4 }],
@@ -301,7 +356,7 @@ const timeOfDayChartData = computed(() => ({
 
 // Activity charts
 
-const activityData      = computed(() => activityFrequency(allStatuses.value, activityMap.value, rangeDays.value))
+const activityData      = computed(() => activityFrequency(allStatuses.value, activityMap.value, rangeDays.value, rangeEnd.value))
 const activityChartData = computed(() => ({
   labels: activityData.value.labels,
   datasets: [{ data: activityData.value.data, backgroundColor: '#0d9488aa', borderRadius: 4 }],
@@ -309,13 +364,13 @@ const activityChartData = computed(() => ({
 
 // Dream charts
 
-const dreamFreqData      = computed(() => dreamFrequency(allDreams.value, rangeDays.value))
+const dreamFreqData      = computed(() => dreamFrequency(allDreams.value, rangeDays.value, rangeEnd.value))
 const dreamFreqChartData = computed(() => ({
   labels: dreamFreqData.value.labels,
   datasets: [{ data: dreamFreqData.value.data, backgroundColor: '#6366f1aa', borderRadius: 4 }],
 }))
 
-const dreamMoodDistRaw  = computed(() => moodDistribution(allDreams.value, moodMap.value, rangeDays.value))
+const dreamMoodDistRaw  = computed(() => moodDistribution(allDreams.value, moodMap.value, rangeDays.value, rangeEnd.value))
 const dreamMoodDistData = computed(() => ({
   labels: dreamMoodDistRaw.value.labels,
   datasets: [{ data: dreamMoodDistRaw.value.data, backgroundColor: dreamMoodDistRaw.value.colors, borderWidth: 0 }],
@@ -326,8 +381,9 @@ const avgDreamsPerWeek = computed(() => {
   if (!filtered.length) return '0'
   let spanDays = rangeDays.value
   if (!spanDays) {
+    const endMs = rangeEnd.value ? new Date(rangeEnd.value + 'T23:59:59').getTime() : Date.now()
     const first = new Date(Math.min(...filtered.map(d => new Date(d.timestamp).getTime())))
-    spanDays = Math.max(7, Math.ceil((Date.now() - first.getTime()) / 86400000))
+    spanDays = Math.max(7, Math.ceil((endMs - first.getTime()) / 86400000))
   }
   return (filtered.length / spanDays * 7).toFixed(1)
 })
@@ -339,9 +395,21 @@ const avgDreamWords = computed(() => {
   return Math.round(total / filtered.length)
 })
 
+// Weekday breakdown
+
+const weekdayRaw = computed(() => weekdayStats(allStatuses.value, moodMap.value, rangeDays.value, rangeEnd.value))
+const weekdayCountData = computed(() => ({
+  labels: weekdayRaw.value.labels,
+  datasets: [{ data: weekdayRaw.value.counts, backgroundColor: '#7c3aed66', borderRadius: 4 }],
+}))
+const weekdayMoodData = computed(() => ({
+  labels: weekdayRaw.value.labels,
+  datasets: [{ data: weekdayRaw.value.avgMoods, backgroundColor: '#f59e0b99', borderRadius: 4 }],
+}))
+
 // Habits
 
-const habitData = computed(() => habitCompletionRates(rawHabitLogs.value, rawHabits.value, rangeDays.value))
+const habitData = computed(() => habitCompletionRates(rawHabitLogs.value, rawHabits.value, rangeDays.value, rangeEnd.value))
 
 // Properties
 
@@ -351,15 +419,14 @@ const propertyCharts = computed(() =>
     .map(p => ({
       id: p.id,
       name: p.name ?? '?',
-      points: propertyOverTime(allStatuses.value, String(p.id), rangeDays.value),
+      points: propertyOverTime(allStatuses.value, String(p.id), rangeDays.value, rangeEnd.value),
     }))
     .filter(pc => pc.points.length > 0)
     .map(pc => ({
       ...pc,
       chartData: {
-        labels: pc.points.map(pt => pt.x),
         datasets: [{
-          data: pc.points.map(pt => pt.y),
+          data: pc.points,
           borderColor: '#7c3aed',
           backgroundColor: 'rgba(124,58,237,0.08)',
           tension: 0.3,
@@ -376,7 +443,18 @@ const propertyCharts = computed(() =>
 const lineOptions = {
   responsive: true, maintainAspectRatio: false,
   plugins: { legend: { display: false } },
-  scales: { x: { display: false }, y: { grid: { color: '#f5f5f4' }, ticks: { precision: 1 } } },
+  scales: {
+    x: {
+      type: 'time',
+      time: {
+        tooltipFormat: 'MMM d, yyyy',
+        displayFormats: { day: 'MMM d', week: 'MMM d', month: 'MMM yyyy' },
+      },
+      grid: { display: false },
+      ticks: { maxTicksLimit: 6, font: { size: 10 }, color: '#a8a29e' },
+    },
+    y: { grid: { color: '#f5f5f4' }, ticks: { precision: 1 } },
+  },
 }
 const doughnutOptions = {
   responsive: true, maintainAspectRatio: false,
