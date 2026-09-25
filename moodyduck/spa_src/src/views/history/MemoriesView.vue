@@ -100,15 +100,15 @@ function todayStr() {
 }
 
 const milestones = computed(() => {
-  const base = selectedDate.value ? new Date(selectedDate.value + 'T12:00:00') : new Date()
+  const today = new Date()
   return [
-    { label: '1 month ago',  date: offset(base, 0, -1, 0) },
-    { label: '3 months ago', date: offset(base, 0, -3, 0) },
-    { label: '6 months ago', date: offset(base, 0, -6, 0) },
-    { label: '1 year ago',   date: offset(base, -1, 0, 0) },
-    { label: '2 years ago',  date: offset(base, -2, 0, 0) },
-    { label: '3 years ago',  date: offset(base, -3, 0, 0) },
-    { label: '5 years ago',  date: offset(base, -5, 0, 0) },
+    { label: '1 month ago',  date: offset(today, 0, -1, 0) },
+    { label: '3 months ago', date: offset(today, 0, -3, 0) },
+    { label: '6 months ago', date: offset(today, 0, -6, 0) },
+    { label: '1 year ago',   date: offset(today, -1, 0, 0) },
+    { label: '2 years ago',  date: offset(today, -2, 0, 0) },
+    { label: '3 years ago',  date: offset(today, -3, 0, 0) },
+    { label: '5 years ago',  date: offset(today, -5, 0, 0) },
   ].filter(m => m.date < todayStr())
 })
 
