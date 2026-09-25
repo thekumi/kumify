@@ -5,10 +5,13 @@ const dec = new TextDecoder();
 
 export async function encryptField(dataKey, plaintext) {
   const iv = crypto.getRandomValues(new Uint8Array(12));
+  const serialized = (typeof plaintext === 'object' && plaintext !== null)
+    ? JSON.stringify(plaintext)
+    : String(plaintext);
   const ct = await crypto.subtle.encrypt(
     { name: "AES-GCM", iv },
     dataKey,
-    enc.encode(String(plaintext))
+    enc.encode(serialized)
   );
   return { ct: b64encode(ct), iv: b64encode(iv) };
 }
@@ -19,7 +22,11 @@ export async function decryptField(dataKey, ct, iv) {
     dataKey,
     b64decode(ct)
   );
-  return dec.decode(plain);
+  const str = dec.decode(plain);
+  if (str.length > 1 && str.charCodeAt(0) === 123) { // starts with '{'
+    try { return JSON.parse(str) } catch {}
+  }
+  return str;
 }
 
 // Encrypts a {fieldName: value} object into the payload format the server stores.

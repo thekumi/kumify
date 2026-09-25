@@ -71,15 +71,25 @@
         <div class="space-y-3">
           <div v-for="p in properties" :key="p.id">
             <p class="text-xs text-stone-500 mb-1.5">{{ p.name || '—' }}</p>
-            <button v-if="p.type === 'boolean'" type="button"
-              @click="toggleProperty(p.id)"
-              class="px-4 py-1.5 rounded-full border text-sm font-medium transition-all"
-              :class="form.properties[String(p.id)]
-                ? 'border-clay-300 bg-clay-50 text-clay-700'
-                : 'border-stone-200 text-stone-500 hover:border-stone-300'">
-              {{ form.properties[String(p.id)] ? 'Yes' : 'No' }}
-            </button>
-            <div v-else-if="(p.max_val - p.min_val) <= 9" class="flex gap-1 flex-wrap">
+            <div v-if="p.type === 'boolean'" class="flex gap-2">
+              <button type="button"
+                @click="setProperty(p.id, true)"
+                class="px-4 py-1.5 rounded-full border text-sm font-medium transition-all"
+                :class="form.properties[String(p.id)] === true
+                  ? 'border-clay-300 bg-clay-50 text-clay-700'
+                  : 'border-stone-200 text-stone-500 hover:border-stone-300'">
+                Yes
+              </button>
+              <button type="button"
+                @click="setProperty(p.id, false)"
+                class="px-4 py-1.5 rounded-full border text-sm font-medium transition-all"
+                :class="form.properties[String(p.id)] === false
+                  ? 'border-clay-300 bg-clay-50 text-clay-700'
+                  : 'border-stone-200 text-stone-500 hover:border-stone-300'">
+                No
+              </button>
+            </div>
+            <div v-else-if="(Number(p.max_val) - Number(p.min_val)) <= 9" class="flex gap-1 flex-wrap">
               <button v-for="v in scaleRange(p)" :key="v" type="button"
                 @click="setProperty(p.id, v)"
                 class="w-8 h-8 rounded-lg border text-sm font-medium transition-all"
@@ -90,12 +100,17 @@
               </button>
             </div>
             <div v-else class="flex items-center gap-2">
-              <span class="text-xs text-stone-400 w-6 text-right">{{ p.min_val }}</span>
-              <input type="range" :min="p.min_val" :max="p.max_val" :step="1"
-                :value="form.properties[String(p.id)] ?? p.min_val"
-                @input="setProperty(p.id, Number($event.target.value))"
+              <span class="text-xs text-stone-400 w-6 text-right">{{ Number(p.min_val) }}</span>
+              <input type="range" :min="Number(p.min_val)" :max="Number(p.max_val)" :step="1"
+                :value="form.properties[String(p.id)] ?? Number(p.min_val)"
+                @input="form.properties[String(p.id)] = Number($event.target.value)"
                 class="flex-1 accent-clay-600" />
-              <span class="text-xs text-stone-600 w-6">{{ form.properties[String(p.id)] ?? p.min_val }}</span>
+              <span class="text-xs text-stone-600 w-6">{{ form.properties[String(p.id)] ?? '—' }}</span>
+              <button v-if="form.properties[String(p.id)] != null" type="button"
+                @click="clearProperty(p.id)"
+                class="text-stone-300 hover:text-stone-500 transition-colors">
+                <i class="ph ph-x text-sm"></i>
+              </button>
             </div>
           </div>
         </div>
@@ -215,17 +230,18 @@ async function removeExistingAttachment(attachmentId) {
 
 function scaleRange(p) {
   const result = []
-  for (let v = p.min_val; v <= p.max_val; v++) result.push(v)
+  for (let v = Number(p.min_val); v <= Number(p.max_val); v++) result.push(v)
   return result
 }
 
-function toggleProperty(id) {
+function setProperty(id, v) {
   const key = String(id)
-  form.value.properties[key] = !form.value.properties[key]
+  if (form.value.properties[key] === v) delete form.value.properties[key]
+  else form.value.properties[key] = v
 }
 
-function setProperty(id, v) {
-  form.value.properties[String(id)] = v
+function clearProperty(id) {
+  delete form.value.properties[String(id)]
 }
 
 function toggleActivity(id) {

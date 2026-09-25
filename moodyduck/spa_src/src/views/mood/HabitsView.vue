@@ -30,7 +30,7 @@
         </div>
         <div class="flex-1 min-w-0">
           <p class="font-medium text-stone-800 truncate">{{ activityOf(h)?.name ?? h.name ?? '—' }}</p>
-          <p v-if="h.goal" class="text-xs text-stone-300">{{ h.goal.target_count }}× {{ h.goal.period }}</p>
+          <p v-if="h.goal && typeof h.goal === 'object'" class="text-xs text-stone-300">{{ h.goal.target_count }}× {{ h.goal.period }}</p>
         </div>
         <button @click="logHabit(h)" title="Log"
           class="w-8 h-8 flex items-center justify-center rounded-full bg-amber-50 border border-amber-200 text-amber-700 hover:bg-amber-100 transition-colors text-sm font-bold shrink-0">
@@ -144,12 +144,13 @@ function openNew() {
 
 function openEdit(h) {
   const rawHabit = raw.value.find(r => r.id === h.id)
+  const goal = (h.goal && typeof h.goal === 'object') ? h.goal : null
   sheet.value = {
     id: h.id, _raw: rawHabit,
     activityId: h.activity_id ?? null,
-    goalEnabled: !!h.goal,
-    goalPeriod: h.goal?.period ?? 'weekly',
-    goalCount: h.goal?.target_count ?? 1,
+    goalEnabled: !!goal,
+    goalPeriod: goal?.period ?? 'weekly',
+    goalCount: goal?.target_count ?? 1,
   }
   sheetError.value = ''
 }
