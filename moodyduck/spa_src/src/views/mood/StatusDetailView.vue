@@ -42,6 +42,19 @@
         </div>
       </div>
 
+      <div v-if="statusProperties.length" class="bg-white rounded-2xl border border-stone-100 shadow-sm p-5">
+        <p class="text-xs font-semibold text-stone-400 uppercase tracking-wider mb-3">Properties</p>
+        <div class="flex flex-wrap gap-2">
+          <span v-for="sp in statusProperties" :key="sp.name"
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-stone-100 text-stone-700 text-sm font-medium">
+            {{ sp.name }}
+            <span class="text-stone-400">·</span>
+            <span v-if="sp.type === 'boolean'">{{ sp.value ? 'Yes' : 'No' }}</span>
+            <span v-else>{{ sp.value }}</span>
+          </span>
+        </div>
+      </div>
+
       <div v-if="status.attachments?.length" class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
         <p class="text-xs font-semibold text-stone-400 uppercase tracking-wider mb-3">Attachments</p>
         <MediaGallery :attachments="status.attachments" :dataKey="ks.dataKey" :showPrivate="true" />
@@ -64,6 +77,7 @@ import TopBar from '@/components/TopBar.vue'
 import BottomNav from '@/components/BottomNav.vue'
 import MediaGallery from '@/components/MediaGallery.vue'
 import { getStatus, deleteStatus, getMoods, getActivities } from '@/api/mood'
+import { getProperties } from '@/api/properties'
 import { useKeystoreStore } from '@/stores/keystore'
 
 const ks = useKeystoreStore()
@@ -73,9 +87,24 @@ const id = route.params.id
 const status = ref(null)
 const rawMoods = ref([])
 const rawActivities = ref([])
+const rawProperties = ref([])
 const decryptedMoods = ref([])
 const decryptedActivities = ref([])
+const decryptedProperties = ref([])
 const loading = ref(true)
+
+const propertyMap = computed(() => Object.fromEntries(decryptedProperties.value.map(p => [p.id, p])))
+
+const statusProperties = computed(() => {
+  const props = status.value?.properties
+  if (!props || typeof props !== 'object') return []
+  return Object.entries(props)
+    .map(([idStr, value]) => {
+      const p = propertyMap.value[Number(idStr)]
+      return p ? { name: p.name || '—', type: p.type, value } : null
+    })
+    .filter(Boolean)
+})
 
 const mood = computed(() => {
   const id = status.value?.mood_id != null ? Number(status.value.mood_id) : status.value?.mood
@@ -88,16 +117,18 @@ function fmtDate(ts) {
 
 async function applyDecryption() {
   if (!status.value) return
-  const [ds, dm, da] = await Promise.all([
+  const [ds, dm, da, dp] = await Promise.all([
     ks.decrypt(status.value),
     ks.decryptAll(rawMoods.value),
     ks.decryptAll(rawActivities.value),
+    ks.decryptAll(rawProperties.value),
   ])
   status.value = ds
   decryptedMoods.value = dm
+  decryptedProperties.value = dp
   const ids = ds.activity_ids != null
     ? JSON.parse(ds.activity_ids).map(Number)
-    : (status.value.activities ?? []).map(a => a.id)
+    : (ds.activities ?? []).map(a => a.id)
   decryptedActivities.value = da.filter(a => ids.includes(a.id))
 }
 
@@ -110,10 +141,11 @@ async function remove() {
 watch(() => ks.dataKey, (key) => { if (key) applyDecryption() })
 
 onMounted(async () => {
-  const [s, m, a] = await Promise.all([getStatus(id), getMoods(), getActivities()])
+  const [s, m, a, p] = await Promise.all([getStatus(id), getMoods(), getActivities(), getProperties().catch(() => [])])
   status.value = s
   rawMoods.value = m
   rawActivities.value = a
+  rawProperties.value = p
   await applyDecryption()
   loading.value = false
 })
