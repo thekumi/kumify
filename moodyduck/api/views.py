@@ -86,6 +86,13 @@ class UserDeviceViewSet(viewsets.ModelViewSet):
             return UserDeviceKeySerializer
         return UserDeviceSerializer
 
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        now = timezone.now()
+        UserDevice.objects.filter(pk=instance.pk).update(last_seen=now)
+        instance.last_seen = now
+        return Response(UserDeviceSerializer(instance, context={"request": request}).data)
+
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -101,7 +108,7 @@ class UserDeviceViewSet(viewsets.ModelViewSet):
         serializer = UserDeviceKeySerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         device.encrypted_data_key = serializer.validated_data["encrypted_data_key"]
-        device.save(update_fields=["encrypted_data_key"])
+        device.save(update_fields=["encrypted_data_key", "last_seen"])
         return Response(UserDeviceSerializer(device, context={"request": request}).data)
 
 
