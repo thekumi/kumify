@@ -31,6 +31,13 @@
         </p>
       </div>
 
+      <!-- Date & time -->
+      <div class="bg-white rounded-2xl border border-stone-100 shadow-sm px-4 py-3 flex items-center gap-3">
+        <i class="ph ph-calendar-blank text-stone-400 text-lg shrink-0"></i>
+        <input v-model="form.timestamp" type="datetime-local"
+          class="flex-1 text-stone-700 text-sm border-0 outline-none bg-transparent min-w-0" />
+      </div>
+
       <!-- Title -->
       <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
         <label class="text-sm font-semibold text-stone-500 block mb-2">Title <span class="font-normal">(optional)</span></label>
@@ -195,7 +202,19 @@ const properties = ref([])
 const rawMoods = ref([])
 const rawActivities = ref([])
 const rawProperties = ref([])
-const form = ref({ mood: null, title: '', text: '', properties: {} })
+const form = ref({ mood: null, title: '', text: '', properties: {}, timestamp: localNow() })
+
+function localNow() {
+  const d = new Date()
+  const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000)
+  return local.toISOString().slice(0, 16)
+}
+
+function toLocalDatetime(iso) {
+  const d = new Date(iso)
+  const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000)
+  return local.toISOString().slice(0, 16)
+}
 const selectedActivities = ref(new Set())
 const existingAttachments = ref([])
 const pendingFiles = ref([])
@@ -267,6 +286,7 @@ async function applyDecryption() {
         : (rawStatus.activities?.map(a => a.id) ?? [])
     )
     form.value.properties = (s.properties && typeof s.properties === 'object') ? s.properties : {}
+    form.value.timestamp = rawStatus.timestamp ? toLocalDatetime(rawStatus.timestamp) : localNow()
   }
 }
 
@@ -295,15 +315,18 @@ async function save() {
     const propEntries = Object.entries(form.value.properties).filter(([, v]) => v != null)
     if (propEntries.length) toEncrypt.properties = Object.fromEntries(propEntries)
 
+    const isoTimestamp = new Date(form.value.timestamp).toISOString()
+
     if (isEdit) {
       const encrypted_payload = await ks.encryptPayload(toEncrypt)
-      const result = await updateStatus(id, { encrypted_payload, mood: null, activity_ids: [] })
+      const result = await updateStatus(id, { encrypted_payload, mood: null, activity_ids: [], timestamp: isoTimestamp })
       await uploadPending(result.id)
       router.push(`/mood/${result.id}`)
     } else {
       const createPayload = Object.keys(toEncrypt).length
         ? { encrypted_payload: await ks.encryptPayload(toEncrypt) }
         : {}
+      createPayload.timestamp = isoTimestamp
       if (!navigator.onLine) {
         await offline.enqueue({ endpoint: '/statuses/', payload: createPayload })
         router.push('/mood')

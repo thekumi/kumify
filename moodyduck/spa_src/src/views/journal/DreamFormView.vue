@@ -37,6 +37,13 @@
         </div>
       </div>
 
+      <!-- Date & time -->
+      <div class="bg-white rounded-2xl border border-stone-100 shadow-sm px-4 py-3 flex items-center gap-3">
+        <i class="ph ph-calendar-blank text-stone-400 text-lg shrink-0"></i>
+        <input v-model="form.timestamp" type="datetime-local"
+          class="flex-1 text-stone-700 text-sm border-0 outline-none bg-transparent min-w-0" />
+      </div>
+
       <!-- Mood picker -->
       <div v-if="moods.length" class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
         <p class="text-sm font-semibold text-stone-500 mb-3">How did you feel?</p>
@@ -137,7 +144,19 @@ const route = useRoute()
 const router = useRouter()
 const id = route.params.id
 const types = { 0: 'Night', 1: 'Daydream', 2: 'Nap' }
-const form = ref({ title: '', content: '', type: 0, lucid: false, wet: false, mood: null })
+const form = ref({ title: '', content: '', type: 0, lucid: false, wet: false, mood: null, timestamp: localNow() })
+
+function localNow() {
+  const d = new Date()
+  const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000)
+  return local.toISOString().slice(0, 16)
+}
+
+function toLocalDatetime(iso) {
+  const d = new Date(iso)
+  const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000)
+  return local.toISOString().slice(0, 16)
+}
 const moods = ref([])
 const rawMoods = ref([])
 const themes = ref([])
@@ -206,6 +225,7 @@ async function fillForm(d) {
     lucid: dec.lucid ?? false,
     wet: dec.wet ?? false,
     mood: dec.mood ?? null,
+    timestamp: d.timestamp ? toLocalDatetime(d.timestamp) : localNow(),
   }
   selectedThemes.value = new Set((dec.themes ?? []).map(t => t.id))
 }
@@ -213,8 +233,10 @@ async function fillForm(d) {
 async function save() {
   saving.value = true; error.value = ''
   try {
+    const isoTimestamp = new Date(form.value.timestamp).toISOString()
+
     if (id) {
-      const result = await saveEncrypted(updateDream, id, { ...form.value, theme_ids: [...selectedThemes.value] }, ['title', 'content'], rawDream, ks)
+      const result = await saveEncrypted(updateDream, id, { ...form.value, theme_ids: [...selectedThemes.value], timestamp: isoTimestamp }, ['title', 'content'], rawDream, ks)
       await uploadPending(result.id)
       router.push(`/journal/dreams/${result.id}`)
     } else {
@@ -227,6 +249,7 @@ async function save() {
         wet: form.value.wet,
         mood: form.value.mood,
         theme_ids: [...selectedThemes.value],
+        timestamp: isoTimestamp,
         ...(Object.keys(toEncrypt).length ? { encrypted_payload: await ks.encryptPayload(toEncrypt) } : {}),
       }
       if (!navigator.onLine) {

@@ -41,6 +41,13 @@
         </div>
       </div>
 
+      <!-- Date & time -->
+      <div class="bg-white rounded-2xl border border-stone-100 shadow-sm px-4 py-3 flex items-center gap-3">
+        <i class="ph ph-calendar-blank text-stone-400 text-lg shrink-0"></i>
+        <input v-model="form.recorded_at" type="datetime-local"
+          class="flex-1 text-stone-700 text-sm border-0 outline-none bg-transparent min-w-0" />
+      </div>
+
       <p v-if="error" class="text-sm text-red-600 bg-red-50 rounded-xl px-4 py-3">{{ error }}</p>
 
       <button type="submit" :disabled="saving"
@@ -74,7 +81,19 @@ const offline = useOfflineStore()
 const route = useRoute()
 const router = useRouter()
 const id = route.params.id
-const form = ref({ notes: '' })
+const form = ref({ notes: '', recorded_at: localNow() })
+
+function localNow() {
+  const d = new Date()
+  const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000)
+  return local.toISOString().slice(0, 16)
+}
+
+function toLocalDatetime(iso) {
+  const d = new Date(iso)
+  const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000)
+  return local.toISOString().slice(0, 16)
+}
 const parameters = ref([])
 const records = ref({})
 const loading = ref(true)
@@ -86,6 +105,7 @@ let rawParams = []
 async function fillNotes(l) {
   const dec = await ks.decrypt(l)
   form.value.notes = dec.notes ?? ''
+  form.value.recorded_at = l.recorded_at ? toLocalDatetime(l.recorded_at) : localNow()
 }
 
 async function applyParamDecryption() {
@@ -109,10 +129,12 @@ async function save() {
         encrypted_payload: await ks.encryptPayload({ value: String(value) }),
       }))
     )
+    const isoRecordedAt = new Date(form.value.recorded_at).toISOString()
+
     if (id) {
-      await saveEncrypted(updateLog, id, { notes: form.value.notes || null, records: encryptedRecords }, ['notes'], rawLog, ks)
+      await saveEncrypted(updateLog, id, { notes: form.value.notes || null, records: encryptedRecords, recorded_at: isoRecordedAt }, ['notes'], rawLog, ks)
     } else {
-      const createPayload = { records: encryptedRecords }
+      const createPayload = { records: encryptedRecords, recorded_at: isoRecordedAt }
       if (form.value.notes) createPayload.encrypted_payload = await ks.encryptPayload({ notes: form.value.notes })
       if (!navigator.onLine) {
         await offline.enqueue({ endpoint: '/health/logs/', payload: createPayload })
