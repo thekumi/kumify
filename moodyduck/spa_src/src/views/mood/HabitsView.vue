@@ -114,9 +114,11 @@ import BottomNav from '@/components/BottomNav.vue'
 import { getHabits, createHabit, updateHabit, deleteHabit, createHabitLog } from '@/api/habits'
 import { getActivities } from '@/api/mood'
 import { useKeystoreStore } from '@/stores/keystore'
+import { useOfflineStore } from '@/stores/offline'
 import { saveEncrypted } from '@/keystore/saveEncrypted'
 
 const ks = useKeystoreStore()
+const offline = useOfflineStore()
 const habits = ref([])
 const activities = ref([])
 const raw = ref([])
@@ -183,7 +185,17 @@ async function removeHabit(h) {
 }
 
 async function logHabit(h) {
-  await createHabitLog({ habit: h.id })
+  const payload = { habit: h.id }
+  if (!navigator.onLine) {
+    await offline.enqueue({ endpoint: '/habit-logs/', payload })
+    return
+  }
+  try {
+    await createHabitLog(payload)
+  } catch (e) {
+    if (!(e instanceof TypeError)) throw e
+    await offline.enqueue({ endpoint: '/habit-logs/', payload })
+  }
 }
 
 onMounted(async () => {

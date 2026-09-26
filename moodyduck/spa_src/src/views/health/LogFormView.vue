@@ -65,10 +65,12 @@ import TopBar from '@/components/TopBar.vue'
 import BottomNav from '@/components/BottomNav.vue'
 import { getLog, createLog, updateLog, deleteLog, getParameters } from '@/api/health'
 import { useKeystoreStore } from '@/stores/keystore'
+import { useOfflineStore } from '@/stores/offline'
 import { saveEncrypted } from '@/keystore/saveEncrypted'
 import { decryptPayload } from '@/keystore/fields'
 
 const ks = useKeystoreStore()
+const offline = useOfflineStore()
 const route = useRoute()
 const router = useRouter()
 const id = route.params.id
@@ -112,7 +114,16 @@ async function save() {
     } else {
       const createPayload = { records: encryptedRecords }
       if (form.value.notes) createPayload.encrypted_payload = await ks.encryptPayload({ notes: form.value.notes })
-      await createLog(createPayload)
+      if (!navigator.onLine) {
+        await offline.enqueue({ endpoint: '/health/logs/', payload: createPayload })
+      } else {
+        try {
+          await createLog(createPayload)
+        } catch (e) {
+          if (!(e instanceof TypeError)) throw e
+          await offline.enqueue({ endpoint: '/health/logs/', payload: createPayload })
+        }
+      }
     }
     router.push('/health/logs')
   } catch { error.value = 'Could not save.' }

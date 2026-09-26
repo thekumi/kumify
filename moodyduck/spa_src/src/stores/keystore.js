@@ -150,18 +150,21 @@ export const useKeystoreStore = defineStore('keystore', () => {
       if (record.data_key) {
         // Cached key — verify the device still exists on the server.
         // If not (server reset, different install), re-register transparently.
-        const check = await apiFetch('GET', `/api/devices/${record.device_id}/`)
-        if (check.ok) {
-          key = record.data_key
-        } else {
-          const newRecord = await _registerDevice()
-          await _wrapAndRegister(newRecord, record.data_key)
-          newRecord.data_key = record.data_key
-          await putDeviceRecord(newRecord)
-          record = newRecord
-          myDeviceId.value = record.device_id
-          key = record.data_key
+        // Skip verification when offline: trust the cached key.
+        try {
+          const check = await apiFetch('GET', `/api/devices/${record.device_id}/`)
+          if (!check.ok) {
+            const newRecord = await _registerDevice()
+            await _wrapAndRegister(newRecord, record.data_key)
+            newRecord.data_key = record.data_key
+            await putDeviceRecord(newRecord)
+            record = newRecord
+            myDeviceId.value = record.device_id
+          }
+        } catch (e) {
+          if (!(e instanceof TypeError)) throw e
         }
+        key = record.data_key
       } else {
         const deviceRes = await apiFetch('GET', `/api/devices/${record.device_id}/`)
         if (deviceRes.ok) {
@@ -206,23 +209,28 @@ export const useKeystoreStore = defineStore('keystore', () => {
         if (record.user_private_key) {
           userKey = record.user_private_key
         } else {
-          const res = await apiFetch('GET', '/api/userkeypair/')
-          if (res.ok) {
-            const { encrypted_private_key } = await res.json()
-            userKey = await unwrapUserPrivateKey(encrypted_private_key, key)
-          } else if (res.status === 404) {
-            const kp = await generateUserKeyPair()
-            const pubB64 = await exportUserPublicKey(kp.publicKey)
-            const encPriv = await wrapUserPrivateKey(kp.privateKey, key)
-            const createRes = await apiFetch('POST', '/api/userkeypair/', {
-              public_key: pubB64,
-              encrypted_private_key: encPriv,
-            })
-            if (createRes.ok) userKey = await unwrapUserPrivateKey(encPriv, key)
-          }
-          if (userKey) {
-            record = { ...record, user_private_key: userKey }
-            await putDeviceRecord(record)
+          try {
+            const res = await apiFetch('GET', '/api/userkeypair/')
+            if (res.ok) {
+              const { encrypted_private_key } = await res.json()
+              userKey = await unwrapUserPrivateKey(encrypted_private_key, key)
+            } else if (res.status === 404) {
+              const kp = await generateUserKeyPair()
+              const pubB64 = await exportUserPublicKey(kp.publicKey)
+              const encPriv = await wrapUserPrivateKey(kp.privateKey, key)
+              const createRes = await apiFetch('POST', '/api/userkeypair/', {
+                public_key: pubB64,
+                encrypted_private_key: encPriv,
+              })
+              if (createRes.ok) userKey = await unwrapUserPrivateKey(encPriv, key)
+            }
+            if (userKey) {
+              record = { ...record, user_private_key: userKey }
+              await putDeviceRecord(record)
+            }
+          } catch (e) {
+            if (!(e instanceof TypeError)) throw e
+            // Offline and no cached user key — continue without it
           }
         }
         userPrivateKey.value = userKey

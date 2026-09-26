@@ -10,8 +10,10 @@ export const useAuthStore = defineStore('auth', () => {
     if (!isLoggedIn()) { ready.value = true; return }
     try {
       user.value = await getMe()
-    } catch {
-      user.value = null
+    } catch (e) {
+      // Network unavailable — treat the stored token as still valid so the
+      // keystore can boot from its IndexedDB-cached key and the app works offline.
+      user.value = e instanceof TypeError ? {} : null
     }
     ready.value = true
   }
