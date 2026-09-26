@@ -10,12 +10,8 @@
             class="w-full px-3 py-2.5 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-clay-400 text-stone-800 bg-stone-50 text-sm" />
         </div>
         <div>
-          <label class="text-sm font-semibold text-stone-500 block mb-1.5">Icon class <span class="font-normal text-xs">(Phosphor CSS class)</span></label>
-          <div class="flex items-center gap-3">
-            <input v-model="form.icon" type="text" placeholder="ph ph-smiley"
-              class="flex-1 px-3 py-2.5 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-clay-400 text-stone-800 bg-stone-50 text-sm" />
-            <i :class="form.icon || 'ph ph-smiley'" :style="form.color ? `color:${form.color}` : ''" class="text-3xl shrink-0"></i>
-          </div>
+          <label class="text-sm font-semibold text-stone-500 block mb-1.5">Icon</label>
+          <IconPicker v-model="form.icon" fallback="ph ph-smiley" :color="form.color" />
         </div>
         <div>
           <label class="text-sm font-semibold text-stone-500 block mb-1.5">Color</label>
@@ -54,6 +50,7 @@ import { ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import TopBar from '@/components/TopBar.vue'
 import BottomNav from '@/components/BottomNav.vue'
+import IconPicker from '@/components/IconPicker.vue'
 import { getMoods, createMood, updateMood, deleteMood } from '@/api/mood'
 import { useKeystoreStore } from '@/stores/keystore'
 import { saveEncrypted } from '@/keystore/saveEncrypted'
