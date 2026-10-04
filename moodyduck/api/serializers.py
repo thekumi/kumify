@@ -97,7 +97,7 @@ class StatusMediaSerializer(serializers.ModelSerializer):
 class MoodSerializer(serializers.ModelSerializer):
     class Meta:
         model = Mood
-        fields = ["id", "name", "value", "icon", "encrypted_payload"]
+        fields = ["id", "name", "value", "icon", "color", "encrypted_payload"]
         read_only_fields = ["id"]
         extra_kwargs = {
             "name": {"required": False, "allow_null": True, "allow_blank": True},
@@ -186,7 +186,7 @@ class StatusSerializer(serializers.ModelSerializer):
 class ActivityCategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = ActivityCategory
-        fields = ["id", "name", "icon", "encrypted_payload"]
+        fields = ["id", "name", "icon", "color", "encrypted_payload"]
         read_only_fields = ["id"]
         extra_kwargs = {
             "name": {"required": False, "allow_null": True, "allow_blank": True},
@@ -197,7 +197,7 @@ class ActivityCategorySerializer(serializers.ModelSerializer):
 class ActivitySerializer(serializers.ModelSerializer):
     class Meta:
         model = Activity
-        fields = ["id", "name", "icon", "category", "encrypted_payload"]
+        fields = ["id", "name", "icon", "color", "category", "encrypted_payload"]
         read_only_fields = ["id"]
         extra_kwargs = {
             "name": {"required": False, "allow_null": True, "allow_blank": True},

@@ -2,9 +2,9 @@ import { apiFetch, b64encode } from './util.js'
 import { encryptPayload, decryptPayload } from './fields.js'
 
 const MODEL_FIELDS = {
-  moods:               ['name', 'value', 'icon'],
-  activities:          ['name', 'icon'],
-  activity_categories: ['name', 'icon'],
+  moods:               ['name', 'value', 'color', 'icon'],
+  activities:          ['name', 'icon', 'color'],
+  activity_categories: ['name', 'icon', 'color'],
   dreams:              ['title', 'content'],
   cbt_records:         ['title', 'situation', 'thoughts', 'pro_facts', 'con_facts', 'realistic', 'outcome'],
   health_logs:         ['notes'],

@@ -9,17 +9,4 @@ class Migration(migrations.Migration):
         ('mood', '0011_activitycategory_encrypted_payload_and_more'),
     ]
 
-    operations = [
-        migrations.RemoveField(
-            model_name='activity',
-            name='color',
-        ),
-        migrations.RemoveField(
-            model_name='activitycategory',
-            name='color',
-        ),
-        migrations.RemoveField(
-            model_name='mood',
-            name='color',
-        ),
-    ]
+    operations = []

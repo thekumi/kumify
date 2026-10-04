@@ -139,9 +139,9 @@ class UserKeyBackupView(APIView):
 
 _SCRUB_FIELDS = {
     "statuses": (Status, "user", ["mood", "title", "text"]),
-    "moods": (Mood, "user", ["name", "value", "icon"]),
-    "activities": (Activity, "user", ["name", "icon"]),
-    "activity_categories": (ActivityCategory, "user", ["name", "icon"]),
+    "moods": (Mood, "user", ["name", "value", "color", "icon"]),
+    "activities": (Activity, "user", ["name", "icon", "color"]),
+    "activity_categories": (ActivityCategory, "user", ["name", "icon", "color"]),
     "dreams": (Dream, "user", ["title", "content"]),
     "cbt_records": (
         ThoughtRecord,

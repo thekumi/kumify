@@ -16,6 +16,7 @@ class Mood(models.Model):
     user = models.ForeignKey(get_user_model(), models.CASCADE)
     name = models.CharField(max_length=64, null=True, blank=True)
     icon = models.CharField(default="ph ph-star", max_length=64, null=True, blank=True)
+    color = ColorField(null=True, blank=True)
     value = models.IntegerField(
         validators=[MinValueValidator(1), MaxValueValidator(255)],
         null=True,
@@ -60,6 +61,7 @@ class ActivityCategory(models.Model):
     user = models.ForeignKey(get_user_model(), models.CASCADE)
     name = models.CharField(max_length=64, null=True, blank=True)
     icon = models.CharField(default="ph ph-check", max_length=64, null=True, blank=True)
+    color = ColorField(null=True, blank=True)
     encrypted_payload = models.JSONField(null=True, blank=True)
 
     def __str__(self):
@@ -73,6 +75,7 @@ class Activity(models.Model):
     user = models.ForeignKey(get_user_model(), models.CASCADE)
     name = models.CharField(max_length=64, null=True, blank=True)
     icon = models.CharField(default="ph ph-check", max_length=64, null=True, blank=True)
+    color = ColorField(null=True, blank=True)
     category = models.ForeignKey(ActivityCategory, models.SET_NULL, null=True)
     hidden = models.BooleanField(default=False)
     encrypted_payload = models.JSONField(null=True, blank=True)
