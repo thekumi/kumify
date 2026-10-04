@@ -13,6 +13,7 @@ from moodyduck.health.models import (
     Vaccination,
 )
 from moodyduck.keystore.models import UserDevice, UserKeyBackup, UserKeyPair
+from moodyduck.notifications.models import NotificationSettings, PushSubscription
 from moodyduck.mood.models import Activity, CustomProperty, Mood, Status, StatusActivity, StatusMedia
 from moodyduck.profiles.models import EmergencyAccessLog, UserProfile
 
@@ -613,3 +614,16 @@ class EmergencyAccessLogSerializer(serializers.ModelSerializer):
         model = EmergencyAccessLog
         fields = ["id", "accessed_at", "source", "method", "details"]
         read_only_fields = ["id", "accessed_at"]
+
+
+class PushSubscriptionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PushSubscription
+        fields = ["id", "endpoint", "p256dh", "auth", "created_at"]
+        read_only_fields = ["id", "created_at"]
+
+
+class NotificationSettingsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = NotificationSettings
+        fields = ["daily_reminder", "daily_reminder_time", "habits_reminder"]

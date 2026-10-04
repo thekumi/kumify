@@ -45,6 +45,7 @@ CORE_MODULES = [
     "frontend",
     "keystore",
     "profiles",
+    "notifications",
 ]
 
 INSTALLED_APPS = [
@@ -263,3 +264,18 @@ CELERY_BROKER_URL = CONFIG_FILE.config.get(
 )
 CELERY_RESULT_BACKEND = CELERY_BROKER_URL
 CELERY_TIMEZONE = TIME_ZONE
+
+from celery.schedules import crontab  # noqa: E402
+
+CELERY_BEAT_SCHEDULE = {
+    "send-push-notifications": {
+        "task": "moodyduck.notifications.tasks.send_scheduled_notifications",
+        "schedule": crontab(minute="*/15"),
+    },
+}
+
+# Web Push (VAPID)
+
+VAPID_PUBLIC_KEY = CONFIG_FILE.config.get("Push", "PublicKey", fallback="")
+VAPID_PRIVATE_KEY = CONFIG_FILE.config.get("Push", "PrivateKey", fallback="")
+VAPID_CLAIMS_SUB = CONFIG_FILE.config.get("Push", "Subject", fallback="mailto:admin@example.com")

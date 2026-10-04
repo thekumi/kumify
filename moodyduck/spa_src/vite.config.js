@@ -8,7 +8,8 @@ export default defineConfig({
     vue(),
     VitePWA({
       injectRegister: null,
-      strategies: 'generateSW',
+      strategies: 'injectManifest',
+      srcDir: 'src',
       filename: 'sw.js',
       manifest: {
         name: 'MoodyDuck',
@@ -23,23 +24,9 @@ export default defineConfig({
           { src: '/static/spa/icons/icon.svg', sizes: '512x512', type: 'image/svg+xml', purpose: 'any maskable' },
         ],
       },
-      workbox: {
+      injectManifest: {
         globPatterns: ['**/*.{js,css,html,woff,woff2,ttf,svg}'],
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
-        navigateFallback: '/static/spa/index.html',
-        navigateFallbackDenylist: [/^\/api\//, /^\/admin\//, /^\/accounts\//, /^\/oidc\//, /^\/sw\.js/],
-        runtimeCaching: [
-          {
-            urlPattern: /^\/api\//,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'api-cache',
-              networkTimeoutSeconds: 10,
-              cacheableResponse: { statuses: [0, 200] },
-              expiration: { maxEntries: 300, maxAgeSeconds: 7 * 24 * 60 * 60 },
-            },
-          },
-        ],
       },
     }),
   ],

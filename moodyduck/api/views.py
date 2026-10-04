@@ -32,12 +32,15 @@ from moodyduck.health.models import (
 from moodyduck.keystore.crypto import encrypt_for_user
 from moodyduck.keystore.models import UserDevice, UserKeyBackup, UserKeyPair
 from moodyduck.mood.models import Activity, CustomProperty, Mood, Status, StatusActivity, StatusMedia
+from moodyduck.notifications.models import NotificationSettings, PushSubscription
 from moodyduck.profiles.models import EmergencyAccessLog, UserProfile
 
 from .serializers import (
     ActivitySerializer,
     CustomPropertySerializer,
     BasicMedicalInfoSerializer,
+    NotificationSettingsSerializer,
+    PushSubscriptionSerializer,
     CBTRecordSerializer,
     DreamMediaSerializer,
     DreamSerializer,
@@ -992,3 +995,42 @@ class TokenLoginView(ObtainAuthToken):
     # here means no authentication runs at all on this endpoint — only the
     # username/password in the request body is checked.
     authentication_classes = []
+
+
+class PushSubscriptionViewSet(viewsets.ModelViewSet):
+    serializer_class = PushSubscriptionSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    http_method_names = ["get", "post", "delete", "head", "options"]
+
+    def get_queryset(self):
+        return PushSubscription.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+
+class NotificationSettingsView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def _get_or_create(self, user):
+        obj, _ = NotificationSettings.objects.get_or_create(user=user)
+        return obj
+
+    def get(self, request):
+        obj = self._get_or_create(request.user)
+        return Response(NotificationSettingsSerializer(obj).data)
+
+    def patch(self, request):
+        obj = self._get_or_create(request.user)
+        serializer = NotificationSettingsSerializer(obj, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+
+class VapidPublicKeyView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        from django.conf import settings as django_settings
+        return Response({"public_key": getattr(django_settings, "VAPID_PUBLIC_KEY", "")})

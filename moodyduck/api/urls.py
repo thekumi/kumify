@@ -6,6 +6,9 @@ from .views import (
     CustomPropertyViewSet,
     CBTRecordViewSet,
     CurrentEmergencyProfileView,
+    NotificationSettingsView,
+    PushSubscriptionViewSet,
+    VapidPublicKeyView,
     CurrentProfileView,
     DashboardStatsView,
     DreamMediaEncryptView,
@@ -55,6 +58,7 @@ router.register(
     "emergency-access-logs", EmergencyAccessLogViewSet, basename="emergency-access-log"
 )
 router.register("devices", UserDeviceViewSet, basename="device")
+router.register("push-subscriptions", PushSubscriptionViewSet, basename="push-subscription")
 
 urlpatterns = [
     path("", include(router.urls)),
@@ -77,4 +81,6 @@ urlpatterns = [
     path("stats/dashboard/", DashboardStatsView.as_view(), name="stats-dashboard"),
     path("auth/token/", TokenLoginView.as_view(), name="api_token_auth"),
     path("auth/", include("rest_framework.urls")),
+    path("notification-settings/", NotificationSettingsView.as_view(), name="notification-settings"),
+    path("vapid-public-key/", VapidPublicKeyView.as_view(), name="vapid-public-key"),
 ]
