@@ -1,25 +1,17 @@
 <template>
   <div class="pb-nav">
-    <TopBar :title="id ? 'Edit Activity' : 'New Activity'" :back="true" />
+    <TopBar :title="id ? 'Edit Category' : 'New Category'" :back="true" />
 
     <form @submit.prevent="save" class="px-4 py-4 space-y-3">
       <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4 space-y-4">
         <div>
           <label class="text-sm font-semibold text-stone-500 block mb-1.5">Name</label>
-          <input v-model="form.name" type="text" required placeholder="e.g. Exercise"
+          <input v-model="form.name" type="text" required placeholder="e.g. Wellbeing"
             class="w-full px-3 py-2.5 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-clay-400 text-stone-800 bg-stone-50 text-sm" />
         </div>
         <div>
           <label class="text-sm font-semibold text-stone-500 block mb-1.5">Icon</label>
-          <IconPicker v-model="form.icon" fallback="ph ph-check" :color="form.color" />
-        </div>
-        <div v-if="categories.length">
-          <label class="text-sm font-semibold text-stone-500 block mb-1.5">Category</label>
-          <select v-model="form.category"
-            class="w-full px-3 py-2.5 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-clay-400 text-stone-800 bg-stone-50 text-sm">
-            <option :value="null">No category</option>
-            <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
-          </select>
+          <IconPicker v-model="form.icon" fallback="ph ph-tag" :color="form.color" />
         </div>
         <div>
           <label class="text-sm font-semibold text-stone-500 block mb-1.5">Color</label>
@@ -35,12 +27,12 @@
 
       <button type="submit" :disabled="saving"
         class="w-full py-3.5 bg-clay-600 hover:bg-clay-700 disabled:opacity-60 text-white font-semibold rounded-xl transition-colors">
-        {{ saving ? 'Saving…' : (id ? 'Save changes' : 'Create activity') }}
+        {{ saving ? 'Saving…' : (id ? 'Save changes' : 'Create category') }}
       </button>
 
       <button v-if="id" type="button" @click="remove"
         class="w-full py-3 rounded-xl border border-red-100 bg-red-50 text-red-600 text-sm font-medium hover:bg-red-100 transition-colors">
-        Delete activity
+        Delete category
       </button>
     </form>
 
@@ -54,7 +46,12 @@ import { useRoute, useRouter } from 'vue-router'
 import TopBar from '@/components/TopBar.vue'
 import BottomNav from '@/components/BottomNav.vue'
 import IconPicker from '@/components/IconPicker.vue'
-import { getActivities, createActivity, updateActivity, deleteActivity, getActivityCategories } from '@/api/mood'
+import {
+  getActivityCategories,
+  createActivityCategory,
+  updateActivityCategory,
+  deleteActivityCategory,
+} from '@/api/mood'
 import { useKeystoreStore } from '@/stores/keystore'
 import { saveEncrypted } from '@/keystore/saveEncrypted'
 
@@ -62,46 +59,44 @@ const ks = useKeystoreStore()
 const route = useRoute()
 const router = useRouter()
 const id = route.params.id
-const form = ref({ name: '', icon: 'ph ph-check', color: '#488460', category: null })
-const categories = ref([])
+const form = ref({ name: '', icon: 'ph ph-tag', color: '#488460' })
 const saving = ref(false)
 const error = ref('')
-let rawActivity = null
+let rawCategory = null
 
-async function fillForm(activity) {
-  const a = await ks.decrypt(activity)
-  form.value = { name: a.name ?? '', icon: a.icon ?? 'ph ph-check', color: a.color ?? '#488460', category: activity.category ?? null }
+async function fillForm(cat) {
+  const c = await ks.decrypt(cat)
+  form.value = { name: c.name ?? '', icon: c.icon ?? 'ph ph-tag', color: c.color ?? '#488460' }
 }
 
-watch(() => ks.dataKey, async (key) => { if (key && rawActivity) await fillForm(rawActivity) })
+watch(() => ks.dataKey, async (key) => { if (key && rawCategory) await fillForm(rawCategory) })
 
 async function save() {
   saving.value = true; error.value = ''
   try {
     if (id) {
-      await saveEncrypted(updateActivity, id, form.value, ['name', 'icon', 'color'], rawActivity, ks)
+      await saveEncrypted(updateActivityCategory, id, form.value, ['name', 'icon', 'color'], rawCategory, ks)
     } else {
-      const toEncrypt = { name: form.value.name, icon: form.value.icon || 'ph ph-check' }
+      const toEncrypt = { name: form.value.name, icon: form.value.icon || 'ph ph-tag' }
       if (form.value.color) toEncrypt.color = form.value.color
-      await createActivity({ category: form.value.category, encrypted_payload: await ks.encryptPayload(toEncrypt) })
+      await createActivityCategory({ encrypted_payload: await ks.encryptPayload(toEncrypt) })
     }
-    router.push('/mood/settings/activities')
+    router.push('/mood/settings/activities/categories')
   } catch { error.value = 'Could not save.' }
   finally { saving.value = false }
 }
 
 async function remove() {
-  if (!confirm('Delete this activity?')) return
-  await deleteActivity(id)
-  router.push('/mood/settings/activities')
+  if (!confirm('Delete this category? Activities in it will become uncategorized.')) return
+  await deleteActivityCategory(id)
+  router.push('/mood/settings/activities/categories')
 }
 
 onMounted(async () => {
-  const [all, rawCats] = await Promise.all([getActivities(), getActivityCategories()])
-  categories.value = await ks.decryptAll(rawCats)
   if (id) {
-    rawActivity = all.find(a => String(a.id) === String(id))
-    if (rawActivity) await fillForm(rawActivity)
+    const all = await getActivityCategories()
+    rawCategory = all.find(c => String(c.id) === String(id))
+    if (rawCategory) await fillForm(rawCategory)
   }
 })
 </script>

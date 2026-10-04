@@ -29,7 +29,7 @@
              class="text-xl"></i>
         </div>
         <div class="flex-1 min-w-0">
-          <p class="font-medium text-stone-800 truncate">{{ activityOf(h)?.name ?? h.name ?? '—' }}</p>
+          <p class="font-medium text-stone-800 truncate">{{ activityOf(h)?.name ?? '—' }}</p>
           <p v-if="h.goal && typeof h.goal === 'object'" class="text-xs text-stone-300">{{ h.goal.target_count }}× {{ h.goal.period }}</p>
         </div>
         <button @click="logHabit(h)" title="Log"

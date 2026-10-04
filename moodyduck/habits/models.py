@@ -1,6 +1,5 @@
 from datetime import date
 
-from colorfield.fields import ColorField
 from dateutil.relativedelta import relativedelta
 from django.contrib.auth import get_user_model
 from django.db import models
@@ -15,10 +14,6 @@ class Habit(models.Model):
         ordering = ["-pk"]
 
     user = models.ForeignKey(get_user_model(), models.CASCADE)
-    name = models.CharField(max_length=64, null=True, blank=True)
-    icon = models.CharField(default="ph ph-user-gear", max_length=64)
-    color = ColorField(default="#000000")
-    description = models.TextField(null=True, blank=True)
     encrypted_payload = models.JSONField(null=True, blank=True)
 
     def __str__(self):

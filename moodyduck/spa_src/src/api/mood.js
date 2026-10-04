@@ -6,6 +6,11 @@ export const createMood      = (d)      => api.post('/moods/', d)
 export const updateMood      = (id, d)  => api.patch(`/moods/${id}/`, d)
 export const deleteMood      = (id)     => api.delete(`/moods/${id}/`)
 
+export const getActivityCategories   = ()       => api.getAll('/activity-categories/')
+export const createActivityCategory  = (d)      => api.post('/activity-categories/', d)
+export const updateActivityCategory  = (id, d)  => api.patch(`/activity-categories/${id}/`, d)
+export const deleteActivityCategory  = (id)     => api.delete(`/activity-categories/${id}/`)
+
 export const getActivities   = ()       => api.getAll('/activities/')
 export const createActivity  = (d)      => api.post('/activities/', d)
 export const updateActivity  = (id, d)  => api.patch(`/activities/${id}/`, d)

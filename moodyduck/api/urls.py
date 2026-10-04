@@ -2,6 +2,7 @@ from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
 from .views import (
+    ActivityCategoryViewSet,
     ActivityViewSet,
     CustomPropertyViewSet,
     CBTRecordViewSet,
@@ -36,6 +37,7 @@ from .views import (
 )
 
 router = DefaultRouter()
+router.register("activity-categories", ActivityCategoryViewSet, basename="activity-category")
 router.register("properties", CustomPropertyViewSet, basename="property")
 router.register("moods", MoodViewSet, basename="mood")
 router.register("activities", ActivityViewSet, basename="activity")

@@ -19,9 +19,9 @@ class HabitScheduleInline(admin.TabularInline):
 
 @admin.register(Habit)
 class HabitAdmin(admin.ModelAdmin):
-    list_display = ("name", "user", "icon", "color")
+    list_display = ("id", "user")
     list_filter = ("user",)
-    search_fields = ("name", "user__username")
+    search_fields = ("user__username",)
     raw_id_fields = ("user",)
 
 

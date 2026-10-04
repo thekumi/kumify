@@ -14,7 +14,7 @@ from moodyduck.health.models import (
 )
 from moodyduck.keystore.models import UserDevice, UserKeyBackup, UserKeyPair
 from moodyduck.notifications.models import NotificationSettings, PushSubscription
-from moodyduck.mood.models import Activity, CustomProperty, Mood, Status, StatusActivity, StatusMedia
+from moodyduck.mood.models import Activity, ActivityCategory, CustomProperty, Mood, Status, StatusActivity, StatusMedia
 from moodyduck.profiles.models import EmergencyAccessLog, UserProfile
 
 
@@ -97,7 +97,7 @@ class StatusMediaSerializer(serializers.ModelSerializer):
 class MoodSerializer(serializers.ModelSerializer):
     class Meta:
         model = Mood
-        fields = ["id", "name", "value", "icon", "color", "encrypted_payload"]
+        fields = ["id", "name", "value", "icon", "encrypted_payload"]
         read_only_fields = ["id"]
         extra_kwargs = {
             "name": {"required": False, "allow_null": True, "allow_blank": True},
@@ -183,13 +183,25 @@ class StatusSerializer(serializers.ModelSerializer):
                 StatusActivity.objects.create(status=status, activity=activity)
 
 
-class ActivitySerializer(serializers.ModelSerializer):
+class ActivityCategorySerializer(serializers.ModelSerializer):
     class Meta:
-        model = Activity
-        fields = ["id", "name", "icon", "color", "encrypted_payload"]
+        model = ActivityCategory
+        fields = ["id", "name", "icon", "encrypted_payload"]
         read_only_fields = ["id"]
         extra_kwargs = {
             "name": {"required": False, "allow_null": True, "allow_blank": True},
+            "icon": {"required": False, "allow_null": True, "allow_blank": True},
+        }
+
+
+class ActivitySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Activity
+        fields = ["id", "name", "icon", "category", "encrypted_payload"]
+        read_only_fields = ["id"]
+        extra_kwargs = {
+            "name": {"required": False, "allow_null": True, "allow_blank": True},
+            "category": {"required": False, "allow_null": True},
         }
 
 
@@ -203,12 +215,8 @@ class CustomPropertySerializer(serializers.ModelSerializer):
 class HabitSerializer(serializers.ModelSerializer):
     class Meta:
         model = Habit
-        fields = ["id", "name", "icon", "color", "description", "encrypted_payload"]
+        fields = ["id", "encrypted_payload"]
         read_only_fields = ["id"]
-        extra_kwargs = {
-            "name": {"required": False, "allow_null": True, "allow_blank": True},
-            "description": {"required": False, "allow_null": True, "allow_blank": True},
-        }
 
 
 class HabitLogSerializer(serializers.ModelSerializer):

@@ -31,11 +31,12 @@ from moodyduck.health.models import (
 )
 from moodyduck.keystore.crypto import encrypt_for_user
 from moodyduck.keystore.models import UserDevice, UserKeyBackup, UserKeyPair
-from moodyduck.mood.models import Activity, CustomProperty, Mood, Status, StatusActivity, StatusMedia
+from moodyduck.mood.models import Activity, ActivityCategory, CustomProperty, Mood, Status, StatusActivity, StatusMedia
 from moodyduck.notifications.models import NotificationSettings, PushSubscription
 from moodyduck.profiles.models import EmergencyAccessLog, UserProfile
 
 from .serializers import (
+    ActivityCategorySerializer,
     ActivitySerializer,
     CustomPropertySerializer,
     BasicMedicalInfoSerializer,
@@ -138,8 +139,9 @@ class UserKeyBackupView(APIView):
 
 _SCRUB_FIELDS = {
     "statuses": (Status, "user", ["mood", "title", "text"]),
-    "moods": (Mood, "user", ["name", "value", "color", "icon"]),
+    "moods": (Mood, "user", ["name", "value", "icon"]),
     "activities": (Activity, "user", ["name", "icon"]),
+    "activity_categories": (ActivityCategory, "user", ["name", "icon"]),
     "dreams": (Dream, "user", ["title", "content"]),
     "cbt_records": (
         ThoughtRecord,
@@ -185,7 +187,6 @@ _SCRUB_FIELDS = {
     ),
     "medications": (Medication, "user", ["name", "remarks"]),
     "health_parameters": (HealthParameter, "user", ["name", "unit", "icon"]),
-    "habits": (Habit, "user", ["name", "description"]),
     "habit_logs": (HabitLog, "habit__user", ["note"]),
     "health_records": (HealthRecord, "log__user", ["value"]),
     "user_profile": (
@@ -211,6 +212,7 @@ def _any_plaintext_q(fields):
 _STAGING_MODELS = {
     "moods": (Mood, "user", MoodSerializer),
     "activities": (Activity, "user", ActivitySerializer),
+    "activity_categories": (ActivityCategory, "user", ActivityCategorySerializer),
     "dreams": (Dream, "user", DreamSerializer),
     "cbt_records": (ThoughtRecord, "user", CBTRecordSerializer),
     "health_logs": (HealthLog, "user", HealthLogSerializer),
@@ -218,7 +220,6 @@ _STAGING_MODELS = {
     "people": (Person, "user", PersonSerializer),
     "medications": (Medication, "user", MedicationSerializer),
     "health_parameters": (HealthParameter, "user", HealthParameterSerializer),
-    "habits": (Habit, "user", HabitSerializer),
     "habit_logs": (HabitLog, "habit__user", HabitLogSerializer),
 }
 
@@ -608,6 +609,17 @@ class MoodViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         return Mood.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+
+class ActivityCategoryViewSet(viewsets.ModelViewSet):
+    serializer_class = ActivityCategorySerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return ActivityCategory.objects.filter(user=self.request.user)
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)

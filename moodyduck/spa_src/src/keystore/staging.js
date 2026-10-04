@@ -2,17 +2,17 @@ import { apiFetch, b64encode } from './util.js'
 import { encryptPayload, decryptPayload } from './fields.js'
 
 const MODEL_FIELDS = {
-  moods:        ['name', 'value', 'color', 'icon'],
-  activities:   ['name', 'icon'],
-  dreams:       ['title', 'content'],
-  cbt_records:  ['title', 'situation', 'thoughts', 'pro_facts', 'con_facts', 'realistic', 'outcome'],
-  health_logs:  ['notes'],
-  vaccinations: ['name', 'target_disease', 'administered_on', 'next_due', 'provider', 'batch_number', 'notes'],
-  people:       ['name', 'nickname', 'birthday', 'email', 'phone', 'relationship', 'address', 'notes', 'last_contact'],
-  medications:        ['name', 'remarks'],
-  health_parameters:  ['name', 'unit', 'icon'],
-  habits:             ['name', 'description'],
-  habit_logs:   ['note'],
+  moods:               ['name', 'value', 'icon'],
+  activities:          ['name', 'icon'],
+  activity_categories: ['name', 'icon'],
+  dreams:              ['title', 'content'],
+  cbt_records:         ['title', 'situation', 'thoughts', 'pro_facts', 'con_facts', 'realistic', 'outcome'],
+  health_logs:         ['notes'],
+  vaccinations:        ['name', 'target_disease', 'administered_on', 'next_due', 'provider', 'batch_number', 'notes'],
+  people:              ['name', 'nickname', 'birthday', 'email', 'phone', 'relationship', 'address', 'notes', 'last_contact'],
+  medications:         ['name', 'remarks'],
+  health_parameters:   ['name', 'unit', 'icon'],
+  habit_logs:          ['note'],
 }
 
 const MEDIA_ENDPOINTS = [
