@@ -12,7 +12,7 @@ import {
   unwrapUserPrivateKey,
 } from '@/keystore/userkey'
 import { apiFetch } from '@/keystore/util'
-import { runStaging } from '@/keystore/staging'
+import { runScrub } from '@/keystore/scrub'
 import { wrapDataKeyForLock, unwrapDataKeyFromLock } from '@/keystore/lock'
 
 const AUTOLOCK_KEY = 'ks:autolock-minutes'
@@ -121,8 +121,11 @@ export const useKeystoreStore = defineStore('keystore', () => {
   function _triggerStaging(key) {
     if (!key || sessionStorage.getItem('ks:staged')) return
     sessionStorage.setItem('ks:staged', '1')
-    runStaging(key)
-      .then(n => { if (n > 0) console.info(`[staging] Encrypted ${n} record(s)`) })
+    runScrub(key)
+      .then(({ staged, scrubbed }) => {
+        if (staged > 0) console.info(`[staging] Encrypted ${staged} record(s)`)
+        if (scrubbed > 0) console.info(`[scrub] Merged plaintext into ${scrubbed} record(s)`)
+      })
       .catch(e => console.warn('[staging] failed:', e))
   }
 
