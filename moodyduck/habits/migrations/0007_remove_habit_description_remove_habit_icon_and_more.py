@@ -4,22 +4,21 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('habits', '0006_remove_habit_color'),
+        ("habits", "0006_remove_habit_color"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='habit',
-            name='description',
+            model_name="habit",
+            name="description",
         ),
         migrations.RemoveField(
-            model_name='habit',
-            name='icon',
+            model_name="habit",
+            name="icon",
         ),
         migrations.RemoveField(
-            model_name='habit',
-            name='name',
+            model_name="habit",
+            name="name",
         ),
     ]

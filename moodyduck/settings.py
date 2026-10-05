@@ -265,7 +265,7 @@ CELERY_BROKER_URL = CONFIG_FILE.config.get(
 CELERY_RESULT_BACKEND = CELERY_BROKER_URL
 CELERY_TIMEZONE = TIME_ZONE
 
-from celery.schedules import crontab  # noqa: E402
+from celery.schedules import crontab
 
 CELERY_BEAT_SCHEDULE = {
     "send-push-notifications": {
@@ -278,4 +278,6 @@ CELERY_BEAT_SCHEDULE = {
 
 VAPID_PUBLIC_KEY = CONFIG_FILE.config.get("Push", "PublicKey", fallback="")
 VAPID_PRIVATE_KEY = CONFIG_FILE.config.get("Push", "PrivateKey", fallback="")
-VAPID_CLAIMS_SUB = CONFIG_FILE.config.get("Push", "Subject", fallback="mailto:admin@example.com")
+VAPID_CLAIMS_SUB = CONFIG_FILE.config.get(
+    "Push", "Subject", fallback="mailto:admin@example.com"
+)

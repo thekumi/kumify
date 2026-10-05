@@ -4,25 +4,26 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('mood', '0010_add_customproperty'),
+        ("mood", "0010_add_customproperty"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='activitycategory',
-            name='encrypted_payload',
+            model_name="activitycategory",
+            name="encrypted_payload",
             field=models.JSONField(blank=True, null=True),
         ),
         migrations.AlterField(
-            model_name='activitycategory',
-            name='icon',
-            field=models.CharField(blank=True, default='ph ph-check', max_length=64, null=True),
+            model_name="activitycategory",
+            name="icon",
+            field=models.CharField(
+                blank=True, default="ph ph-check", max_length=64, null=True
+            ),
         ),
         migrations.AlterField(
-            model_name='activitycategory',
-            name='name',
+            model_name="activitycategory",
+            name="name",
             field=models.CharField(blank=True, max_length=64, null=True),
         ),
     ]

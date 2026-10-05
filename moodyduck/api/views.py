@@ -3,6 +3,7 @@ import json
 import uuid
 from collections import Counter
 
+from django.conf import settings as django_settings
 from django.db.models import Prefetch, Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
@@ -20,7 +21,7 @@ from moodyduck.common.helpers import get_upload_path
 from moodyduck.dreams.models import Dream, DreamMedia, Theme
 from moodyduck.friends.models import Person
 from moodyduck.gpslog.models import GPSPoint
-from moodyduck.habits.models import Habit, HabitLog
+from moodyduck.habits.models import HabitLog
 from moodyduck.health.models import (
     BasicMedicalInfo,
     HealthLog,
@@ -31,18 +32,24 @@ from moodyduck.health.models import (
 )
 from moodyduck.keystore.crypto import encrypt_for_user
 from moodyduck.keystore.models import UserDevice, UserKeyBackup, UserKeyPair
-from moodyduck.mood.models import Activity, ActivityCategory, CustomProperty, Mood, Status, StatusActivity, StatusMedia
+from moodyduck.mood.models import (
+    Activity,
+    ActivityCategory,
+    CustomProperty,
+    Mood,
+    Status,
+    StatusActivity,
+    StatusMedia,
+)
 from moodyduck.notifications.models import NotificationSettings, PushSubscription
 from moodyduck.profiles.models import EmergencyAccessLog, UserProfile
 
 from .serializers import (
     ActivityCategorySerializer,
     ActivitySerializer,
-    CustomPropertySerializer,
     BasicMedicalInfoSerializer,
-    NotificationSettingsSerializer,
-    PushSubscriptionSerializer,
     CBTRecordSerializer,
+    CustomPropertySerializer,
     DreamMediaSerializer,
     DreamSerializer,
     EmergencyAccessLogSerializer,
@@ -55,7 +62,9 @@ from .serializers import (
     HealthParameterSerializer,
     MedicationSerializer,
     MoodSerializer,
+    NotificationSettingsSerializer,
     PersonSerializer,
+    PushSubscriptionSerializer,
     StatusMediaSerializer,
     StatusSerializer,
     ThemeSerializer,
@@ -95,7 +104,9 @@ class UserDeviceViewSet(viewsets.ModelViewSet):
         now = timezone.now()
         UserDevice.objects.filter(pk=instance.pk).update(last_seen=now)
         instance.last_seen = now
-        return Response(UserDeviceSerializer(instance, context={"request": request}).data)
+        return Response(
+            UserDeviceSerializer(instance, context={"request": request}).data
+        )
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -1034,7 +1045,9 @@ class NotificationSettingsView(APIView):
 
     def patch(self, request):
         obj = self._get_or_create(request.user)
-        serializer = NotificationSettingsSerializer(obj, data=request.data, partial=True)
+        serializer = NotificationSettingsSerializer(
+            obj, data=request.data, partial=True
+        )
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)
@@ -1044,5 +1057,6 @@ class VapidPublicKeyView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        from django.conf import settings as django_settings
-        return Response({"public_key": getattr(django_settings, "VAPID_PUBLIC_KEY", "")})
+        return Response(
+            {"public_key": getattr(django_settings, "VAPID_PUBLIC_KEY", "")}
+        )

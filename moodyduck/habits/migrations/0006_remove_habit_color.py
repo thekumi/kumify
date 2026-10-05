@@ -4,14 +4,13 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('habits', '0005_add_encrypted_payload'),
+        ("habits", "0005_add_encrypted_payload"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='habit',
-            name='color',
+            model_name="habit",
+            name="color",
         ),
     ]

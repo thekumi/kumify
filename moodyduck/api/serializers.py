@@ -13,8 +13,16 @@ from moodyduck.health.models import (
     Vaccination,
 )
 from moodyduck.keystore.models import UserDevice, UserKeyBackup, UserKeyPair
+from moodyduck.mood.models import (
+    Activity,
+    ActivityCategory,
+    CustomProperty,
+    Mood,
+    Status,
+    StatusActivity,
+    StatusMedia,
+)
 from moodyduck.notifications.models import NotificationSettings, PushSubscription
-from moodyduck.mood.models import Activity, ActivityCategory, CustomProperty, Mood, Status, StatusActivity, StatusMedia
 from moodyduck.profiles.models import EmergencyAccessLog, UserProfile
 
 

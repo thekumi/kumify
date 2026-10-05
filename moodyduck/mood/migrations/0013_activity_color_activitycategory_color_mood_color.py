@@ -11,34 +11,59 @@ def restore_color_columns(apps, schema_editor):
     for model_name in ("Mood", "Activity", "ActivityCategory"):
         model = apps.get_model("mood", model_name)
         with connection.cursor() as cursor:
-            existing = [c.name for c in connection.introspection.get_table_description(cursor, model._meta.db_table)]
+            existing = [
+                c.name
+                for c in connection.introspection.get_table_description(
+                    cursor, model._meta.db_table
+                )
+            ]
         if "color" not in existing:
             schema_editor.add_field(model, model._meta.get_field("color"))
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('mood', '0012_remove_activity_color_remove_activitycategory_color_and_more'),
+        ("mood", "0012_remove_activity_color_remove_activitycategory_color_and_more"),
     ]
 
     operations = [
         migrations.SeparateDatabaseAndState(
             state_operations=[
                 migrations.AddField(
-                    model_name='activity',
-                    name='color',
-                    field=colorfield.fields.ColorField(blank=True, default=None, image_field=None, max_length=25, null=True, samples=None),
+                    model_name="activity",
+                    name="color",
+                    field=colorfield.fields.ColorField(
+                        blank=True,
+                        default=None,
+                        image_field=None,
+                        max_length=25,
+                        null=True,
+                        samples=None,
+                    ),
                 ),
                 migrations.AddField(
-                    model_name='activitycategory',
-                    name='color',
-                    field=colorfield.fields.ColorField(blank=True, default=None, image_field=None, max_length=25, null=True, samples=None),
+                    model_name="activitycategory",
+                    name="color",
+                    field=colorfield.fields.ColorField(
+                        blank=True,
+                        default=None,
+                        image_field=None,
+                        max_length=25,
+                        null=True,
+                        samples=None,
+                    ),
                 ),
                 migrations.AddField(
-                    model_name='mood',
-                    name='color',
-                    field=colorfield.fields.ColorField(blank=True, default=None, image_field=None, max_length=25, null=True, samples=None),
+                    model_name="mood",
+                    name="color",
+                    field=colorfield.fields.ColorField(
+                        blank=True,
+                        default=None,
+                        image_field=None,
+                        max_length=25,
+                        null=True,
+                        samples=None,
+                    ),
                 ),
             ],
             database_operations=[

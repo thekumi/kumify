@@ -4,13 +4,10 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     ActivityCategoryViewSet,
     ActivityViewSet,
-    CustomPropertyViewSet,
     CBTRecordViewSet,
     CurrentEmergencyProfileView,
-    NotificationSettingsView,
-    PushSubscriptionViewSet,
-    VapidPublicKeyView,
     CurrentProfileView,
+    CustomPropertyViewSet,
     DashboardStatsView,
     DreamMediaEncryptView,
     DreamViewSet,
@@ -22,7 +19,9 @@ from .views import (
     MedicationViewSet,
     MeView,
     MoodViewSet,
+    NotificationSettingsView,
     PersonViewSet,
+    PushSubscriptionViewSet,
     ScrubView,
     StagingView,
     StatusCheckView,
@@ -34,10 +33,13 @@ from .views import (
     UserKeyBackupView,
     UserKeyPairView,
     VaccinationViewSet,
+    VapidPublicKeyView,
 )
 
 router = DefaultRouter()
-router.register("activity-categories", ActivityCategoryViewSet, basename="activity-category")
+router.register(
+    "activity-categories", ActivityCategoryViewSet, basename="activity-category"
+)
 router.register("properties", CustomPropertyViewSet, basename="property")
 router.register("moods", MoodViewSet, basename="mood")
 router.register("activities", ActivityViewSet, basename="activity")
@@ -60,7 +62,9 @@ router.register(
     "emergency-access-logs", EmergencyAccessLogViewSet, basename="emergency-access-log"
 )
 router.register("devices", UserDeviceViewSet, basename="device")
-router.register("push-subscriptions", PushSubscriptionViewSet, basename="push-subscription")
+router.register(
+    "push-subscriptions", PushSubscriptionViewSet, basename="push-subscription"
+)
 
 urlpatterns = [
     path("", include(router.urls)),
@@ -83,6 +87,10 @@ urlpatterns = [
     path("stats/dashboard/", DashboardStatsView.as_view(), name="stats-dashboard"),
     path("auth/token/", TokenLoginView.as_view(), name="api_token_auth"),
     path("auth/", include("rest_framework.urls")),
-    path("notification-settings/", NotificationSettingsView.as_view(), name="notification-settings"),
+    path(
+        "notification-settings/",
+        NotificationSettingsView.as_view(),
+        name="notification-settings",
+    ),
     path("vapid-public-key/", VapidPublicKeyView.as_view(), name="vapid-public-key"),
 ]

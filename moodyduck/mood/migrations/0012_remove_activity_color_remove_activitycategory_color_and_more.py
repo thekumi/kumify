@@ -4,9 +4,8 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('mood', '0011_activitycategory_encrypted_payload_and_more'),
+        ("mood", "0011_activitycategory_encrypted_payload_and_more"),
     ]
 
     operations = []
