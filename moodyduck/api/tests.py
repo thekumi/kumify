@@ -252,7 +252,7 @@ class DreamApiTests(APITestCase):
         self.assertEqual(delete_response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(DreamMedia.objects.filter(dream=dream).count(), 0)
 
-    def test_dream_encrypt_without_pgp_key_is_rejected(self):
+    def test_dream_unknown_fields_are_ignored(self):
         response = self.client.post(
             reverse("dream-list"),
             {
@@ -265,8 +265,7 @@ class DreamApiTests(APITestCase):
             HTTP_HOST=self.host,
         )
 
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("encrypt", response.data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
     def test_dream_list_is_newest_first(self):
         older = Dream.objects.create(
@@ -411,16 +410,15 @@ class EmergencyApiTests(APITestCase):
             HTTP_HOST=self.host,
         )
         self.assertEqual(profile_response.status_code, status.HTTP_200_OK)
-        self.assertEqual(profile_response.data["blood_type"], "O+")
+        self.assertIn("medical_encrypted_payload", profile_response.data)
+        self.assertEqual(len(profile_response.data["contacts"]), 1)
+        self.assertIn("encrypted_payload", profile_response.data["contacts"][0])
+        self.assertEqual(len(profile_response.data["vaccinations"]), 3)
         self.assertEqual(
-            profile_response.data["contacts"][0]["relationship"], "Sibling"
+            profile_response.data["vaccinations"][0]["administered_on"], "2025-03-05"
         )
-        self.assertEqual(len(profile_response.data["vaccinations"]), 2)
         self.assertEqual(
-            profile_response.data["vaccinations"][0]["target_disease"], "COVID-19"
-        )
-        self.assertEqual(
-            profile_response.data["vaccinations"][1]["name"], "Flu shot 2025"
+            profile_response.data["vaccinations"][1]["administered_on"], "2025-10-01"
         )
 
         log_response = self.client.post(
