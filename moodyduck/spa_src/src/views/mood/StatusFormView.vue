@@ -55,20 +55,26 @@
       <!-- Activities -->
       <div v-if="activities.length" class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
         <p class="text-sm font-semibold text-stone-500 mb-3">Activities</p>
-        <div class="flex flex-wrap gap-2">
-          <button
-            v-for="a in activities"
-            :key="a.id"
-            type="button"
-            @click="toggleActivity(a.id)"
-            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm font-medium transition-all"
-            :class="selectedActivities.has(a.id)
-              ? 'border-clay-300 bg-clay-50 text-clay-700'
-              : 'border-stone-200 text-stone-600 hover:border-stone-300'"
-          >
-            <i :class="a.icon || 'ph ph-check'" :style="a.color ? `color:${a.color}` : ''" class="text-base"></i>
-            {{ a.name || '—' }}
-          </button>
+        <div v-for="group in groupedActivities" :key="group.id ?? '__none__'" class="mb-3 last:mb-0">
+          <p v-if="group.name" class="text-xs font-medium text-stone-400 mb-2 flex items-center gap-1">
+            <i v-if="group.icon" :class="group.icon" :style="group.color ? `color:${group.color}` : ''" class="text-sm"></i>
+            {{ group.name }}
+          </p>
+          <div class="flex flex-wrap gap-2">
+            <button
+              v-for="a in group.activities"
+              :key="a.id"
+              type="button"
+              @click="toggleActivity(a.id)"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm font-medium transition-all"
+              :class="selectedActivities.has(a.id)
+                ? 'border-clay-300 bg-clay-50 text-clay-700'
+                : 'border-stone-200 text-stone-600 hover:border-stone-300'"
+            >
+              <i :class="a.icon || 'ph ph-check'" :style="a.color ? `color:${a.color}` : ''" class="text-base"></i>
+              {{ a.name || '—' }}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -179,12 +185,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import TopBar from '@/components/TopBar.vue'
 import BottomNav from '@/components/BottomNav.vue'
 import MediaGallery from '@/components/MediaGallery.vue'
-import { getMoods, getActivities, getStatus, createStatus, updateStatus, uploadAttachment, deleteAttachment } from '@/api/mood'
+import { getMoods, getActivities, getActivityCategories, getStatus, createStatus, updateStatus, uploadAttachment, deleteAttachment } from '@/api/mood'
 import { getProperties } from '@/api/properties'
 import { useKeystoreStore } from '@/stores/keystore'
 import { useOfflineStore } from '@/stores/offline'
@@ -198,9 +204,11 @@ const isEdit = !!id
 
 const moods = ref([])
 const activities = ref([])
+const activityCategories = ref([])
 const properties = ref([])
 const rawMoods = ref([])
 const rawActivities = ref([])
+const rawActivityCategories = ref([])
 const rawProperties = ref([])
 const form = ref({ mood: null, title: '', text: '', properties: {}, timestamp: localNow() })
 
@@ -269,11 +277,31 @@ function toggleActivity(id) {
     : selectedActivities.value.add(id)
 }
 
+const groupedActivities = computed(() => {
+  const catMap = Object.fromEntries(activityCategories.value.map(c => [c.id, c]))
+  const groups = []
+  const seen = new Set()
+  for (const a of activities.value) {
+    const catId = a.category ?? null
+    if (!seen.has(catId)) {
+      seen.add(catId)
+      const cat = catId != null ? catMap[catId] : null
+      groups.push({ id: catId, name: cat?.name ?? null, icon: cat?.icon ?? null, color: cat?.color ?? null, activities: [] })
+    }
+    groups.find(g => g.id === catId).activities.push(a)
+  }
+  // Put uncategorized last
+  const uncatIdx = groups.findIndex(g => g.id === null)
+  if (uncatIdx > 0) groups.push(groups.splice(uncatIdx, 1)[0])
+  return groups
+})
+
 async function applyDecryption() {
   const dm = await ks.decryptAll(rawMoods.value)
   dm.sort((a, b) => (Number(b.value) || 0) - (Number(a.value) || 0))
   moods.value = dm
   activities.value = await ks.decryptAll(rawActivities.value)
+  activityCategories.value = await ks.decryptAll(rawActivityCategories.value)
   properties.value = await ks.decryptAll(rawProperties.value)
   if (rawStatus && isEdit) {
     const s = await ks.decrypt(rawStatus)
@@ -350,9 +378,10 @@ async function save() {
 }
 
 onMounted(async () => {
-  const [m, a, p] = await Promise.all([getMoods().catch(() => []), getActivities().catch(() => []), getProperties().catch(() => [])])
+  const [m, a, ac, p] = await Promise.all([getMoods().catch(() => []), getActivities().catch(() => []), getActivityCategories().catch(() => []), getProperties().catch(() => [])])
   rawMoods.value = m
   rawActivities.value = a
+  rawActivityCategories.value = ac
   rawProperties.value = p
   await applyDecryption()
 
