@@ -1,53 +1,63 @@
-
-
 <template>
-  <div>
-    <!-- Trigger row -->
-    <div class="flex items-center gap-3 cursor-pointer" @click="open = true">
-      <div class="w-12 h-12 rounded-xl border border-stone-200 bg-stone-50 flex items-center justify-center shrink-0">
-        <i :class="modelValue || fallback" :style="color ? `color:${color}` : ''" class="text-2xl"></i>
-      </div>
-      <div class="flex-1 min-w-0">
-        <p class="text-sm text-stone-700 truncate font-mono">{{ modelValue || fallback }}</p>
-        <p class="text-xs text-stone-400">Tap to change</p>
-      </div>
-      <i class="ph ph-caret-right text-stone-300 text-lg shrink-0"></i>
-    </div>
-
-    <!-- Bottom sheet -->
-    <Teleport to="body">
-      <div v-if="open" class="fixed inset-0 bg-black/30 z-50 flex items-end" @click.self="open = false">
-        <div class="bg-white w-full rounded-t-3xl flex flex-col" style="max-height:80vh">
-          <div class="flex items-center gap-3 px-5 pt-5 pb-3 shrink-0">
-            <i class="ph ph-magnifying-glass text-stone-400 text-lg"></i>
-            <input ref="searchEl" v-model="query" type="search" placeholder="Search icons…"
-              class="flex-1 text-sm text-stone-800 border-0 outline-none bg-transparent placeholder-stone-300" />
-            <button type="button" @click="open = false" class="text-stone-400 hover:text-stone-600">
-              <i class="ph ph-x text-lg"></i>
-            </button>
-          </div>
-          <div class="overflow-y-auto px-4 pb-6">
-            <template v-for="group in filtered" :key="group.label">
-              <p class="text-xs font-semibold text-stone-400 uppercase tracking-wider mt-4 mb-2">{{ group.label }}</p>
-              <div class="grid grid-cols-7 gap-1.5">
-                <button v-for="icon in group.icons" :key="icon" type="button"
-                  @click="pick(icon)"
-                  class="w-full aspect-square rounded-xl flex items-center justify-center transition-all"
-                  :class="modelValue === `ph ${icon}`
+    <div>
+        <!-- Trigger row -->
+        <div class="flex items-center gap-3 cursor-pointer" @click="open = true">
+            <div class="w-12 h-12 rounded-xl border border-stone-200 bg-stone-50 flex items-center justify-center shrink-0">
+                <i :class="modelValue || fallback"
+                   :style="color ? `color:${color}` : ''"
+                   class="text-2xl"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+                <p class="text-sm text-stone-700 truncate font-mono">{{ modelValue || fallback }}</p>
+                <p class="text-xs text-stone-400">Tap to change</p>
+            </div>
+            <i class="ph ph-caret-right text-stone-300 text-lg shrink-0"></i>
+        </div>
+        <!-- Bottom sheet -->
+        <Teleport to="body">
+        <div v-if="open"
+             class="fixed inset-0 bg-black/30 z-50 flex items-end"
+             @click.self="open = false">
+            <div class="bg-white w-full rounded-t-3xl flex flex-col max-h-[80vh]">
+                <div class="flex items-center gap-3 px-5 pt-5 pb-3 shrink-0">
+                    <i class="ph ph-magnifying-glass text-stone-400 text-lg"></i>
+                    <input ref="searchEl"
+                           v-model="query"
+                           type="search"
+                           placeholder="Search icons…"
+                           class="flex-1 text-sm text-stone-800 border-0 outline-none bg-transparent placeholder-stone-300" />
+                    <button type="button"
+                            @click="open = false"
+                            class="text-stone-400 hover:text-stone-600">
+                        <i class="ph ph-x text-lg"></i>
+                    </button>
+                </div>
+                <div class="overflow-y-auto px-4 pb-6">
+                    <template v-for="group in filtered" :key="group.label">
+                        <p class="text-xs font-semibold text-stone-400 uppercase tracking-wider mt-4 mb-2">{{ group.label }}</p>
+                        <div class="grid grid-cols-7 gap-1.5">
+                            <button v-for="icon in group.icons"
+                                    :key="icon"
+                                    type="button"
+                                    @click="pick(icon)"
+                                    class="w-full aspect-square rounded-xl flex items-center justify-center transition-all"
+                                    :class="modelValue === `ph ${icon}`
                     ? 'bg-clay-100 ring-2 ring-clay-400'
                     : 'bg-stone-50 hover:bg-stone-100'">
-                  <i :class="`ph ${icon}`" :style="modelValue === `ph ${icon}` && color ? `color:${color}` : ''" class="text-xl"></i>
-                </button>
-              </div>
-            </template>
-            <p v-if="!filtered.length" class="text-sm text-stone-400 text-center py-8">No icons found.</p>
-          </div>
+                                <i :class="`ph ${icon}`"
+                                   :style="modelValue === `ph ${icon}` && color ? `color:${color}` : ''"
+                                   class="text-xl"></i>
+                            </button>
+                        </div>
+                    </template>
+                    <p v-if="!filtered.length"
+                       class="text-sm text-stone-400 text-center py-8">No icons found.</p>
+                </div>
+            </div>
         </div>
-      </div>
-    </Teleport>
-  </div>
+        </Teleport>
+    </div>
 </template>
-
 <script setup>
 import { ref, computed, watch, nextTick } from 'vue'
 

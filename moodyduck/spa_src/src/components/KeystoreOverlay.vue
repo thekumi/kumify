@@ -1,133 +1,130 @@
 <template>
-  <!-- Lock screen -->
-  <Teleport to="body">
+    <!-- Lock screen -->
+    <Teleport to="body">
     <div v-if="ks.status === 'locked'"
          class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-clay-50 px-6">
-      <div class="w-20 h-20 rounded-full bg-clay-200 flex items-center justify-center mb-6">
-        <DuckIcon bg="#f4d2ba" class="w-10 h-10 text-clay-700"/>
-      </div>
-      <h1 class="text-xl font-bold text-stone-800 mb-2">MoodyDuck is locked</h1>
-      <p class="text-sm text-stone-400 mb-8 text-center">
-        {{ ks.lockConfigured ? 'Enter your lock PIN to continue.' : 'Tap Unlock to continue.' }}
-      </p>
-
-      <div class="w-full max-w-xs space-y-3">
-        <input
-          v-if="ks.lockConfigured"
-          ref="pinRef"
-          v-model="lockPin"
-          type="password"
-          placeholder="Lock PIN"
-          autocomplete="current-password"
-          @keydown.enter="submitUnlock"
-          class="w-full px-3 py-2.5 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-clay-400 text-stone-800 bg-white text-sm"
-        />
-
-        <p v-if="lockError" class="text-sm text-red-600 bg-red-50 rounded-xl px-3 py-2">{{ lockError }}</p>
-
-        <button @click="submitUnlock" :disabled="unlocking || (ks.lockConfigured && !lockPin)"
-          class="w-full py-3.5 bg-clay-600 hover:bg-clay-700 disabled:opacity-60 text-white font-semibold rounded-xl transition-colors">
-          {{ unlocking ? 'Unlocking…' : 'Unlock' }}
-        </button>
-
-        <button type="button" @click="toggleEmergency"
-          class="w-full py-2.5 rounded-xl border border-red-200 bg-white text-red-600 text-sm font-medium hover:bg-red-50 transition-colors flex items-center justify-center gap-2">
-          <i class="ph ph-first-aid text-base"></i>
-          Emergency Info
-        </button>
-      </div>
-
-      <!-- Emergency info panel -->
-      <div v-if="showEmergency" class="w-full max-w-xs mt-4 bg-white rounded-2xl border border-red-100 shadow-sm p-4 text-sm space-y-2 max-h-72 overflow-y-auto">
-        <div v-if="emergencyLoading" class="flex justify-center py-4">
-          <div class="w-5 h-5 border-2 border-red-200 border-t-red-500 rounded-full animate-spin"></div>
+        <div class="w-20 h-20 rounded-full bg-clay-200 flex items-center justify-center mb-6">
+            <DuckIcon bg="#f4d2ba" class="w-10 h-10 text-clay-700" />
         </div>
-        <template v-else-if="emergency">
-          <p v-if="emergency.legal_name || emergency.display_name" class="font-semibold text-stone-800">{{ emergency.legal_name || emergency.display_name }}</p>
-          <p v-if="emergency.date_of_birth" class="text-stone-500">DOB: {{ emergency.date_of_birth }}</p>
-          <p v-if="emergency.blood_type" class="text-stone-500">Blood type: <span class="font-medium text-stone-700">{{ emergency.blood_type }}</span></p>
-          <p v-if="emergency.phone" class="text-stone-500">Phone: {{ emergency.phone }}</p>
-          <div v-if="emergency.allergies" class="pt-1">
-            <p class="text-xs font-semibold text-red-600 uppercase tracking-wider mb-0.5">Allergies</p>
-            <p class="text-stone-700 whitespace-pre-wrap">{{ emergency.allergies }}</p>
-          </div>
-          <div v-if="emergency.medical_notes" class="pt-1">
-            <p class="text-xs font-semibold text-stone-400 uppercase tracking-wider mb-0.5">Medical notes</p>
-            <p class="text-stone-700 whitespace-pre-wrap">{{ emergency.medical_notes }}</p>
-          </div>
-          <div v-if="emergency.contacts?.length" class="pt-1">
-            <p class="text-xs font-semibold text-stone-400 uppercase tracking-wider mb-1">Emergency contacts</p>
-            <div v-for="c in emergency.contacts" :key="c.id" class="text-stone-700">
-              {{ c.name }}<span v-if="c.relationship" class="text-stone-400"> ({{ c.relationship }})</span><span v-if="c.phone"> · {{ c.phone }}</span>
+        <h1 class="text-xl font-bold text-stone-800 mb-2">MoodyDuck is locked</h1>
+        <p class="text-sm text-stone-400 mb-8 text-center">
+            {{ ks.lockConfigured ? 'Enter your lock PIN to continue.' : 'Tap Unlock to continue.' }}
+        </p>
+        <div class="w-full max-w-xs space-y-3">
+            <input v-if="ks.lockConfigured"
+                   ref="pinRef"
+                   v-model="lockPin"
+                   type="password"
+                   placeholder="Lock PIN"
+                   autocomplete="current-password"
+                   @keydown.enter="submitUnlock"
+                   class="w-full px-3 py-2.5 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-clay-400 text-stone-800 bg-white text-sm" />
+            <p v-if="lockError"
+               class="text-sm text-red-600 bg-red-50 rounded-xl px-3 py-2">{{ lockError }}</p>
+            <button type="button"
+                    @click="submitUnlock"
+                    :disabled="unlocking || (ks.lockConfigured && !lockPin)"
+                    class="w-full py-3.5 bg-clay-600 hover:bg-clay-700 disabled:opacity-60 text-white font-semibold rounded-xl transition-colors">
+                {{ unlocking ? 'Unlocking…' : 'Unlock' }}
+            </button>
+            <button type="button"
+                    @click="toggleEmergency"
+                    class="w-full py-2.5 rounded-xl border border-red-200 bg-white text-red-600 text-sm font-medium hover:bg-red-50 transition-colors flex items-center justify-center gap-2">
+                <i class="ph ph-first-aid text-base"></i>
+                Emergency Info
+            </button>
+        </div>
+        <!-- Emergency info panel -->
+        <div v-if="showEmergency"
+             class="w-full max-w-xs mt-4 bg-white rounded-2xl border border-red-100 shadow-sm p-4 text-sm space-y-2 max-h-72 overflow-y-auto">
+            <div v-if="emergencyLoading" class="flex justify-center py-4">
+                <div class="w-5 h-5 border-2 border-red-200 border-t-red-500 rounded-full animate-spin"></div>
             </div>
-          </div>
-          <div v-if="emergency.vaccinations?.length" class="pt-1">
-            <p class="text-xs font-semibold text-stone-400 uppercase tracking-wider mb-1">Vaccinations</p>
-            <div v-for="v in emergency.vaccinations" :key="v.id" class="text-stone-700">
-              {{ v.name }}<span v-if="v.target_disease" class="text-stone-400"> ({{ v.target_disease }})</span><span v-if="v.administered_on" class="text-stone-400"> · {{ v.administered_on }}</span><span v-if="v.next_due" class="text-stone-400"> · Due {{ v.next_due }}</span>
-            </div>
-          </div>
-          <p v-if="!hasAnyEmergencyData" class="text-stone-400 text-center py-2">No emergency info set up yet.</p>
-        </template>
-      </div>
+            <template v-else-if="emergency">
+                <p v-if="emergency.legal_name || emergency.display_name"
+                   class="font-semibold text-stone-800">{{ emergency.legal_name || emergency.display_name }}</p>
+                <p v-if="emergency.date_of_birth" class="text-stone-500">DOB: {{ emergency.date_of_birth }}</p>
+                <p v-if="emergency.blood_type"
+                   class="text-stone-500">Blood type: <span class="font-medium text-stone-700">{{ emergency.blood_type }}</span></p>
+                <p v-if="emergency.phone" class="text-stone-500">Phone: {{ emergency.phone }}</p>
+                <div v-if="emergency.allergies" class="pt-1">
+                    <p class="text-xs font-semibold text-red-600 uppercase tracking-wider mb-0.5">Allergies</p>
+                    <p class="text-stone-700 whitespace-pre-wrap">{{ emergency.allergies }}</p>
+                </div>
+                <div v-if="emergency.medical_notes" class="pt-1">
+                    <p class="text-xs font-semibold text-stone-400 uppercase tracking-wider mb-0.5">Medical notes</p>
+                    <p class="text-stone-700 whitespace-pre-wrap">{{ emergency.medical_notes }}</p>
+                </div>
+                <div v-if="emergency.contacts?.length" class="pt-1">
+                    <p class="text-xs font-semibold text-stone-400 uppercase tracking-wider mb-1">Emergency contacts</p>
+                    <div v-for="c in emergency.contacts" :key="c.id" class="text-stone-700">
+                        {{ c.name }}<span v-if="c.relationship"
+      class="text-stone-400"> ({{ c.relationship }})</span><span v-if="c.phone"> · {{ c.phone }}</span>
+                    </div>
+                </div>
+                <div v-if="emergency.vaccinations?.length" class="pt-1">
+                    <p class="text-xs font-semibold text-stone-400 uppercase tracking-wider mb-1">Vaccinations</p>
+                    <div v-for="v in emergency.vaccinations"
+                         :key="v.id"
+                         class="text-stone-700">
+                        {{ v.name }}<span v-if="v.target_disease" class="text-stone-400"> ({{ v.target_disease }})</span><span v-if="v.administered_on" class="text-stone-400"> · {{ v.administered_on }}</span><span v-if="v.next_due" class="text-stone-400"> · Due {{ v.next_due }}</span>
+                    </div>
+                </div>
+                <p v-if="!hasAnyEmergencyData" class="text-stone-400 text-center py-2">No emergency info set up yet.</p>
+            </template>
+        </div>
     </div>
-  </Teleport>
-
-  <!-- Passphrase modal -->
-  <Teleport to="body">
+    </Teleport>
+    <!-- Passphrase modal -->
+    <Teleport to="body">
     <div v-if="ks.status === 'needs_passphrase'"
          class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
-        <div class="flex items-center gap-3 mb-4">
-          <div class="w-10 h-10 rounded-full bg-clay-100 flex items-center justify-center shrink-0">
-            <i class="ph ph-lock-key text-clay-700 text-xl"></i>
-          </div>
-          <div>
-            <h2 class="font-semibold text-stone-800">Unlock your data</h2>
-            <p class="text-xs text-stone-400">Enter your recovery passphrase</p>
-          </div>
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 rounded-full bg-clay-100 flex items-center justify-center shrink-0">
+                    <i class="ph ph-lock-key text-clay-700 text-xl"></i>
+                </div>
+                <div>
+                    <h2 class="font-semibold text-stone-800">Unlock your data</h2>
+                    <p class="text-xs text-stone-400">Enter your recovery passphrase</p>
+                </div>
+            </div>
+            <p class="text-sm text-stone-500 mb-4">
+                This device doesn't have your encryption key yet. Enter your recovery passphrase to unlock your encrypted entries.
+            </p>
+            <p v-if="error"
+               class="text-sm text-red-600 bg-red-50 rounded-xl px-3 py-2 mb-3">{{ error }}</p>
+            <input ref="inputRef"
+                   v-model="passphrase"
+                   type="password"
+                   placeholder="Recovery passphrase"
+                   autocomplete="current-password"
+                   @keydown.enter="submit"
+                   class="w-full px-3 py-2.5 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-clay-400 text-stone-800 bg-stone-50 text-sm mb-3" />
+            <button type="button"
+                    @click="submit"
+                    :disabled="busy || !passphrase"
+                    class="w-full py-3 bg-clay-600 hover:bg-clay-700 disabled:opacity-60 text-white font-semibold rounded-xl transition-colors text-sm">
+                {{ busy ? 'Unlocking…' : 'Unlock' }}
+            </button>
         </div>
-
-        <p class="text-sm text-stone-500 mb-4">
-          This device doesn't have your encryption key yet. Enter your recovery passphrase to unlock your encrypted entries.
-        </p>
-
-        <p v-if="error" class="text-sm text-red-600 bg-red-50 rounded-xl px-3 py-2 mb-3">{{ error }}</p>
-
-        <input
-          ref="inputRef"
-          v-model="passphrase"
-          type="password"
-          placeholder="Recovery passphrase"
-          autocomplete="current-password"
-          @keydown.enter="submit"
-          class="w-full px-3 py-2.5 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-clay-400 text-stone-800 bg-stone-50 text-sm mb-3"
-        />
-
-        <button @click="submit" :disabled="busy || !passphrase"
-          class="w-full py-3 bg-clay-600 hover:bg-clay-700 disabled:opacity-60 text-white font-semibold rounded-xl transition-colors text-sm">
-          {{ busy ? 'Unlocking…' : 'Unlock' }}
-        </button>
-      </div>
     </div>
-
     <!-- Waiting banner -->
     <div v-if="ks.status === 'waiting'"
          class="fixed top-0 inset-x-0 z-40 bg-amber-50 border-b border-amber-200 px-4 py-3 text-sm text-amber-800">
-      <div class="flex items-start gap-2">
-        <i class="ph ph-hourglass text-amber-600 text-base shrink-0 mt-0.5"></i>
-        <div>
-          <p><strong>Waiting for authorisation.</strong> On a trusted device, go to Devices &amp; Keys and grant access to this device.</p>
-          <p v-if="ks.myFingerprint" class="mt-1.5">
-            Verify this device shows the code:
-            <span class="font-mono font-bold tracking-widest ml-1">{{ ks.myFingerprint }}</span>
-          </p>
+        <div class="flex items-start gap-2">
+            <i class="ph ph-hourglass text-amber-600 text-base shrink-0 mt-0.5"></i>
+            <div>
+                <p><strong>Waiting for authorisation.</strong> On a trusted device, go to Devices &amp; Keys and grant access to this device.</p>
+                <p v-if="ks.myFingerprint" class="mt-1.5">
+                    Verify this device shows the code:
+                    <span class="font-mono font-bold tracking-widest ml-1">{{ ks.myFingerprint }}</span>
+                </p>
+            </div>
         </div>
-      </div>
     </div>
-  </Teleport>
+    </Teleport>
 </template>
-
 <script setup>
 import { ref, computed, nextTick, watch } from 'vue'
 import { useKeystoreStore } from '@/stores/keystore'

@@ -1,131 +1,144 @@
 <template>
-  <div class="pb-nav">
-    <TopBar :title="id ? 'Edit Dream' : 'Record Dream'" :back="true" />
-
-    <form @submit.prevent="save" class="px-4 py-4 space-y-3">
-      <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4 space-y-4">
-        <div>
-          <label class="text-sm font-semibold text-stone-500 block mb-1.5">Title <span class="font-normal">(optional)</span></label>
-          <input v-model="form.title" type="text" placeholder="Name this dream…"
-            class="w-full px-3 py-2.5 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-blue-400 text-stone-800 bg-stone-50 text-sm" />
-        </div>
-        <div>
-          <label class="text-sm font-semibold text-stone-500 block mb-2">Type</label>
-          <div class="flex gap-2">
-            <button v-for="(label, val) in types" :key="val" type="button"
-              @click="form.type = Number(val)"
-              class="flex-1 py-2 rounded-xl border text-sm font-medium transition-all"
-              :class="form.type === Number(val) ? 'border-blue-400 bg-blue-50 text-blue-700' : 'border-stone-200 text-stone-600 hover:border-stone-300'">
-              {{ label }}
-            </button>
-          </div>
-        </div>
-        <div>
-          <label class="text-sm font-semibold text-stone-500 block mb-2">Dream content</label>
-          <textarea v-model="form.content" rows="6" placeholder="What happened in your dream?"
-            class="w-full px-3 py-2.5 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-blue-400 text-stone-800 bg-stone-50 text-sm resize-none leading-relaxed"></textarea>
-        </div>
-        <div class="flex gap-4">
-          <label class="flex items-center gap-2 cursor-pointer">
-            <input v-model="form.lucid" type="checkbox" class="w-4 h-4 rounded accent-blue-600" />
-            <span class="text-sm text-stone-700 font-medium">Lucid dream</span>
-          </label>
-          <label class="flex items-center gap-2 cursor-pointer">
-            <input v-model="form.wet" type="checkbox" class="w-4 h-4 rounded accent-pink-500" />
-            <span class="text-sm text-stone-700 font-medium">Wet dream</span>
-          </label>
-        </div>
-      </div>
-
-      <!-- Date & time -->
-      <div class="bg-white rounded-2xl border border-stone-100 shadow-sm px-4 py-3 flex items-center gap-3">
-        <i class="ph ph-calendar-blank text-stone-400 text-lg shrink-0"></i>
-        <input v-model="form.timestamp" type="datetime-local"
-          class="flex-1 text-stone-700 text-sm border-0 outline-none bg-transparent min-w-0" />
-      </div>
-
-      <!-- Mood picker -->
-      <div v-if="moods.length" class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
-        <p class="text-sm font-semibold text-stone-500 mb-3">How did you feel?</p>
-        <div class="grid grid-cols-4 gap-2">
-          <button
-            v-for="m in moods"
-            :key="m.id"
-            type="button"
-            @click="form.mood = form.mood === m.id ? null : m.id"
-            class="flex flex-col items-center gap-1 p-2 rounded-xl transition-all"
-            :class="form.mood === m.id ? 'ring-2 ring-offset-1 bg-stone-50' : 'hover:bg-stone-50'"
-            :style="form.mood === m.id && m.color ? `--tw-ring-color:${m.color}` : ''"
-          >
-            <i :class="m.icon || 'ph ph-smiley'"
-               :style="m.color ? `color:${m.color}` : ''"
-               class="text-3xl"></i>
-            <span class="text-xs text-stone-600 truncate w-full text-center">{{ m.name || '—' }}</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Themes -->
-      <div v-if="themes.length" class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
-        <p class="text-sm font-semibold text-stone-500 mb-3">Themes</p>
-        <div class="flex flex-wrap gap-2">
-          <button
-            v-for="t in themes"
-            :key="t.id"
-            type="button"
-            @click="toggleTheme(t.id)"
-            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm font-medium transition-all"
-            :class="selectedThemes.has(t.id)
+    <div class="pb-nav">
+        <TopBar :title="id ? 'Edit Dream' : 'Record Dream'" :back="true" />
+        <form @submit.prevent="save" class="px-4 py-4 space-y-3">
+            <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4 space-y-4">
+                <div>
+                    <label class="text-sm font-semibold text-stone-500 block mb-1.5">Title <span class="font-normal">(optional)</span></label>
+                    <input v-model="form.title"
+                           type="text"
+                           placeholder="Name this dream…"
+                           class="w-full px-3 py-2.5 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-blue-400 text-stone-800 bg-stone-50 text-sm" />
+                </div>
+                <div>
+                    <label class="text-sm font-semibold text-stone-500 block mb-2">Type</label>
+                    <div class="flex gap-2">
+                        <button v-for="(label, val) in types"
+                                :key="val"
+                                type="button"
+                                @click="form.type = Number(val)"
+                                class="flex-1 py-2 rounded-xl border text-sm font-medium transition-all"
+                                :class="form.type === Number(val) ? 'border-blue-400 bg-blue-50 text-blue-700' : 'border-stone-200 text-stone-600 hover:border-stone-300'">
+                            {{ label }}
+                        </button>
+                    </div>
+                </div>
+                <div>
+                    <label class="text-sm font-semibold text-stone-500 block mb-2">Dream content</label>
+                    <textarea v-model="form.content"
+                              rows="6"
+                              placeholder="What happened in your dream?"
+                              class="w-full px-3 py-2.5 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-blue-400 text-stone-800 bg-stone-50 text-sm resize-none leading-relaxed"></textarea>
+                </div>
+                <div class="flex gap-4">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input v-model="form.lucid"
+                               type="checkbox"
+                               class="w-4 h-4 rounded accent-blue-600" />
+                        <span class="text-sm text-stone-700 font-medium">Lucid dream</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input v-model="form.wet"
+                               type="checkbox"
+                               class="w-4 h-4 rounded accent-pink-500" />
+                        <span class="text-sm text-stone-700 font-medium">Wet dream</span>
+                    </label>
+                </div>
+            </div>
+            <!-- Date & time -->
+            <div class="bg-white rounded-2xl border border-stone-100 shadow-sm px-4 py-3 flex items-center gap-3">
+                <i class="ph ph-calendar-blank text-stone-400 text-lg shrink-0"></i>
+                <input v-model="form.timestamp"
+                       type="datetime-local"
+                       class="flex-1 text-stone-700 text-sm border-0 outline-none bg-transparent min-w-0" />
+            </div>
+            <!-- Mood picker -->
+            <div v-if="moods.length"
+                 class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
+                <p class="text-sm font-semibold text-stone-500 mb-3">How did you feel?</p>
+                <div class="grid grid-cols-4 gap-2">
+                    <button v-for="m in moods"
+                            :key="m.id"
+                            type="button"
+                            @click="form.mood = form.mood === m.id ? null : m.id"
+                            class="flex flex-col items-center gap-1 p-2 rounded-xl transition-all"
+                            :class="form.mood === m.id ? 'ring-2 ring-offset-1 bg-stone-50' : 'hover:bg-stone-50'"
+                            :style="form.mood === m.id && m.color ? `--tw-ring-color:${m.color}` : ''">
+                        <i :class="m.icon || 'ph ph-smiley'"
+                           :style="m.color ? `color:${m.color}` : ''"
+                           class="text-3xl"></i>
+                        <span class="text-xs text-stone-600 truncate w-full text-center">{{ m.name || '—' }}</span>
+                    </button>
+                </div>
+            </div>
+            <!-- Themes -->
+            <div v-if="themes.length"
+                 class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
+                <p class="text-sm font-semibold text-stone-500 mb-3">Themes</p>
+                <div class="flex flex-wrap gap-2">
+                    <button v-for="t in themes"
+                            :key="t.id"
+                            type="button"
+                            @click="toggleTheme(t.id)"
+                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm font-medium transition-all"
+                            :class="selectedThemes.has(t.id)
               ? 'border-blue-300 bg-blue-50 text-blue-700'
-              : 'border-stone-200 text-stone-600 hover:border-stone-300'"
-          >
-            <i :class="t.icon || 'ph ph-tag'" :style="t.color ? `color:${t.color}` : ''" class="text-base"></i>
-            {{ t.name }}
-          </button>
-        </div>
-      </div>
-
-      <!-- Attachments -->
-      <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
-        <p class="text-sm font-semibold text-stone-500 mb-3">Attachments</p>
-        <div v-if="existingAttachments.length" class="mb-3">
-          <MediaGallery :attachments="existingAttachments" :dataKey="ks.dataKey" :canDelete="true" :showPrivate="true" @delete="removeExistingAttachment" />
-        </div>
-        <div v-if="pendingFiles.length" class="space-y-2 mb-3">
-          <div v-for="(pf, i) in pendingFiles" :key="i" class="flex items-center gap-2 bg-stone-50 rounded-xl px-3 py-2">
-            <img v-if="pf.previewUrl" :src="pf.previewUrl" class="w-10 h-10 rounded-lg object-cover shrink-0" />
-            <i v-else class="ph ph-file text-stone-400 text-xl shrink-0"></i>
-            <span class="text-sm text-stone-700 truncate flex-1">{{ pf.file.name }}</span>
-            <button type="button" @click="pf.private = !pf.private"
-              class="shrink-0 flex items-center gap-1 text-xs px-2 py-1 rounded-lg transition-colors"
-              :class="pf.private ? 'bg-amber-50 text-amber-600' : 'text-stone-400 hover:text-stone-600'">
-              <i :class="pf.private ? 'ph ph-lock-simple' : 'ph ph-lock-simple-open'" class="text-sm"></i>
-              {{ pf.private ? 'Private' : 'Visible' }}
+              : 'border-stone-200 text-stone-600 hover:border-stone-300'">
+                        <i :class="t.icon || 'ph ph-tag'"
+                           :style="t.color ? `color:${t.color}` : ''"
+                           class="text-base"></i>
+                        {{ t.name }}
+                    </button>
+                </div>
+            </div>
+            <!-- Attachments -->
+            <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
+                <p class="text-sm font-semibold text-stone-500 mb-3">Attachments</p>
+                <div v-if="existingAttachments.length" class="mb-3">
+                    <MediaGallery :attachments="existingAttachments" :dataKey="ks.dataKey" :canDelete="true" :showPrivate="true" @delete="removeExistingAttachment" />
+                </div>
+                <div v-if="pendingFiles.length" class="space-y-2 mb-3">
+                    <div v-for="(pf, i) in pendingFiles"
+                         :key="i"
+                         class="flex items-center gap-2 bg-stone-50 rounded-xl px-3 py-2">
+                        <img v-if="pf.previewUrl"
+                             :src="pf.previewUrl"
+                             alt=""
+                             class="w-10 h-10 rounded-lg object-cover shrink-0" />
+                        <i v-else class="ph ph-file text-stone-400 text-xl shrink-0"></i>
+                        <span class="text-sm text-stone-700 truncate flex-1">{{ pf.file.name }}</span>
+                        <button type="button"
+                                @click="pf.private = !pf.private"
+                                class="shrink-0 flex items-center gap-1 text-xs px-2 py-1 rounded-lg transition-colors"
+                                :class="pf.private ? 'bg-amber-50 text-amber-600' : 'text-stone-400 hover:text-stone-600'">
+                            <i :class="pf.private ? 'ph ph-lock-simple' : 'ph ph-lock-simple-open'"
+                               class="text-sm"></i>
+                            {{ pf.private ? 'Private' : 'Visible' }}
+                        </button>
+                        <button type="button"
+                                @click="removePending(i)"
+                                class="text-stone-300 hover:text-red-400 transition-colors shrink-0">
+                            <i class="ph ph-x text-sm"></i>
+                        </button>
+                    </div>
+                </div>
+                <label class="inline-flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-700 cursor-pointer">
+                    <i class="ph ph-paperclip text-base"></i>
+                    Add files
+                    <input type="file" multiple class="hidden" @change="addFiles" />
+                </label>
+            </div>
+            <p v-if="error"
+               class="text-sm text-red-600 bg-red-50 rounded-xl px-4 py-3">{{ error }}</p>
+            <button type="submit"
+                    :disabled="saving"
+                    class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white font-semibold rounded-xl transition-colors">
+                {{ saving ? 'Saving…' : (id ? 'Save changes' : 'Record dream') }}
             </button>
-            <button type="button" @click="removePending(i)" class="text-stone-300 hover:text-red-400 transition-colors shrink-0">
-              <i class="ph ph-x text-sm"></i>
-            </button>
-          </div>
-        </div>
-        <label class="inline-flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-700 cursor-pointer">
-          <i class="ph ph-paperclip text-base"></i>
-          Add files
-          <input type="file" multiple class="hidden" @change="addFiles" />
-        </label>
-      </div>
-
-      <p v-if="error" class="text-sm text-red-600 bg-red-50 rounded-xl px-4 py-3">{{ error }}</p>
-
-      <button type="submit" :disabled="saving"
-        class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white font-semibold rounded-xl transition-colors">
-        {{ saving ? 'Saving…' : (id ? 'Save changes' : 'Record dream') }}
-      </button>
-    </form>
-
-    <BottomNav />
-  </div>
+        </form>
+        <BottomNav />
+    </div>
 </template>
-
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'

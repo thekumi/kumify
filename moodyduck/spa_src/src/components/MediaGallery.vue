@@ -1,76 +1,60 @@
 <template>
-  <div v-if="attachments.length" class="space-y-2">
-    <div v-if="imageItems.length" class="grid grid-cols-3 gap-1.5">
-      <div
-        v-for="item in imageItems" :key="item.id"
-        class="relative aspect-square rounded-xl overflow-hidden bg-stone-100"
-      >
-        <img
-          v-if="loaded[item.id]"
-          :src="loaded[item.id].blobUrl"
-          class="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
-          @click="lightbox = item"
-        />
-        <div v-else class="w-full h-full flex items-center justify-center">
-          <div class="w-5 h-5 border-2 border-stone-300 border-t-stone-500 rounded-full animate-spin"></div>
+    <div v-if="attachments.length" class="space-y-2">
+        <div v-if="imageItems.length" class="grid grid-cols-3 gap-1.5">
+            <div v-for="item in imageItems"
+                 :key="item.id"
+                 class="relative aspect-square rounded-xl overflow-hidden bg-stone-100">
+                <img v-if="loaded[item.id]"
+                     :src="loaded[item.id].blobUrl"
+                     alt=""
+                     class="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                     @click="lightbox = item" />
+                <div v-else class="w-full h-full flex items-center justify-center">
+                    <div class="w-5 h-5 border-2 border-stone-300 border-t-stone-500 rounded-full animate-spin"></div>
+                </div>
+                <button v-if="canDelete"
+                        type="button"
+                        @click.stop="emit('delete', item.id)"
+                        class="absolute top-1 right-1 w-5 h-5 bg-black/40 hover:bg-red-500 rounded-full flex items-center justify-center transition-colors">
+                    <i class="ph ph-x text-white text-xs"></i>
+                </button>
+            </div>
         </div>
-        <button
-          v-if="canDelete"
-          type="button"
-          @click.stop="emit('delete', item.id)"
-          class="absolute top-1 right-1 w-5 h-5 bg-black/40 hover:bg-red-500 rounded-full flex items-center justify-center transition-colors"
-        >
-          <i class="ph ph-x text-white text-xs"></i>
-        </button>
-      </div>
+        <div v-if="otherItems.length" class="space-y-1">
+            <div v-for="item in otherItems"
+                 :key="item.id"
+                 class="flex items-center gap-3 px-3 py-2.5 bg-stone-50 rounded-xl">
+                <i class="ph ph-file text-stone-400 text-xl shrink-0"></i>
+                <a v-if="loaded[item.id]"
+                   :href="loaded[item.id].blobUrl"
+                   :download="loaded[item.id].name ?? item.name"
+                   class="text-sm text-clay-600 hover:underline truncate flex-1">{{ loaded[item.id].name ?? item.name }}</a>
+                <span v-else class="text-sm text-stone-400 truncate flex-1">{{ item.name }}</span>
+                <button v-if="canDelete"
+                        type="button"
+                        @click="emit('delete', item.id)"
+                        class="text-stone-400 hover:text-red-500 transition-colors shrink-0">
+                    <i class="ph ph-x text-sm"></i>
+                </button>
+            </div>
+        </div>
+        <Teleport to="body">
+        <div v-if="lightbox"
+             class="fixed inset-0 z-50 bg-black/85 flex items-center justify-center p-4"
+             @click="lightbox = null">
+            <img :src="loaded[lightbox.id]?.blobUrl"
+                 alt=""
+                 class="max-w-full max-h-full rounded-lg object-contain"
+                 @click.stop />
+            <button type="button"
+                    @click="lightbox = null"
+                    class="absolute top-4 right-4 w-9 h-9 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center">
+                <i class="ph ph-x text-white text-lg"></i>
+            </button>
+        </div>
+        </Teleport>
     </div>
-
-    <div v-if="otherItems.length" class="space-y-1">
-      <div
-        v-for="item in otherItems" :key="item.id"
-        class="flex items-center gap-3 px-3 py-2.5 bg-stone-50 rounded-xl"
-      >
-        <i class="ph ph-file text-stone-400 text-xl shrink-0"></i>
-        <a
-          v-if="loaded[item.id]"
-          :href="loaded[item.id].blobUrl"
-          :download="loaded[item.id].name ?? item.name"
-          class="text-sm text-clay-600 hover:underline truncate flex-1"
-        >{{ loaded[item.id].name ?? item.name }}</a>
-        <span v-else class="text-sm text-stone-400 truncate flex-1">{{ item.name }}</span>
-        <button
-          v-if="canDelete"
-          type="button"
-          @click="emit('delete', item.id)"
-          class="text-stone-400 hover:text-red-500 transition-colors shrink-0"
-        >
-          <i class="ph ph-x text-sm"></i>
-        </button>
-      </div>
-    </div>
-
-    <Teleport to="body">
-      <div
-        v-if="lightbox"
-        class="fixed inset-0 z-50 bg-black/85 flex items-center justify-center p-4"
-        @click="lightbox = null"
-      >
-        <img
-          :src="loaded[lightbox.id]?.blobUrl"
-          class="max-w-full max-h-full rounded-lg object-contain"
-          @click.stop
-        />
-        <button
-          @click="lightbox = null"
-          class="absolute top-4 right-4 w-9 h-9 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center"
-        >
-          <i class="ph ph-x text-white text-lg"></i>
-        </button>
-      </div>
-    </Teleport>
-  </div>
 </template>
-
 <script setup>
 import { ref, computed, watch, onUnmounted } from 'vue'
 import { b64decode } from '@/keystore/util'

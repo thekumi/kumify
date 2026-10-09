@@ -1,86 +1,88 @@
 <template>
-  <div class="pb-nav">
-    <TopBar title="Devices & Keys" :back="true" />
-
-    <div v-if="loading" class="flex justify-center py-16">
-      <div class="w-8 h-8 border-4 border-clay-200 border-t-clay-600 rounded-full animate-spin"></div>
+    <div class="pb-nav">
+        <TopBar title="Devices & Keys" :back="true" />
+        <div v-if="loading" class="flex justify-center py-16">
+            <div class="w-8 h-8 border-4 border-clay-200 border-t-clay-600 rounded-full animate-spin"></div>
+        </div>
+        <div v-else class="px-4 py-4 space-y-3">
+            <div v-if="!devices.length"
+                 class="bg-white rounded-2xl border border-stone-100 shadow-sm p-6 text-center">
+                <i class="ph ph-devices text-5xl text-stone-300 mb-3 block"></i>
+                <p class="text-stone-500 text-sm">No devices registered.</p>
+            </div>
+            <ul v-else
+                class="bg-white rounded-2xl border border-stone-100 shadow-sm divide-y divide-stone-50 overflow-hidden">
+                <li v-for="d in devices" :key="d.device_id" class="px-4 py-4">
+                    <div class="flex items-start gap-3">
+                        <div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+                             :class="d.device_id === ks.myDeviceId ? 'bg-clay-100' : 'bg-stone-100'">
+                            <i class="ph ph-device-mobile text-xl"
+                               :class="d.device_id === ks.myDeviceId ? 'text-clay-600' : 'text-stone-500'"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="font-medium text-stone-800 truncate">
+                                {{ d.label || 'Unnamed device' }}
+                                <span v-if="d.device_id === ks.myDeviceId"
+                                      class="ml-1.5 text-xs font-medium text-clay-600 bg-clay-100 px-1.5 py-0.5 rounded-full">This device</span>
+                            </p>
+                            <p class="text-xs text-stone-400 mt-0.5">Last seen: {{ d.last_seen ? fmtDate(d.last_seen) : 'never' }}</p>
+                            <p class="text-xs mt-0.5"
+                               :class="d.has_data_key ? 'text-green-600' : 'text-amber-600'">
+                                <i :class="d.has_data_key ? 'ph ph-check-circle' : 'ph ph-warning-circle'"
+                                   class="mr-0.5"></i>
+                                {{ d.has_data_key ? 'Encryption key provisioned' : 'No encryption key' }}
+                            </p>
+                        </div>
+                    </div>
+                    <div v-if="!d.has_data_key && ks.dataKey" class="mt-3">
+                        <div v-if="verifying !== d.device_id">
+                            <button type="button"
+                                    @click="startVerify(d)"
+                                    class="w-full py-2 text-xs font-medium rounded-xl bg-green-50 text-green-700 hover:bg-green-100 transition-colors border border-green-200">
+                                Verify &amp; grant access
+                            </button>
+                        </div>
+                        <div v-else
+                             class="bg-amber-50 rounded-xl border border-amber-200 p-3 space-y-2">
+                            <p class="text-xs font-semibold text-amber-800">Device verification</p>
+                            <p class="text-xs text-amber-700">
+                                Check that <strong>{{ d.label || 'the other device' }}</strong> shows this code:
+                            </p>
+                            <p class="font-mono text-xl font-bold text-amber-900 tracking-widest text-center py-1">
+                                {{ fingerprints[d.device_id] || '…' }}
+                            </p>
+                            <p class="text-xs text-amber-600">Only grant access if the code matches exactly.</p>
+                            <div class="flex gap-2 pt-1">
+                                <button type="button"
+                                        @click="cancelVerify"
+                                        class="flex-1 py-2 text-xs font-medium rounded-xl border border-stone-200 text-stone-600 hover:bg-stone-50 transition-colors">
+                                    Cancel
+                                </button>
+                                <button type="button"
+                                        @click="confirmGrant(d)"
+                                        :disabled="granting === d.device_id"
+                                        class="flex-1 py-2 text-xs font-medium rounded-xl bg-green-600 text-white hover:bg-green-700 disabled:opacity-60 transition-colors">
+                                    {{ granting === d.device_id ? 'Granting…' : 'Codes match — Grant' }}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div v-if="d.device_id !== ks.myDeviceId" class="mt-2">
+                        <button type="button"
+                                @click="remove(d)"
+                                :disabled="removing === d.device_id"
+                                class="text-xs text-red-500 hover:text-red-700 disabled:opacity-60 transition-colors">
+                            {{ removing === d.device_id ? 'Removing…' : 'Remove device' }}
+                        </button>
+                    </div>
+                </li>
+            </ul>
+            <p v-if="error"
+               class="text-sm text-red-600 bg-red-50 rounded-xl px-4 py-3">{{ error }}</p>
+        </div>
+        <BottomNav />
     </div>
-
-    <div v-else class="px-4 py-4 space-y-3">
-      <div v-if="!devices.length" class="bg-white rounded-2xl border border-stone-100 shadow-sm p-6 text-center">
-        <i class="ph ph-devices text-5xl text-stone-300 mb-3 block"></i>
-        <p class="text-stone-500 text-sm">No devices registered.</p>
-      </div>
-
-      <ul v-else class="bg-white rounded-2xl border border-stone-100 shadow-sm divide-y divide-stone-50 overflow-hidden">
-        <li v-for="d in devices" :key="d.device_id" class="px-4 py-4">
-          <div class="flex items-start gap-3">
-            <div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
-                 :class="d.device_id === ks.myDeviceId ? 'bg-clay-100' : 'bg-stone-100'">
-              <i class="ph ph-device-mobile text-xl"
-                 :class="d.device_id === ks.myDeviceId ? 'text-clay-600' : 'text-stone-500'"></i>
-            </div>
-            <div class="flex-1 min-w-0">
-              <p class="font-medium text-stone-800 truncate">
-                {{ d.label || 'Unnamed device' }}
-                <span v-if="d.device_id === ks.myDeviceId"
-                      class="ml-1.5 text-xs font-medium text-clay-600 bg-clay-100 px-1.5 py-0.5 rounded-full">This device</span>
-              </p>
-              <p class="text-xs text-stone-400 mt-0.5">
-                Last seen: {{ d.last_seen ? fmtDate(d.last_seen) : 'never' }}
-              </p>
-              <p class="text-xs mt-0.5" :class="d.has_data_key ? 'text-green-600' : 'text-amber-600'">
-                <i :class="d.has_data_key ? 'ph ph-check-circle' : 'ph ph-warning-circle'" class="mr-0.5"></i>
-                {{ d.has_data_key ? 'Encryption key provisioned' : 'No encryption key' }}
-              </p>
-            </div>
-          </div>
-
-          <div v-if="!d.has_data_key && ks.dataKey" class="mt-3">
-            <div v-if="verifying !== d.device_id">
-              <button @click="startVerify(d)"
-                class="w-full py-2 text-xs font-medium rounded-xl bg-green-50 text-green-700 hover:bg-green-100 transition-colors border border-green-200">
-                Verify &amp; grant access
-              </button>
-            </div>
-            <div v-else class="bg-amber-50 rounded-xl border border-amber-200 p-3 space-y-2">
-              <p class="text-xs font-semibold text-amber-800">Device verification</p>
-              <p class="text-xs text-amber-700">
-                Check that <strong>{{ d.label || 'the other device' }}</strong> shows this code:
-              </p>
-              <p class="font-mono text-xl font-bold text-amber-900 tracking-widest text-center py-1">
-                {{ fingerprints[d.device_id] || '…' }}
-              </p>
-              <p class="text-xs text-amber-600">Only grant access if the code matches exactly.</p>
-              <div class="flex gap-2 pt-1">
-                <button @click="cancelVerify"
-                  class="flex-1 py-2 text-xs font-medium rounded-xl border border-stone-200 text-stone-600 hover:bg-stone-50 transition-colors">
-                  Cancel
-                </button>
-                <button @click="confirmGrant(d)" :disabled="granting === d.device_id"
-                  class="flex-1 py-2 text-xs font-medium rounded-xl bg-green-600 text-white hover:bg-green-700 disabled:opacity-60 transition-colors">
-                  {{ granting === d.device_id ? 'Granting…' : 'Codes match — Grant' }}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div v-if="d.device_id !== ks.myDeviceId" class="mt-2">
-            <button @click="remove(d)" :disabled="removing === d.device_id"
-              class="text-xs text-red-500 hover:text-red-700 disabled:opacity-60 transition-colors">
-              {{ removing === d.device_id ? 'Removing…' : 'Remove device' }}
-            </button>
-          </div>
-        </li>
-      </ul>
-
-      <p v-if="error" class="text-sm text-red-600 bg-red-50 rounded-xl px-4 py-3">{{ error }}</p>
-    </div>
-
-    <BottomNav />
-  </div>
 </template>
-
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import TopBar from '@/components/TopBar.vue'

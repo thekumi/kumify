@@ -1,109 +1,114 @@
 <template>
-  <div class="pb-nav">
-    <TopBar title="Media Gallery" :back="true" />
-
-    <!-- Filter bar -->
-    <div class="sticky top-0 z-10 bg-white border-b border-stone-100 px-4 py-2.5 flex items-center gap-2 flex-wrap">
-      <div class="flex gap-1 bg-stone-100 rounded-xl p-0.5 text-xs font-medium">
-        <button v-for="f in ['all','images','files']" :key="f"
-          @click="typeFilter = f"
-          class="px-3 py-1.5 rounded-lg transition-colors capitalize"
-          :class="typeFilter === f ? 'bg-white shadow-sm text-stone-800' : 'text-stone-500'">
-          {{ f }}
-        </button>
-      </div>
-      <div class="flex gap-1 bg-stone-100 rounded-xl p-0.5 text-xs font-medium ml-auto">
-        <button v-for="s in ['newest','oldest','month']" :key="s"
-          @click="sortMode = s"
-          class="px-2.5 py-1.5 rounded-lg transition-colors capitalize"
-          :class="sortMode === s ? 'bg-white shadow-sm text-stone-800' : 'text-stone-500'">
-          {{ s }}
-        </button>
-      </div>
-      <button @click="showPrivate = !showPrivate"
-        class="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-xl border transition-colors"
-        :class="showPrivate ? 'border-amber-300 bg-amber-50 text-amber-700' : 'border-stone-200 text-stone-400'">
-        <i :class="showPrivate ? 'ph ph-lock-simple-open' : 'ph ph-lock-simple'" class="text-sm"></i>
-        Private
-      </button>
-    </div>
-
-    <div v-if="loading" class="flex flex-col items-center justify-center py-20 gap-3">
-      <div class="w-8 h-8 border-4 border-stone-200 border-t-rose-500 rounded-full animate-spin"></div>
-      <p class="text-sm text-stone-400">Loading media…</p>
-    </div>
-
-    <div v-else-if="!visibleItems.length" class="flex flex-col items-center justify-center py-20 px-6 text-center">
-      <i class="ph ph-images text-5xl text-stone-300 mb-3"></i>
-      <p class="text-stone-500 font-medium">No media yet</p>
-      <p class="text-stone-400 text-sm mt-1">Attach photos or files to your journal entries.</p>
-    </div>
-
-    <div v-else class="px-4 py-4 space-y-6">
-      <div v-for="group in groupedItems" :key="group.label">
-        <p class="text-xs font-semibold text-stone-400 uppercase tracking-wider mb-2">{{ group.label }}</p>
-
-        <!-- Image grid -->
-        <div v-if="group.images.length" class="grid grid-cols-3 gap-1.5 mb-2">
-          <div v-for="item in group.images" :key="item.attachment.id"
-               class="relative aspect-square rounded-xl overflow-hidden bg-stone-100">
-            <img v-if="loaded[item.attachment.id]?.blobUrl"
-                 :src="loaded[item.attachment.id].blobUrl"
-                 class="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
-                 @click="openLightbox(item)" />
-            <div v-else class="w-full h-full flex items-center justify-center">
-              <div class="w-4 h-4 border-2 border-stone-300 border-t-stone-500 rounded-full animate-spin"></div>
+    <div class="pb-nav">
+        <TopBar title="Media Gallery" :back="true" />
+        <!-- Filter bar -->
+        <div class="sticky top-0 z-10 bg-white border-b border-stone-100 px-4 py-2.5 flex items-center gap-2 flex-wrap">
+            <div class="flex gap-1 bg-stone-100 rounded-xl p-0.5 text-xs font-medium">
+                <button type="button"
+                        v-for="f in ['all','images','files']"
+                        :key="f"
+                        @click="typeFilter = f"
+                        class="px-3 py-1.5 rounded-lg transition-colors capitalize"
+                        :class="typeFilter === f ? 'bg-white shadow-sm text-stone-800' : 'text-stone-500'">
+                    {{ f }}
+                </button>
             </div>
-            <RouterLink :to="item.sourceUrl"
-              class="absolute bottom-1 left-1 w-5 h-5 bg-black/30 hover:bg-black/50 rounded-full flex items-center justify-center transition-colors">
-              <i :class="item.sourceType === 'dream' ? 'ph ph-moon-stars' : 'ph ph-smiley'" class="text-white text-xs"></i>
-            </RouterLink>
-          </div>
+            <div class="flex gap-1 bg-stone-100 rounded-xl p-0.5 text-xs font-medium ml-auto">
+                <button type="button"
+                        v-for="s in ['newest','oldest','month']"
+                        :key="s"
+                        @click="sortMode = s"
+                        class="px-2.5 py-1.5 rounded-lg transition-colors capitalize"
+                        :class="sortMode === s ? 'bg-white shadow-sm text-stone-800' : 'text-stone-500'">
+                    {{ s }}
+                </button>
+            </div>
+            <button type="button"
+                    @click="showPrivate = !showPrivate"
+                    class="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-xl border transition-colors"
+                    :class="showPrivate ? 'border-amber-300 bg-amber-50 text-amber-700' : 'border-stone-200 text-stone-400'">
+                <i :class="showPrivate ? 'ph ph-lock-simple-open' : 'ph ph-lock-simple'"
+                   class="text-sm"></i>
+                Private
+            </button>
         </div>
-
-        <!-- File list -->
-        <div v-if="group.files.length" class="space-y-1">
-          <div v-for="item in group.files" :key="item.attachment.id"
-               class="flex items-center gap-3 px-3 py-2.5 bg-stone-50 rounded-xl">
-            <i class="ph ph-file text-stone-400 text-xl shrink-0"></i>
-            <a v-if="loaded[item.attachment.id]?.blobUrl"
-               :href="loaded[item.attachment.id].blobUrl"
-               :download="loaded[item.attachment.id].name ?? item.attachment.name"
-               class="text-sm text-clay-600 hover:underline truncate flex-1">
-              {{ loaded[item.attachment.id].name ?? item.attachment.name }}
-            </a>
-            <span v-else class="text-sm text-stone-400 truncate flex-1">{{ item.attachment.name }}</span>
-            <RouterLink :to="item.sourceUrl" class="text-stone-300 hover:text-stone-500 shrink-0">
-              <i :class="item.sourceType === 'dream' ? 'ph ph-moon-stars' : 'ph ph-smiley'" class="text-base"></i>
-            </RouterLink>
-          </div>
+        <div v-if="loading"
+             class="flex flex-col items-center justify-center py-20 gap-3">
+            <div class="w-8 h-8 border-4 border-stone-200 border-t-rose-500 rounded-full animate-spin"></div>
+            <p class="text-sm text-stone-400">Loading media…</p>
         </div>
-      </div>
+        <div v-else-if="!visibleItems.length"
+             class="flex flex-col items-center justify-center py-20 px-6 text-center">
+            <i class="ph ph-images text-5xl text-stone-300 mb-3"></i>
+            <p class="text-stone-500 font-medium">No media yet</p>
+            <p class="text-stone-400 text-sm mt-1">Attach photos or files to your journal entries.</p>
+        </div>
+        <div v-else class="px-4 py-4 space-y-6">
+            <div v-for="group in groupedItems" :key="group.label">
+                <p class="text-xs font-semibold text-stone-400 uppercase tracking-wider mb-2">{{ group.label }}</p>
+                <!-- Image grid -->
+                <div v-if="group.images.length" class="grid grid-cols-3 gap-1.5 mb-2">
+                    <div v-for="item in group.images"
+                         :key="item.attachment.id"
+                         class="relative aspect-square rounded-xl overflow-hidden bg-stone-100">
+                        <img v-if="loaded[item.attachment.id]?.blobUrl"
+                             :src="loaded[item.attachment.id].blobUrl"
+                             alt=""
+                             class="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                             @click="openLightbox(item)" />
+                        <div v-else class="w-full h-full flex items-center justify-center">
+                            <div class="w-4 h-4 border-2 border-stone-300 border-t-stone-500 rounded-full animate-spin"></div>
+                        </div>
+                        <RouterLink :to="item.sourceUrl" class="absolute bottom-1 left-1 w-5 h-5 bg-black/30 hover:bg-black/50 rounded-full flex items-center justify-center transition-colors">
+                        <i :class="item.sourceType === 'dream' ? 'ph ph-moon-stars' : 'ph ph-smiley'"
+                           class="text-white text-xs"></i>
+                        </RouterLink>
+                    </div>
+                </div>
+                <!-- File list -->
+                <div v-if="group.files.length" class="space-y-1">
+                    <div v-for="item in group.files"
+                         :key="item.attachment.id"
+                         class="flex items-center gap-3 px-3 py-2.5 bg-stone-50 rounded-xl">
+                        <i class="ph ph-file text-stone-400 text-xl shrink-0"></i>
+                        <a v-if="loaded[item.attachment.id]?.blobUrl"
+                           :href="loaded[item.attachment.id].blobUrl"
+                           :download="loaded[item.attachment.id].name ?? item.attachment.name"
+                           class="text-sm text-clay-600 hover:underline truncate flex-1">
+                            {{ loaded[item.attachment.id].name ?? item.attachment.name }}
+                        </a>
+                        <span v-else class="text-sm text-stone-400 truncate flex-1">{{ item.attachment.name }}</span>
+                        <RouterLink :to="item.sourceUrl" class="text-stone-300 hover:text-stone-500 shrink-0">
+                        <i :class="item.sourceType === 'dream' ? 'ph ph-moon-stars' : 'ph ph-smiley'"
+                           class="text-base"></i>
+                        </RouterLink>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Lightbox -->
+        <Teleport to="body">
+        <div v-if="lightbox"
+             class="fixed inset-0 z-50 bg-black/85 flex flex-col items-center justify-center p-4"
+             @click="lightbox = null">
+            <img :src="loaded[lightbox.attachment.id]?.blobUrl"
+                 alt=""
+                 class="max-w-full max-h-[80vh] rounded-lg object-contain"
+                 @click.stop />
+            <RouterLink :to="lightbox.sourceUrl" @click="lightbox = null" class="mt-3 text-white/70 hover:text-white text-sm flex items-center gap-1.5">
+            <i :class="lightbox.sourceType === 'dream' ? 'ph ph-moon-stars' : 'ph ph-smiley'"></i>
+            View source entry
+            </RouterLink>
+            <button type="button"
+                    @click="lightbox = null"
+                    class="absolute top-4 right-4 w-9 h-9 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center">
+                <i class="ph ph-x text-white text-lg"></i>
+            </button>
+        </div>
+        </Teleport>
+        <BottomNav />
     </div>
-
-    <!-- Lightbox -->
-    <Teleport to="body">
-      <div v-if="lightbox" class="fixed inset-0 z-50 bg-black/85 flex flex-col items-center justify-center p-4"
-           @click="lightbox = null">
-        <img :src="loaded[lightbox.attachment.id]?.blobUrl"
-             class="max-w-full max-h-[80vh] rounded-lg object-contain"
-             @click.stop />
-        <RouterLink :to="lightbox.sourceUrl" @click="lightbox = null"
-          class="mt-3 text-white/70 hover:text-white text-sm flex items-center gap-1.5">
-          <i :class="lightbox.sourceType === 'dream' ? 'ph ph-moon-stars' : 'ph ph-smiley'"></i>
-          View source entry
-        </RouterLink>
-        <button @click="lightbox = null"
-          class="absolute top-4 right-4 w-9 h-9 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center">
-          <i class="ph ph-x text-white text-lg"></i>
-        </button>
-      </div>
-    </Teleport>
-
-    <BottomNav />
-  </div>
 </template>
-
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import TopBar from '@/components/TopBar.vue'

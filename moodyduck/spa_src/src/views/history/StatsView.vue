@@ -1,206 +1,228 @@
 <template>
-  <div class="pb-nav">
-    <TopBar title="Statistics" :back="true" />
-
-    <div v-if="loading" class="flex flex-col items-center justify-center py-20 gap-3">
-      <div class="w-8 h-8 border-4 border-stone-200 border-t-violet-500 rounded-full animate-spin"></div>
-      <p class="text-sm text-stone-400">Loading your data…</p>
+    <div class="pb-nav">
+        <TopBar title="Statistics" :back="true" />
+        <div v-if="loading"
+             class="flex flex-col items-center justify-center py-20 gap-3">
+            <div class="w-8 h-8 border-4 border-stone-200 border-t-violet-500 rounded-full animate-spin"></div>
+            <p class="text-sm text-stone-400">Loading your data…</p>
+        </div>
+        <div v-else class="px-4 py-4 space-y-4">
+            <!-- Global range selector -->
+            <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-1 flex">
+                <button type="button"
+                        v-for="d in [7, 30, 90, 365, 0]"
+                        :key="d"
+                        @click="rangeDays = d"
+                        class="flex-1 text-xs py-2 rounded-xl font-medium transition-colors"
+                        :class="rangeDays === d ? 'bg-violet-100 text-violet-700' : 'text-stone-400 hover:text-stone-600'">
+                    {{ d === 0 ? 'All' : d + 'd' }}
+                </button>
+            </div>
+            <!-- Time navigation -->
+            <div v-if="rangeDays"
+                 class="bg-white rounded-2xl border border-stone-100 shadow-sm px-3 py-2 flex items-center gap-2">
+                <button type="button"
+                        @click="goBack"
+                        class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-stone-100 transition-colors shrink-0">
+                    <i class="ph ph-caret-left text-stone-500 text-lg"></i>
+                </button>
+                <span class="flex-1 text-center text-sm font-medium text-stone-700">{{ rangeLabel }}</span>
+                <button type="button"
+                        @click="goForward"
+                        :disabled="!rangeEnd"
+                        class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-stone-100 transition-colors disabled:opacity-30 shrink-0">
+                    <i class="ph ph-caret-right text-stone-500 text-lg"></i>
+                </button>
+            </div>
+            <!-- Summary chips -->
+            <div class="grid grid-cols-2 gap-2">
+                <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-3 text-center">
+                    <p class="text-2xl font-bold text-stone-800">{{ totalEntries }}</p>
+                    <p class="text-xs text-stone-400 mt-0.5">Entries</p>
+                </div>
+                <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-3 text-center">
+                    <p class="text-2xl font-bold text-stone-800">{{ totalDreams }}</p>
+                    <p class="text-xs text-stone-400 mt-0.5">Dreams</p>
+                </div>
+                <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-3 text-center">
+                    <p class="text-2xl font-bold text-stone-800">{{ activeDays }}</p>
+                    <p class="text-xs text-stone-400 mt-0.5">Active days</p>
+                </div>
+                <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-3 text-center">
+                    <p class="text-2xl font-bold text-stone-800">{{ streak }}</p>
+                    <p class="text-xs text-stone-400 mt-0.5">Day streak</p>
+                </div>
+            </div>
+            <!-- Calendar heatmap -->
+            <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
+                <div class="flex items-center justify-between mb-3">
+                    <p class="text-sm font-semibold text-stone-700">Calendar <span class="text-xs font-normal text-stone-400">past year</span></p>
+                    <div class="flex gap-0.5 bg-stone-100 rounded-lg p-0.5">
+                        <button type="button"
+                                @click="calMode = 'activity'"
+                                class="text-xs px-2.5 py-1 rounded-md transition-colors font-medium"
+                                :class="calMode === 'activity' ? 'bg-white shadow-sm text-stone-700' : 'text-stone-400'">Activity</button>
+                        <button type="button"
+                                @click="calMode = 'mood'"
+                                class="text-xs px-2.5 py-1 rounded-md transition-colors font-medium"
+                                :class="calMode === 'mood' ? 'bg-white shadow-sm text-stone-700' : 'text-stone-400'">Mood</button>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <div class="flex gap-px min-w-max">
+                        <div class="flex flex-col gap-px mr-1">
+                            <div class="h-3 w-5"></div>
+                            <div v-for="(label, i) in ['M','T','W','T','F','S','S']"
+                                 :key="i"
+                                 class="h-3 w-5 text-[9px] text-stone-300 flex items-center justify-end pr-1">{{ label }}</div>
+                        </div>
+                        <div v-for="(week, wi) in calendarWeeks"
+                             :key="wi"
+                             class="flex flex-col gap-px">
+                            <div class="h-3 text-[9px] text-stone-300 text-center">{{ calendarMonthLabels[wi] ?? '' }}</div>
+                            <div v-for="day in week"
+                                 :key="day"
+                                 :title="calDayTitle(day)"
+                                 class="w-3 h-3 rounded-sm"
+                                 :class="calMode === 'mood' ? calMoodClass(day) : calDayClass(day)"></div>
+                        </div>
+                    </div>
+                </div>
+                <div v-if="calMode === 'activity'" class="flex items-center gap-1.5 mt-2">
+                    <span class="text-[10px] text-stone-400">Less</span>
+                    <div v-for="cls in ['bg-stone-100','bg-clay-100','bg-clay-300','bg-clay-500','bg-clay-700']"
+                         :key="cls"
+                         :class="[cls, 'w-3 h-3 rounded-sm']"></div>
+                    <span class="text-[10px] text-stone-400">More</span>
+                </div>
+                <div v-else class="flex items-center gap-1.5 mt-2 flex-wrap gap-y-1">
+                    <span class="text-[10px] text-stone-400">No entry</span>
+                    <div class="w-3 h-3 rounded-sm bg-stone-100"></div>
+                    <span class="text-[10px] text-stone-400 ml-1">No mood</span>
+                    <div class="w-3 h-3 rounded-sm bg-stone-200"></div>
+                    <span class="text-[10px] text-stone-400 ml-1">Low → High</span>
+                    <div v-for="cls in ['bg-rose-200','bg-amber-200','bg-stone-300','bg-emerald-200','bg-emerald-400']"
+                         :key="cls"
+                         :class="[cls, 'w-3 h-3 rounded-sm']"></div>
+                </div>
+            </div>
+            <template v-if="moodLinePoints.length || moodDistRaw.labels.length">
+                <p class="text-xs font-semibold text-stone-400 uppercase tracking-wider pt-1">Mood</p>
+                <div v-if="moodLinePoints.length"
+                     class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
+                    <p class="text-sm font-semibold text-stone-700 mb-3">Over time</p>
+                    <div class="h-40">
+                        <Line :data="moodLineData" :options="lineOptions" />
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div v-if="moodDistRaw.labels.length"
+                         class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
+                        <p class="text-sm font-semibold text-stone-700 mb-3">Mix</p>
+                        <div class="h-44">
+                            <Doughnut :data="moodDistData" :options="doughnutOptions" />
+                        </div>
+                    </div>
+                    <div v-if="timeOfDayRaw.data.some(v => v > 0)"
+                         class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
+                        <p class="text-sm font-semibold text-stone-700 mb-3">Time of day</p>
+                        <div class="h-44">
+                            <Bar :data="timeOfDayChartData" :options="barOptions" />
+                        </div>
+                    </div>
+                </div>
+            </template>
+            <template v-if="activityData.labels.length">
+                <p class="text-xs font-semibold text-stone-400 uppercase tracking-wider pt-1">Activities</p>
+                <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
+                    <div class="h-52">
+                        <Bar :data="activityChartData" :options="hBarOptions" />
+                    </div>
+                </div>
+            </template>
+            <template v-if="totalEntries > 0">
+                <p class="text-xs font-semibold text-stone-400 uppercase tracking-wider pt-1">By weekday</p>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
+                        <p class="text-sm font-semibold text-stone-700 mb-3">Entries</p>
+                        <div class="h-44">
+                            <Bar :data="weekdayCountData" :options="barOptions" />
+                        </div>
+                    </div>
+                    <div v-if="weekdayRaw.avgMoods.some(v => v != null)"
+                         class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
+                        <p class="text-sm font-semibold text-stone-700 mb-3">Avg mood</p>
+                        <div class="h-44">
+                            <Bar :data="weekdayMoodData" :options="barOptions" />
+                        </div>
+                    </div>
+                </div>
+            </template>
+            <template v-if="allDreams.length">
+                <p class="text-xs font-semibold text-stone-400 uppercase tracking-wider pt-1">Dreams</p>
+                <div class="grid grid-cols-3 gap-2">
+                    <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-3 text-center">
+                        <p class="text-2xl font-bold text-stone-800">{{ totalDreams }}</p>
+                        <p class="text-xs text-stone-400 mt-0.5">Logged</p>
+                    </div>
+                    <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-3 text-center">
+                        <p class="text-2xl font-bold text-stone-800">{{ avgDreamsPerWeek }}</p>
+                        <p class="text-xs text-stone-400 mt-0.5">Per week</p>
+                    </div>
+                    <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-3 text-center">
+                        <p class="text-2xl font-bold text-stone-800">{{ avgDreamWords }}</p>
+                        <p class="text-xs text-stone-400 mt-0.5">Avg words</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div v-if="dreamFreqData.data.length > 1"
+                         class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
+                        <p class="text-sm font-semibold text-stone-700 mb-3">Frequency</p>
+                        <div class="h-44">
+                            <Bar :data="dreamFreqChartData" :options="dreamBarOptions" />
+                        </div>
+                    </div>
+                    <div v-if="dreamMoodDistRaw.labels.length"
+                         class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
+                        <p class="text-sm font-semibold text-stone-700 mb-3">Mood</p>
+                        <div class="h-44">
+                            <Doughnut :data="dreamMoodDistData" :options="doughnutOptions" />
+                        </div>
+                    </div>
+                </div>
+            </template>
+            <template v-if="habitData.length">
+                <p class="text-xs font-semibold text-stone-400 uppercase tracking-wider pt-1">Habits</p>
+                <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
+                    <div class="space-y-2.5">
+                        <div v-for="h in habitData" :key="h.id" class="flex items-center gap-2">
+                            <span class="text-sm text-stone-600 w-28 truncate shrink-0">{{ h.name }}</span>
+                            <div class="flex-1 bg-stone-100 rounded-full h-2">
+                                <div class="bg-emerald-500 h-2 rounded-full transition-all"
+                                     :style="`width:${Math.min(100, h.count / h.expected * 100)}%`"></div>
+                            </div>
+                            <span class="text-xs text-stone-400 shrink-0 text-right w-16">{{ h.count }}/{{ h.expected }}</span>
+                        </div>
+                    </div>
+                </div>
+            </template>
+            <template v-if="propertyCharts.length">
+                <p class="text-xs font-semibold text-stone-400 uppercase tracking-wider pt-1">Custom</p>
+                <div v-for="pc in propertyCharts"
+                     :key="pc.id"
+                     class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
+                    <p class="text-sm font-semibold text-stone-700 mb-3">{{ pc.name }}</p>
+                    <div class="h-40">
+                        <Line :data="pc.chartData" :options="lineOptions" />
+                    </div>
+                </div>
+            </template>
+            <p v-if="!totalEntries && !allDreams.length && !loading"
+               class="text-center text-stone-400 text-sm py-8">No data yet — start tracking!</p>
+        </div>
+        <BottomNav />
     </div>
-
-    <div v-else class="px-4 py-4 space-y-4">
-
-      <!-- Global range selector -->
-      <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-1 flex">
-        <button v-for="d in [7, 30, 90, 365, 0]" :key="d"
-          @click="rangeDays = d"
-          class="flex-1 text-xs py-2 rounded-xl font-medium transition-colors"
-          :class="rangeDays === d ? 'bg-violet-100 text-violet-700' : 'text-stone-400 hover:text-stone-600'">
-          {{ d === 0 ? 'All' : d + 'd' }}
-        </button>
-      </div>
-
-      <!-- Time navigation -->
-      <div v-if="rangeDays" class="bg-white rounded-2xl border border-stone-100 shadow-sm px-3 py-2 flex items-center gap-2">
-        <button @click="goBack"
-          class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-stone-100 transition-colors shrink-0">
-          <i class="ph ph-caret-left text-stone-500 text-lg"></i>
-        </button>
-        <span class="flex-1 text-center text-sm font-medium text-stone-700">{{ rangeLabel }}</span>
-        <button @click="goForward" :disabled="!rangeEnd"
-          class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-stone-100 transition-colors disabled:opacity-30 shrink-0">
-          <i class="ph ph-caret-right text-stone-500 text-lg"></i>
-        </button>
-      </div>
-
-      <!-- Summary chips -->
-      <div class="grid grid-cols-2 gap-2">
-        <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-3 text-center">
-          <p class="text-2xl font-bold text-stone-800">{{ totalEntries }}</p>
-          <p class="text-xs text-stone-400 mt-0.5">Entries</p>
-        </div>
-        <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-3 text-center">
-          <p class="text-2xl font-bold text-stone-800">{{ totalDreams }}</p>
-          <p class="text-xs text-stone-400 mt-0.5">Dreams</p>
-        </div>
-        <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-3 text-center">
-          <p class="text-2xl font-bold text-stone-800">{{ activeDays }}</p>
-          <p class="text-xs text-stone-400 mt-0.5">Active days</p>
-        </div>
-        <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-3 text-center">
-          <p class="text-2xl font-bold text-stone-800">{{ streak }}</p>
-          <p class="text-xs text-stone-400 mt-0.5">Day streak</p>
-        </div>
-      </div>
-
-      <!-- Calendar heatmap -->
-      <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
-        <div class="flex items-center justify-between mb-3">
-          <p class="text-sm font-semibold text-stone-700">Calendar <span class="text-xs font-normal text-stone-400">past year</span></p>
-          <div class="flex gap-0.5 bg-stone-100 rounded-lg p-0.5">
-            <button @click="calMode = 'activity'"
-              class="text-xs px-2.5 py-1 rounded-md transition-colors font-medium"
-              :class="calMode === 'activity' ? 'bg-white shadow-sm text-stone-700' : 'text-stone-400'">Activity</button>
-            <button @click="calMode = 'mood'"
-              class="text-xs px-2.5 py-1 rounded-md transition-colors font-medium"
-              :class="calMode === 'mood' ? 'bg-white shadow-sm text-stone-700' : 'text-stone-400'">Mood</button>
-          </div>
-        </div>
-        <div class="overflow-x-auto">
-          <div class="flex gap-px" style="min-width: max-content">
-            <div class="flex flex-col gap-px mr-1">
-              <div class="h-3 w-5"></div>
-              <div v-for="(label, i) in ['M','T','W','T','F','S','S']" :key="i"
-                   class="h-3 w-5 text-[9px] text-stone-300 flex items-center justify-end pr-1">{{ label }}</div>
-            </div>
-            <div v-for="(week, wi) in calendarWeeks" :key="wi" class="flex flex-col gap-px">
-              <div class="h-3 text-[9px] text-stone-300 text-center">{{ calendarMonthLabels[wi] ?? '' }}</div>
-              <div v-for="day in week" :key="day"
-                   :title="calDayTitle(day)"
-                   class="w-3 h-3 rounded-sm"
-                   :class="calMode === 'mood' ? calMoodClass(day) : calDayClass(day)"></div>
-            </div>
-          </div>
-        </div>
-        <div v-if="calMode === 'activity'" class="flex items-center gap-1.5 mt-2">
-          <span class="text-[10px] text-stone-400">Less</span>
-          <div v-for="cls in ['bg-stone-100','bg-clay-100','bg-clay-300','bg-clay-500','bg-clay-700']" :key="cls" :class="[cls, 'w-3 h-3 rounded-sm']"></div>
-          <span class="text-[10px] text-stone-400">More</span>
-        </div>
-        <div v-else class="flex items-center gap-1.5 mt-2 flex-wrap gap-y-1">
-          <span class="text-[10px] text-stone-400">No entry</span>
-          <div class="w-3 h-3 rounded-sm bg-stone-100"></div>
-          <span class="text-[10px] text-stone-400 ml-1">No mood</span>
-          <div class="w-3 h-3 rounded-sm bg-stone-200"></div>
-          <span class="text-[10px] text-stone-400 ml-1">Low → High</span>
-          <div v-for="cls in ['bg-rose-200','bg-amber-200','bg-stone-300','bg-emerald-200','bg-emerald-400']" :key="cls" :class="[cls, 'w-3 h-3 rounded-sm']"></div>
-        </div>
-      </div>
-
-      <template v-if="moodLinePoints.length || moodDistRaw.labels.length">
-        <p class="text-xs font-semibold text-stone-400 uppercase tracking-wider pt-1">Mood</p>
-
-        <div v-if="moodLinePoints.length" class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
-          <p class="text-sm font-semibold text-stone-700 mb-3">Over time</p>
-          <div class="h-40"><Line :data="moodLineData" :options="lineOptions" /></div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-3">
-          <div v-if="moodDistRaw.labels.length" class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
-            <p class="text-sm font-semibold text-stone-700 mb-3">Mix</p>
-            <div class="h-44"><Doughnut :data="moodDistData" :options="doughnutOptions" /></div>
-          </div>
-          <div v-if="timeOfDayRaw.data.some(v => v > 0)" class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
-            <p class="text-sm font-semibold text-stone-700 mb-3">Time of day</p>
-            <div class="h-44"><Bar :data="timeOfDayChartData" :options="barOptions" /></div>
-          </div>
-        </div>
-      </template>
-
-      <template v-if="activityData.labels.length">
-        <p class="text-xs font-semibold text-stone-400 uppercase tracking-wider pt-1">Activities</p>
-        <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
-          <div class="h-52"><Bar :data="activityChartData" :options="hBarOptions" /></div>
-        </div>
-      </template>
-
-      <template v-if="totalEntries > 0">
-        <p class="text-xs font-semibold text-stone-400 uppercase tracking-wider pt-1">By weekday</p>
-        <div class="grid grid-cols-2 gap-3">
-          <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
-            <p class="text-sm font-semibold text-stone-700 mb-3">Entries</p>
-            <div class="h-44"><Bar :data="weekdayCountData" :options="barOptions" /></div>
-          </div>
-          <div v-if="weekdayRaw.avgMoods.some(v => v != null)" class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
-            <p class="text-sm font-semibold text-stone-700 mb-3">Avg mood</p>
-            <div class="h-44"><Bar :data="weekdayMoodData" :options="barOptions" /></div>
-          </div>
-        </div>
-      </template>
-
-      <template v-if="allDreams.length">
-        <p class="text-xs font-semibold text-stone-400 uppercase tracking-wider pt-1">Dreams</p>
-
-        <div class="grid grid-cols-3 gap-2">
-          <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-3 text-center">
-            <p class="text-2xl font-bold text-stone-800">{{ totalDreams }}</p>
-            <p class="text-xs text-stone-400 mt-0.5">Logged</p>
-          </div>
-          <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-3 text-center">
-            <p class="text-2xl font-bold text-stone-800">{{ avgDreamsPerWeek }}</p>
-            <p class="text-xs text-stone-400 mt-0.5">Per week</p>
-          </div>
-          <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-3 text-center">
-            <p class="text-2xl font-bold text-stone-800">{{ avgDreamWords }}</p>
-            <p class="text-xs text-stone-400 mt-0.5">Avg words</p>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-3">
-          <div v-if="dreamFreqData.data.length > 1" class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
-            <p class="text-sm font-semibold text-stone-700 mb-3">Frequency</p>
-            <div class="h-44"><Bar :data="dreamFreqChartData" :options="dreamBarOptions" /></div>
-          </div>
-          <div v-if="dreamMoodDistRaw.labels.length" class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
-            <p class="text-sm font-semibold text-stone-700 mb-3">Mood</p>
-            <div class="h-44"><Doughnut :data="dreamMoodDistData" :options="doughnutOptions" /></div>
-          </div>
-        </div>
-      </template>
-
-      <template v-if="habitData.length">
-        <p class="text-xs font-semibold text-stone-400 uppercase tracking-wider pt-1">Habits</p>
-        <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
-          <div class="space-y-2.5">
-            <div v-for="h in habitData" :key="h.id" class="flex items-center gap-2">
-              <span class="text-sm text-stone-600 w-28 truncate shrink-0">{{ h.name }}</span>
-              <div class="flex-1 bg-stone-100 rounded-full h-2">
-                <div class="bg-emerald-500 h-2 rounded-full transition-all"
-                     :style="`width:${Math.min(100, h.count / h.expected * 100)}%`"></div>
-              </div>
-              <span class="text-xs text-stone-400 shrink-0 text-right w-16">{{ h.count }}/{{ h.expected }}</span>
-            </div>
-          </div>
-        </div>
-      </template>
-
-      <template v-if="propertyCharts.length">
-        <p class="text-xs font-semibold text-stone-400 uppercase tracking-wider pt-1">Custom</p>
-        <div v-for="pc in propertyCharts" :key="pc.id" class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
-          <p class="text-sm font-semibold text-stone-700 mb-3">{{ pc.name }}</p>
-          <div class="h-40"><Line :data="pc.chartData" :options="lineOptions" /></div>
-        </div>
-      </template>
-
-      <p v-if="!totalEntries && !allDreams.length && !loading" class="text-center text-stone-400 text-sm py-8">
-        No data yet — start tracking!
-      </p>
-
-    </div>
-
-    <BottomNav />
-  </div>
 </template>
-
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { Line, Doughnut, Bar } from 'vue-chartjs'

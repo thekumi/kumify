@@ -1,56 +1,50 @@
 <template>
-  <div class="pb-nav">
-    <TopBar title="Me" />
-
-    <div class="px-4 py-4 space-y-3">
-      <!-- User card -->
-      <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-5 flex items-center gap-4">
-        <div class="w-14 h-14 rounded-full bg-clay-100 flex items-center justify-center shrink-0">
-          <i class="ph ph-user text-3xl text-clay-600"></i>
+    <div class="pb-nav">
+        <TopBar title="Me" />
+        <div class="px-4 py-4 space-y-3">
+            <!-- User card -->
+            <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-5 flex items-center gap-4">
+                <div class="w-14 h-14 rounded-full bg-clay-100 flex items-center justify-center shrink-0">
+                    <i class="ph ph-user text-3xl text-clay-600"></i>
+                </div>
+                <div>
+                    <p class="font-semibold text-stone-800 text-lg">{{ auth.user?.display_name || auth.user?.username || '…' }}</p>
+                    <p class="text-sm text-stone-400">{{ auth.user?.email }}</p>
+                </div>
+            </div>
+            <!-- Navigation links -->
+            <div class="bg-white rounded-2xl border border-stone-100 shadow-sm overflow-hidden divide-y divide-stone-50">
+                <RouterLink v-for="item in links" :key="item.to" :to="item.to" class="flex items-center gap-3 px-4 py-4 hover:bg-stone-50 transition-colors">
+                <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+                     :class="item.bg">
+                    <i :class="[item.icon, item.color, 'text-lg']"></i>
+                </div>
+                <p class="flex-1 text-sm font-medium text-stone-700">{{ item.label }}</p>
+                <i class="ph ph-caret-right text-stone-300"></i>
+                </RouterLink>
+            </div>
+            <!-- Staff-only section -->
+            <div v-if="auth.user?.is_staff"
+                 class="bg-white rounded-2xl border border-stone-100 shadow-sm overflow-hidden divide-y divide-stone-50">
+                <p class="px-4 pt-3 pb-1 text-xs font-semibold text-stone-400 uppercase tracking-wider">Administration</p>
+                <RouterLink to="/me/module-admin" class="flex items-center gap-3 px-4 py-4 hover:bg-stone-50 transition-colors">
+                <div class="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center shrink-0">
+                    <i class="ph ph-puzzle-piece text-lg text-stone-500"></i>
+                </div>
+                <p class="flex-1 text-sm font-medium text-stone-700">Modules</p>
+                <i class="ph ph-caret-right text-stone-300"></i>
+                </RouterLink>
+            </div>
+            <!-- Logout -->
+            <button type="button"
+                    @click="handleLogout"
+                    class="w-full py-3.5 rounded-2xl border border-red-100 bg-white text-red-600 text-sm font-semibold hover:bg-red-50 transition-colors">
+                Sign out
+            </button>
         </div>
-        <div>
-          <p class="font-semibold text-stone-800 text-lg">{{ auth.user?.display_name || auth.user?.username || '…' }}</p>
-          <p class="text-sm text-stone-400">{{ auth.user?.email }}</p>
-        </div>
-      </div>
-
-      <!-- Navigation links -->
-      <div class="bg-white rounded-2xl border border-stone-100 shadow-sm overflow-hidden divide-y divide-stone-50">
-        <RouterLink v-for="item in links" :key="item.to" :to="item.to"
-          class="flex items-center gap-3 px-4 py-4 hover:bg-stone-50 transition-colors">
-          <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0" :class="item.bg">
-            <i :class="[item.icon, item.color, 'text-lg']"></i>
-          </div>
-          <p class="flex-1 text-sm font-medium text-stone-700">{{ item.label }}</p>
-          <i class="ph ph-caret-right text-stone-300"></i>
-        </RouterLink>
-      </div>
-
-      <!-- Staff-only section -->
-      <div v-if="auth.user?.is_staff"
-        class="bg-white rounded-2xl border border-stone-100 shadow-sm overflow-hidden divide-y divide-stone-50">
-        <p class="px-4 pt-3 pb-1 text-xs font-semibold text-stone-400 uppercase tracking-wider">Administration</p>
-        <RouterLink to="/me/module-admin"
-          class="flex items-center gap-3 px-4 py-4 hover:bg-stone-50 transition-colors">
-          <div class="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center shrink-0">
-            <i class="ph ph-puzzle-piece text-lg text-stone-500"></i>
-          </div>
-          <p class="flex-1 text-sm font-medium text-stone-700">Modules</p>
-          <i class="ph ph-caret-right text-stone-300"></i>
-        </RouterLink>
-      </div>
-
-      <!-- Logout -->
-      <button @click="handleLogout"
-        class="w-full py-3.5 rounded-2xl border border-red-100 bg-white text-red-600 text-sm font-semibold hover:bg-red-50 transition-colors">
-        Sign out
-      </button>
+        <BottomNav />
     </div>
-
-    <BottomNav />
-  </div>
 </template>
-
 <script setup>
 import { useRouter } from 'vue-router'
 import TopBar from '@/components/TopBar.vue'
