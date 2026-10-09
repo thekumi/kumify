@@ -2,7 +2,7 @@
   <nav class="fixed bottom-0 inset-x-0 bg-white border-t border-stone-100 safe-bottom z-50">
     <div class="flex items-center h-16">
       <RouterLink
-        v-for="item in tabs"
+        v-for="item in pluginsStore.orderedVisibleNavItems"
         :key="item.to"
         :to="item.to"
         class="flex-1 flex flex-col items-center justify-center gap-0.5 py-2 text-xs font-medium transition-colors"
@@ -23,17 +23,11 @@
 <script setup>
 import { useRoute } from 'vue-router'
 import { useKeystoreStore } from '@/stores/keystore'
+import { usePluginsStore } from '@/stores/plugins'
 
 const ks = useKeystoreStore()
 const route = useRoute()
-
-const tabs = [
-  { to: '/',        label: 'Home',    icon: 'ph ph-house' },
-  { to: '/journal', label: 'Journal', icon: 'ph ph-book-open' },
-  { to: '/health',  label: 'Health',  icon: 'ph ph-heartbeat' },
-  { to: '/people',  label: 'People',  icon: 'ph ph-users' },
-  { to: '/me',      label: 'Me',      icon: 'ph ph-user-circle' },
-]
+const pluginsStore = usePluginsStore()
 
 function isActive(item) {
   if (item.to === '/') return route.path === '/'

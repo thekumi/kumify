@@ -66,6 +66,8 @@ const routes = [
   { path: '/me/emergency',   component: () => import('@/views/me/EmergencyView.vue') },
   { path: '/me/properties',     component: () => import('@/views/me/PropertiesView.vue') },
   { path: '/me/notifications',  component: () => import('@/views/me/NotificationsView.vue') },
+  { path: '/me/modules',        component: () => import('@/views/me/ModulesView.vue') },
+  { path: '/me/module-admin',   component: () => import('@/views/me/ModuleAdminView.vue') },
 ]
 
 const router = createRouter({

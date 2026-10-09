@@ -26,6 +26,20 @@
         </RouterLink>
       </div>
 
+      <!-- Staff-only section -->
+      <div v-if="auth.user?.is_staff"
+        class="bg-white rounded-2xl border border-stone-100 shadow-sm overflow-hidden divide-y divide-stone-50">
+        <p class="px-4 pt-3 pb-1 text-xs font-semibold text-stone-400 uppercase tracking-wider">Administration</p>
+        <RouterLink to="/me/module-admin"
+          class="flex items-center gap-3 px-4 py-4 hover:bg-stone-50 transition-colors">
+          <div class="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center shrink-0">
+            <i class="ph ph-puzzle-piece text-lg text-stone-500"></i>
+          </div>
+          <p class="flex-1 text-sm font-medium text-stone-700">Modules</p>
+          <i class="ph ph-caret-right text-stone-300"></i>
+        </RouterLink>
+      </div>
+
       <!-- Logout -->
       <button @click="handleLogout"
         class="w-full py-3.5 rounded-2xl border border-red-100 bg-white text-red-600 text-sm font-semibold hover:bg-red-50 transition-colors">
@@ -54,6 +68,7 @@ const links = [
   { to: '/me/emergency',  label: 'Emergency Info',        icon: 'ph ph-first-aid',           bg: 'bg-red-100',    color: 'text-red-600' },
   { to: '/me/properties',     label: 'Custom Properties',  icon: 'ph ph-sliders-horizontal',  bg: 'bg-purple-100',  color: 'text-purple-600' },
   { to: '/me/notifications',  label: 'Notifications',      icon: 'ph ph-bell',                bg: 'bg-yellow-100',  color: 'text-yellow-600' },
+  { to: '/me/modules',        label: 'Navigation',         icon: 'ph ph-navigation-arrow',    bg: 'bg-teal-100',    color: 'text-teal-600' },
   { to: '/people',        label: 'People',               icon: 'ph ph-users',               bg: 'bg-violet-100', color: 'text-violet-600' },
 ]
 

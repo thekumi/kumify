@@ -46,6 +46,7 @@ CORE_MODULES = [
     "keystore",
     "profiles",
     "notifications",
+    "modules",
 ]
 
 INSTALLED_APPS = [
@@ -64,6 +65,12 @@ INSTALLED_APPS = [
     "rest_framework.authtoken",
     "moodyduck.api",
 ] + [f"moodyduck.{module}" for module in CORE_MODULES + ENABLED_MODULES]
+
+from importlib.metadata import entry_points as _entry_points
+
+INSTALLED_APPS += [
+    ep.value.replace(":", ".") for ep in _entry_points(group="moodyduck.plugins")
+]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",

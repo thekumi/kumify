@@ -904,6 +904,7 @@ class MeView(APIView):
                 "username": request.user.username,
                 "email": request.user.email,
                 "display_name": profile.display_name or "",
+                "is_staff": request.user.is_staff,
             }
         )
 
