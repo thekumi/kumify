@@ -68,7 +68,7 @@ exclude = ["**/migrations/*.py"]
 
 [tool.djlint]
 profile = "django"
-extension = "html"
+extension = "html,vue"
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "moodyduck.settings"

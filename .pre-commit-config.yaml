@@ -17,4 +17,4 @@ repos:
         name: djlint
         entry: djlint --reformat
         language: system
-        types: [html]
+        files: '\.(html|vue)$'
