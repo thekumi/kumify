@@ -386,9 +386,11 @@ onMounted(async () => {
   await applyDecryption()
 
   if (isEdit) {
-    rawStatus = await getStatus(id)
-    existingAttachments.value = rawStatus.attachments ?? []
-    await applyDecryption()
+    rawStatus = await getStatus(id).catch(() => null)
+    if (rawStatus) {
+      existingAttachments.value = rawStatus.attachments ?? []
+      await applyDecryption()
+    }
   }
   loading.value = false
 })

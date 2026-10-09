@@ -99,7 +99,7 @@ const grouped = computed(() => {
 })
 
 onMounted(async () => {
-  ;[raw.value, rawCategories.value] = await Promise.all([getActivities(), getActivityCategories()])
+  ;[raw.value, rawCategories.value] = await Promise.all([getActivities().catch(() => []), getActivityCategories().catch(() => [])])
   await applyDecryption()
   loading.value = false
 })

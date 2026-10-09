@@ -60,7 +60,7 @@ async function applyDecryption() { vaccinations.value = await ks.decryptAll(raw.
 watch(() => ks.dataKey, (key) => { if (key) applyDecryption() })
 
 onMounted(async () => {
-  raw.value = await getVaccinations()
+  raw.value = await getVaccinations().catch(() => [])
   await applyDecryption()
   loading.value = false
 })

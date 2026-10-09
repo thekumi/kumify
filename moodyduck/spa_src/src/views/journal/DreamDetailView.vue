@@ -99,7 +99,7 @@ async function remove() {
 
 watch(() => ks.dataKey, (key) => { if (key) applyDecryption() })
 onMounted(async () => {
-  const [d, m] = await Promise.all([getDream(id), getMoods().catch(() => [])])
+  const [d, m] = await Promise.all([getDream(id).catch(() => null), getMoods().catch(() => [])])
   raw.value = d
   rawMoods.value = m
   await applyDecryption()

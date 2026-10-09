@@ -45,7 +45,7 @@ async function applyDecryption() { categories.value = await ks.decryptAll(raw.va
 watch(() => ks.dataKey, (key) => { if (key) applyDecryption() })
 
 onMounted(async () => {
-  raw.value = await getActivityCategories()
+  raw.value = await getActivityCategories().catch(() => [])
   await applyDecryption()
   loading.value = false
 })

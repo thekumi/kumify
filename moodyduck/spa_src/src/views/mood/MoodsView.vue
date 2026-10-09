@@ -49,7 +49,7 @@ async function applyDecryption() { moods.value = await ks.decryptAll(raw.value) 
 watch(() => ks.dataKey, (key) => { if (key) applyDecryption() })
 
 onMounted(async () => {
-  raw.value = await getMoods()
+  raw.value = await getMoods().catch(() => [])
   await applyDecryption()
   loading.value = false
 })

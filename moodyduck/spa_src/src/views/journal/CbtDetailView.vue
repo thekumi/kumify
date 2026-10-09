@@ -57,5 +57,5 @@ async function remove() {
   router.push('/journal/cbt')
 }
 
-onMounted(async () => { record.value = await getRecord(id); loading.value = false })
+onMounted(async () => { record.value = await getRecord(id).catch(() => null); loading.value = false })
 </script>

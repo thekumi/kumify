@@ -83,10 +83,10 @@ async function load(p = 1) {
 
 async function loadMore() {
   loadingMore.value = true
-  await load(page.value + 1)
+  await load(page.value + 1).catch(() => {})
   loadingMore.value = false
 }
 
 watch(() => ks.dataKey, (key) => { if (key) applyDecryption() })
-onMounted(async () => { await load(); loading.value = false })
+onMounted(async () => { await load().catch(() => {}); loading.value = false })
 </script>

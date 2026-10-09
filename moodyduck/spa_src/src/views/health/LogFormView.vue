@@ -159,20 +159,25 @@ async function remove() {
 }
 
 onMounted(async () => {
-  rawParams = await getParameters()
-  await applyParamDecryption()
-  if (id) {
-    rawLog = await getLog(id)
-    await fillNotes(rawLog)
-    for (const r of rawLog.records ?? []) {
-      if (r.encrypted_payload && ks.dataKey) {
-        const dec = await decryptPayload(ks.dataKey, r.encrypted_payload).catch(() => ({}))
-        records.value[r.parameter.id] = dec.value ?? null
-      } else {
-        records.value[r.parameter.id] = r.value
+  try {
+    rawParams = await getParameters().catch(() => [])
+    await applyParamDecryption()
+    if (id) {
+      rawLog = await getLog(id).catch(() => null)
+      if (rawLog) {
+        await fillNotes(rawLog)
+        for (const r of rawLog.records ?? []) {
+          if (r.encrypted_payload && ks.dataKey) {
+            const dec = await decryptPayload(ks.dataKey, r.encrypted_payload).catch(() => ({}))
+            records.value[r.parameter.id] = dec.value ?? null
+          } else {
+            records.value[r.parameter.id] = r.value
+          }
+        }
       }
     }
+  } finally {
+    loading.value = false
   }
-  loading.value = false
 })
 </script>

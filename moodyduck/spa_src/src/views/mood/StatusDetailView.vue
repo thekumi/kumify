@@ -141,7 +141,7 @@ async function remove() {
 watch(() => ks.dataKey, (key) => { if (key) applyDecryption() })
 
 onMounted(async () => {
-  const [s, m, a, p] = await Promise.all([getStatus(id), getMoods(), getActivities(), getProperties().catch(() => [])])
+  const [s, m, a, p] = await Promise.all([getStatus(id).catch(() => null), getMoods().catch(() => []), getActivities().catch(() => []), getProperties().catch(() => [])])
   status.value = s
   rawMoods.value = m
   rawActivities.value = a

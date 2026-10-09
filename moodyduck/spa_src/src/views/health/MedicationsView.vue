@@ -59,7 +59,7 @@ async function applyDecryption() { meds.value = await ks.decryptAll(raw.value) }
 watch(() => ks.dataKey, (key) => { if (key) applyDecryption() })
 
 onMounted(async () => {
-  raw.value = await getMedications()
+  raw.value = await getMedications().catch(() => [])
   await applyDecryption()
   loading.value = false
 })
