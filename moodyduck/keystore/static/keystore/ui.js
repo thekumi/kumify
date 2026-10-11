@@ -66,14 +66,30 @@ export function promptPassphrase(onAttempt) {
 }
 
 // Shows a dismissible banner when this device is awaiting key distribution
-// from another already-authorised device.
-export function showWaitingBanner() {
+// from another already-authorised device. If onUseRecoveryKey is provided,
+// a fallback link is shown for when those devices aren't currently available.
+export function showWaitingBanner(onUseRecoveryKey = null) {
   if (document.getElementById("ks-waiting-banner")) return;
+
+  const recoveryLink = onUseRecoveryKey
+    ? ` <a href="#" id="ks-use-recovery-link" class="alert-link ms-2">Use recovery key instead.</a>`
+    : "";
+
   document.body.insertAdjacentHTML(
     "afterbegin",
     `<div id="ks-waiting-banner" class="alert alert-info m-0 rounded-0 text-center small py-2">
       <strong>Waiting for authorisation.</strong>
-      Log in on a paired device to grant this device access to your encrypted data.
+      Log in on a paired device to grant this device access to your encrypted data.${recoveryLink}
     </div>`
   );
+
+  if (onUseRecoveryKey) {
+    document.getElementById("ks-use-recovery-link").addEventListener("click", async (e) => {
+      e.preventDefault();
+      document.getElementById("ks-waiting-banner").remove();
+      await onUseRecoveryKey();
+      // Key is now registered on the server; reload so bootstrap can pick it up cleanly.
+      location.reload();
+    });
+  }
 }

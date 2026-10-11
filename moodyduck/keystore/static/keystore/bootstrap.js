@@ -56,26 +56,43 @@ async function obtainDataKey(record, deviceState) {
     return key;
   }
 
-  const backupRes = await apiFetch("GET", "/api/keybackup/");
+  const [backupRes, devicesRes] = await Promise.all([
+    apiFetch("GET", "/api/keybackup/"),
+    apiFetch("GET", "/api/devices/"),
+  ]);
+
+  let backup = null;
   if (backupRes.ok) {
-    const backup = await backupRes.json();
-    const key = await promptPassphrase((passphrase) =>
-      unwrapDataKeyFromBackup(backup.encrypted_data_key, backup.kdf_salt, passphrase)
-    );
-    await wrapAndRegisterForSelf(record, key);
-    return key;
+    backup = await backupRes.json();
   }
 
-  const devicesRes = await apiFetch("GET", "/api/devices/");
   if (devicesRes.ok) {
     const { results: devices } = await devicesRes.json();
     const othersWithKey = devices.filter(
       (d) => d.device_id !== record.device_id && d.has_data_key
     );
     if (othersWithKey.length > 0) {
-      showWaitingBanner();
+      // Cross-device verification is the primary path. Recovery key is offered as
+      // an escape hatch for when those devices aren't currently available to the user.
+      const useRecovery = backup
+        ? async () => {
+            const key = await promptPassphrase((passphrase) =>
+              unwrapDataKeyFromBackup(backup.encrypted_data_key, backup.kdf_salt, passphrase)
+            );
+            await wrapAndRegisterForSelf(record, key);
+          }
+        : null;
+      showWaitingBanner(useRecovery);
       return null;
     }
+  }
+
+  if (backup) {
+    const key = await promptPassphrase((passphrase) =>
+      unwrapDataKeyFromBackup(backup.encrypted_data_key, backup.kdf_salt, passphrase)
+    );
+    await wrapAndRegisterForSelf(record, key);
+    return key;
   }
 
   const key = await generateDataKey();
