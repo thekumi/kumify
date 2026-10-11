@@ -45,5 +45,5 @@ jobs:
           push: true
           platforms: linux/amd64,linux/arm64
           tags: |
-            git.private.coffee/kumi/moodyduck:latest
-            git.private.coffee/kumi/moodyduck:${{ env.GITHUB_REF_NAME }}
+            git.private.coffee/privatecoffee/moodyduck:latest
+            git.private.coffee/privatecoffee/moodyduck:${{ env.GITHUB_REF_NAME }}
