@@ -88,6 +88,23 @@
                 </div>
                 <p v-if="testError" class="text-xs text-red-500">{{ testError }}</p>
             </div>
+            <!-- Contacts sync (Android only) -->
+            <div v-if="!!window.Android"
+                 class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-semibold text-stone-800">Sync contacts</p>
+                        <p class="text-xs text-stone-400 mt-0.5">Keep your People list in the Android Contacts app</p>
+                    </div>
+                    <button type="button"
+                            @click="toggleContacts"
+                            class="relative w-11 h-6 rounded-full transition-colors shrink-0"
+                            :class="contactsEnabled ? 'bg-clay-600' : 'bg-stone-200'">
+                        <span class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform"
+                              :class="contactsEnabled ? 'translate-x-5' : 'translate-x-0'"></span>
+                    </button>
+                </div>
+            </div>
             <p v-if="saveError"
                class="text-sm text-red-600 bg-red-50 rounded-xl px-4 py-3">{{ saveError }}</p>
         </div>
@@ -107,8 +124,13 @@ import {
   getPushSubscriptions,
   sendTestNotification,
 } from '@/api/notifications'
+import { useKeystoreStore } from '@/stores/keystore'
+import { syncAndroidContacts, CONTACTS_ENABLED_KEY } from '@/androidContacts'
+
+const ks = useKeystoreStore()
 
 const form = ref({ daily_reminder: false, daily_reminder_time: '20:00', habits_reminder: false })
+const contactsEnabled = ref(localStorage.getItem(CONTACTS_ENABLED_KEY) === '1')
 const permissionState = ref(Notification.permission)
 const subscribed = ref(false)
 const subscribing = ref(false)
@@ -208,6 +230,18 @@ async function sendTest() {
     testError.value = 'Could not send test notification.'
   } finally {
     testing.value = false
+  }
+}
+
+async function toggleContacts() {
+  if (contactsEnabled.value) {
+    contactsEnabled.value = false
+    localStorage.removeItem(CONTACTS_ENABLED_KEY)
+    window.Android?.removeContacts?.()
+  } else {
+    contactsEnabled.value = true
+    localStorage.setItem(CONTACTS_ENABLED_KEY, '1')
+    await syncAndroidContacts(ks).catch(() => {})
   }
 }
 

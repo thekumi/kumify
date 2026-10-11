@@ -16,6 +16,7 @@ import { useKeystoreStore } from '@/stores/keystore'
 import { useOfflineStore } from '@/stores/offline'
 import KeystoreOverlay from '@/components/KeystoreOverlay.vue'
 import SyncBanner from '@/components/SyncBanner.vue'
+import { syncAndroidContacts, CONTACTS_ENABLED_KEY } from '@/androidContacts'
 
 const auth = useAuthStore()
 const ks = useKeystoreStore()
@@ -32,5 +33,17 @@ watch(
   () => auth.user,
   (user) => { if (user) ks.boot() },
   { immediate: true }
+)
+
+let contactsSynced = false
+watch(
+  () => ks.status,
+  (status) => {
+    if (status === 'ready' && !contactsSynced && window.Android
+        && localStorage.getItem(CONTACTS_ENABLED_KEY) === '1') {
+      contactsSynced = true
+      syncAndroidContacts(ks).catch(() => {})
+    }
+  }
 )
 </script>
