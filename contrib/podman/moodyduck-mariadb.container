@@ -1,0 +1,17 @@
+[Unit]
+Description=MoodyDuck MariaDB container
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+Image=docker.io/library/mariadb:11
+ContainerName=moodyduck-mariadb
+Network=moodyduck.network
+Volume=moodyduck-db-data:/var/lib/mysql:Z
+EnvironmentFile=/etc/moodyduck/db.env
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

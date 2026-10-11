@@ -1,8 +1,8 @@
 [Unit]
 Description=MoodyDuck web container
-After=network-online.target moodyduck-redis.service
+After=network-online.target moodyduck-redis.service moodyduck-mariadb.service
 Wants=network-online.target
-Requires=moodyduck-redis.service
+Requires=moodyduck-redis.service moodyduck-mariadb.service
 
 [Container]
 Image=git.private.coffee/kumi/moodyduck:latest
