@@ -37,7 +37,13 @@ export const useKeystoreStore = defineStore('keystore', () => {
   async function _registerDevice() {
     const keyPair = await generateDeviceKeyPair()
     const publicKeyB64 = await exportPublicKey(keyPair.publicKey)
-    const label = navigator.userAgent.substring(0, 255)
+    let label
+    try {
+      label = window.Android?.getDeviceInfo
+        ? JSON.parse(window.Android.getDeviceInfo()).model
+        : null
+    } catch { label = null }
+    label = (label || navigator.userAgent).substring(0, 255)
     const res = await apiFetch('POST', '/api/devices/', { public_key: publicKeyB64, label })
     if (!res.ok) throw new Error('Device registration failed')
     const device = await res.json()
