@@ -230,7 +230,7 @@
     </div>
 </template>
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import TopBar from '@/components/TopBar.vue'
 import BottomNav from '@/components/BottomNav.vue'
 import { useKeystoreStore } from '@/stores/keystore'
