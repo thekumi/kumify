@@ -17,3 +17,6 @@ export const deletePushSubscription = (id) =>
 
 export const getPushSubscriptions = () =>
   api.getAll('/push-subscriptions/')
+
+export const sendTestNotification = () =>
+  api.post('/push/test/', {})

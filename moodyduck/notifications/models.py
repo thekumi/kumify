@@ -18,6 +18,20 @@ class PushSubscription(models.Model):
         return f"{self.user} — {self.endpoint[:60]}"
 
 
+class UnifiedPushSubscription(models.Model):
+    user = models.ForeignKey(
+        get_user_model(), on_delete=models.CASCADE, related_name="up_subscriptions"
+    )
+    endpoint = models.URLField(max_length=2048)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = [("user", "endpoint")]
+
+    def __str__(self):
+        return f"{self.user} — {self.endpoint[:60]}"
+
+
 class NotificationSettings(models.Model):
     user = models.OneToOneField(
         get_user_model(),

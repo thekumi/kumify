@@ -15,12 +15,16 @@ export const useAuthStore = defineStore('auth', () => {
       // keystore can boot from its IndexedDB-cached key and the app works offline.
       user.value = e instanceof TypeError ? {} : null
     }
+    if (user.value !== null) {
+      window.Android?.notifyLogin?.(localStorage.getItem('authToken') ?? '')
+    }
     ready.value = true
   }
 
   function logout() {
     apiLogout()
     user.value = null
+    window.Android?.notifyLogout?.()
   }
 
   return { user, ready, init, logout }

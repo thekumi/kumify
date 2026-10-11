@@ -41,7 +41,12 @@ from moodyduck.mood.models import (
     StatusActivity,
     StatusMedia,
 )
-from moodyduck.notifications.models import NotificationSettings, PushSubscription
+from moodyduck.notifications.models import (
+    NotificationSettings,
+    PushSubscription,
+    UnifiedPushSubscription,
+)
+from moodyduck.notifications.tasks import send_push_to_user
 from moodyduck.profiles.models import EmergencyAccessLog, UserProfile
 
 from .serializers import (
@@ -1061,3 +1066,44 @@ class VapidPublicKeyView(APIView):
         return Response(
             {"public_key": getattr(django_settings, "VAPID_PUBLIC_KEY", "")}
         )
+
+
+class TestPushView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        send_push_to_user(
+            request.user,
+            {
+                "title": "MoodyDuck",
+                "body": "Test notification — push is working.",
+                "url": "/",
+            },
+        )
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class UnifiedPushSubscriptionView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        endpoint = request.data.get("endpoint", "").strip()
+        if not endpoint:
+            return Response(
+                {"detail": "endpoint required."}, status=status.HTTP_400_BAD_REQUEST
+            )
+        _, created = UnifiedPushSubscription.objects.get_or_create(
+            user=request.user, endpoint=endpoint
+        )
+        return Response(
+            {"status": "registered"},
+            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+        )
+
+    def delete(self, request):
+        endpoint = request.data.get("endpoint", "").strip()
+        qs = UnifiedPushSubscription.objects.filter(user=request.user)
+        if endpoint:
+            qs = qs.filter(endpoint=endpoint)
+        qs.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

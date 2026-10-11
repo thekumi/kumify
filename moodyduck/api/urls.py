@@ -27,8 +27,10 @@ from .views import (
     StatusCheckView,
     StatusMediaEncryptView,
     StatusViewSet,
+    TestPushView,
     ThemeViewSet,
     TokenLoginView,
+    UnifiedPushSubscriptionView,
     UserDeviceViewSet,
     UserKeyBackupView,
     UserKeyPairView,
@@ -93,4 +95,8 @@ urlpatterns = [
         name="notification-settings",
     ),
     path("vapid-public-key/", VapidPublicKeyView.as_view(), name="vapid-public-key"),
+    path(
+        "push/unifiedpush/", UnifiedPushSubscriptionView.as_view(), name="unifiedpush"
+    ),
+    path("push/test/", TestPushView.as_view(), name="push-test"),
 ]
