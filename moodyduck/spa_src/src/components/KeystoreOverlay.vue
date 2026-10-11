@@ -8,25 +8,51 @@
         </div>
         <h1 class="text-xl font-bold text-stone-800 mb-2">MoodyDuck is locked</h1>
         <p class="text-sm text-stone-400 mb-8 text-center">
-            {{ ks.lockConfigured ? 'Enter your lock PIN to continue.' : 'Tap Unlock to continue.' }}
+            {{ biometricAvailable && !showPinFallback
+                ? 'Use biometrics to unlock.'
+                : ks.lockConfigured ? 'Enter your lock PIN to continue.' : 'Tap Unlock to continue.' }}
         </p>
         <div class="w-full max-w-xs space-y-3">
-            <input v-if="ks.lockConfigured"
-                   ref="pinRef"
-                   v-model="lockPin"
-                   type="password"
-                   placeholder="Lock PIN"
-                   autocomplete="current-password"
-                   @keydown.enter="submitUnlock"
-                   class="w-full px-3 py-2.5 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-clay-400 text-stone-800 bg-white text-sm" />
-            <p v-if="lockError"
-               class="text-sm text-red-600 bg-red-50 rounded-xl px-3 py-2">{{ lockError }}</p>
-            <button type="button"
-                    @click="submitUnlock"
-                    :disabled="unlocking || (ks.lockConfigured && !lockPin)"
-                    class="w-full py-3.5 bg-clay-600 hover:bg-clay-700 disabled:opacity-60 text-white font-semibold rounded-xl transition-colors">
-                {{ unlocking ? 'Unlocking…' : 'Unlock' }}
+            <!-- Biometric primary button -->
+            <button v-if="biometricAvailable && !showPinFallback"
+                    type="button"
+                    @click="unlockWithBiometric"
+                    :disabled="unlocking"
+                    class="w-full py-3.5 bg-clay-600 hover:bg-clay-700 disabled:opacity-60 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2">
+                <i class="ph ph-fingerprint text-xl"></i>
+                {{ unlocking ? 'Unlocking…' : 'Use Biometrics' }}
             </button>
+            <button v-if="biometricAvailable && !showPinFallback && ks.lockConfigured"
+                    type="button"
+                    @click="showPinFallback = true"
+                    class="w-full py-2 text-sm text-stone-400 hover:text-stone-600 transition-colors">
+                Use PIN instead
+            </button>
+            <!-- PIN fallback (or default when no biometric) -->
+            <template v-if="!biometricAvailable || showPinFallback">
+                <input v-if="ks.lockConfigured"
+                       ref="pinRef"
+                       v-model="lockPin"
+                       type="password"
+                       placeholder="Lock PIN"
+                       autocomplete="current-password"
+                       @keydown.enter="submitUnlock"
+                       class="w-full px-3 py-2.5 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-clay-400 text-stone-800 bg-white text-sm" />
+                <p v-if="lockError"
+                   class="text-sm text-red-600 bg-red-50 rounded-xl px-3 py-2">{{ lockError }}</p>
+                <button type="button"
+                        @click="submitUnlock"
+                        :disabled="unlocking || (ks.lockConfigured && !lockPin)"
+                        class="w-full py-3.5 bg-clay-600 hover:bg-clay-700 disabled:opacity-60 text-white font-semibold rounded-xl transition-colors">
+                    {{ unlocking ? 'Unlocking…' : 'Unlock' }}
+                </button>
+                <button v-if="biometricAvailable && showPinFallback"
+                        type="button"
+                        @click="showPinFallback = false; unlockWithBiometric()"
+                        class="w-full py-2 text-sm text-stone-400 hover:text-stone-600 transition-colors">
+                    Back to biometrics
+                </button>
+            </template>
             <button type="button"
                     @click="toggleEmergency"
                     class="w-full py-2.5 rounded-xl border border-red-200 bg-white text-red-600 text-sm font-medium hover:bg-red-50 transition-colors flex items-center justify-center gap-2">
@@ -183,9 +209,13 @@ watch(() => ks.status, async (s) => {
   if (s === 'locked') {
     lockPin.value = ''
     lockError.value = ''
+    showPinFallback.value = false
     showEmergency.value = false
     emergency.value = null
-    nextTick(() => pinRef.value?.focus())
+    nextTick(() => {
+      if (biometricAvailable.value) unlockWithBiometric()
+      else pinRef.value?.focus()
+    })
   }
 })
 
@@ -231,6 +261,31 @@ const lockPin = ref('')
 const unlocking = ref(false)
 const lockError = ref('')
 const pinRef = ref(null)
+const showPinFallback = ref(false)
+
+const biometricAvailable = computed(() =>
+  ks.lockConfigured &&
+  !!window.Android?.isBiometricAvailable?.() &&
+  !!window.Android?.hasBiometricPin?.()
+)
+
+async function unlockWithBiometric() {
+  if (!biometricAvailable.value) return
+  unlocking.value = true
+  lockError.value = ''
+  try {
+    const pin = await window.Android.requestPinBiometricAsync()
+    await ks.unlock(pin)
+  } catch (e) {
+    lockError.value = e?.message?.includes('No PIN stored')
+      ? 'Biometric unlock is not set up. Use your PIN.'
+      : 'Biometric authentication failed.'
+    showPinFallback.value = true
+    nextTick(() => pinRef.value?.focus())
+  } finally {
+    unlocking.value = false
+  }
+}
 
 async function submitUnlock() {
   if (unlocking.value) return

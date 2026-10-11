@@ -109,6 +109,60 @@
                     </div>
                 </template>
             </div>
+            <!-- Biometric unlock (Android only) -->
+            <div v-if="androidBiometricAvailable"
+                 class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4 space-y-3">
+                <div class="flex items-center gap-2 mb-1">
+                    <i class="ph ph-fingerprint text-stone-400 text-lg"></i>
+                    <p class="text-sm font-semibold text-stone-700">Biometric unlock</p>
+                    <span class="ml-auto text-xs font-medium px-2 py-0.5 rounded-full"
+                          :class="androidBiometricPinStored ? 'bg-green-100 text-green-700' : 'bg-stone-100 text-stone-500'">
+                        {{ androidBiometricPinStored ? 'Active' : 'Not set up' }}
+                    </span>
+                </div>
+                <p class="text-xs text-stone-400 leading-relaxed">
+                    Use your fingerprint or face to unlock instead of typing your PIN.
+                    Your PIN is encrypted in the Android Keystore and never leaves this device.
+                </p>
+                <p v-if="biometricError"
+                   class="text-xs text-red-600 bg-red-50 rounded-xl px-3 py-2">{{ biometricError }}</p>
+                <!-- Not yet set up -->
+                <template v-if="!androidBiometricPinStored">
+                    <p v-if="!ks.lockConfigured"
+                       class="text-xs text-stone-400">Set a lock PIN first to enable biometric unlock.</p>
+                    <template v-else-if="!showBiometricSetup">
+                        <button type="button"
+                                @click="showBiometricSetup = true; biometricError = ''"
+                                class="w-full py-2.5 bg-clay-600 hover:bg-clay-700 text-white text-sm font-semibold rounded-xl transition-colors">
+                            Set up biometric unlock
+                        </button>
+                    </template>
+                    <template v-else>
+                        <input v-model="biometricSetupPin"
+                               type="password"
+                               placeholder="Enter current PIN to confirm"
+                               class="w-full px-3 py-2.5 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-clay-400 text-stone-800 bg-stone-50 text-sm" />
+                        <div class="flex gap-2">
+                            <button type="button"
+                                    @click="showBiometricSetup = false; biometricSetupPin = ''; biometricError = ''"
+                                    class="flex-1 py-2.5 rounded-xl border border-stone-200 text-stone-600 text-sm font-medium hover:bg-stone-50 transition-colors">Cancel</button>
+                            <button type="button"
+                                    @click="doSetupBiometric"
+                                    :disabled="biometricBusy || !biometricSetupPin"
+                                    class="flex-1 py-2.5 bg-clay-600 hover:bg-clay-700 disabled:opacity-60 text-white text-sm font-semibold rounded-xl transition-colors">
+                                {{ biometricBusy ? 'Setting up…' : 'Enable' }}
+                            </button>
+                        </div>
+                    </template>
+                </template>
+                <!-- Already active -->
+                <button v-else
+                        type="button"
+                        @click="doRemoveBiometric"
+                        class="w-full py-2.5 rounded-xl border border-red-100 bg-red-50 text-red-600 text-sm font-medium hover:bg-red-100 transition-colors">
+                    Remove biometric unlock
+                </button>
+            </div>
             <!-- Auto-lock -->
             <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
                 <div class="flex items-center gap-2 mb-1">
@@ -203,6 +257,7 @@ async function doSetPin() {
   try {
     await ks.setLockPin(newPin.value)
     mode.value = 'idle'
+    await mirrorPinToBiometric(newPin.value)
   } catch { formError.value = 'Could not set PIN. Please try again.' }
   finally { busy.value = false }
 }
@@ -214,6 +269,7 @@ async function doChangePin() {
   try {
     await ks.changeLockPin(oldPin.value, newPin.value)
     mode.value = 'idle'
+    await mirrorPinToBiometric(newPin.value)
   } catch { formError.value = 'Incorrect current PIN.' }
   finally { busy.value = false }
 }
@@ -223,8 +279,45 @@ async function doRemovePin() {
   try {
     await ks.removeLockPin(oldPin.value)
     mode.value = 'idle'
+    window.Android?.clearBiometricPin?.()
+    androidBiometricPinStored.value = false
   } catch { formError.value = 'Incorrect PIN.' }
   finally { busy.value = false }
+}
+
+// Biometric (Android bridge)
+const androidBiometricAvailable = computed(() => !!window.Android?.isBiometricAvailable?.())
+const androidBiometricPinStored = ref(window.Android?.hasBiometricPin?.() ?? false)
+const biometricBusy = ref(false)
+const biometricError = ref('')
+const showBiometricSetup = ref(false)
+const biometricSetupPin = ref('')
+
+async function mirrorPinToBiometric(pin) {
+  if (!androidBiometricAvailable.value) return
+  try {
+    await window.Android.savePinBiometricAsync(pin)
+    androidBiometricPinStored.value = true
+  } catch { /* user dismissed biometric prompt — non-fatal */ }
+}
+
+async function doSetupBiometric() {
+  if (biometricSetupPin.value.length < 4) { biometricError.value = 'Enter your current PIN.'; return }
+  biometricBusy.value = true; biometricError.value = ''
+  try {
+    // Verify the PIN is correct by re-wrapping with the same value (throws on wrong PIN)
+    await ks.changeLockPin(biometricSetupPin.value, biometricSetupPin.value)
+    await window.Android.savePinBiometricAsync(biometricSetupPin.value)
+    androidBiometricPinStored.value = true
+    biometricSetupPin.value = ''
+    showBiometricSetup.value = false
+  } catch { biometricError.value = 'Incorrect PIN.' }
+  finally { biometricBusy.value = false }
+}
+
+function doRemoveBiometric() {
+  window.Android?.clearBiometricPin?.()
+  androidBiometricPinStored.value = false
 }
 
 // Encryption scrub
