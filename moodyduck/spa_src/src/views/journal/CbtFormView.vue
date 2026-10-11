@@ -1,38 +1,41 @@
 <template>
-  <div class="pb-nav">
-    <TopBar :title="id ? 'Edit Thought Record' : 'New Thought Record'" :back="true" />
-
-    <form @submit.prevent="save" class="px-4 py-4 space-y-3">
-      <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4 space-y-4">
-        <div>
-          <label class="text-sm font-semibold text-stone-500 block mb-1.5">Title <span class="font-normal">(optional)</span></label>
-          <input v-model="form.title" type="text" placeholder="Brief label…"
-            class="w-full px-3 py-2.5 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-purple-400 text-stone-800 bg-stone-50 text-sm" />
-        </div>
-        <div>
-          <label class="text-sm font-semibold text-stone-500 block mb-1.5">Situation</label>
-          <textarea v-model="form.situation" rows="3" placeholder="What happened? Where were you?"
-            class="w-full px-3 py-2.5 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-purple-400 text-stone-800 bg-stone-50 text-sm resize-none leading-relaxed"></textarea>
-        </div>
-        <div>
-          <label class="text-sm font-semibold text-stone-500 block mb-1.5">Automatic thoughts</label>
-          <textarea v-model="form.thoughts" rows="4" placeholder="What went through your mind?"
-            class="w-full px-3 py-2.5 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-purple-400 text-stone-800 bg-stone-50 text-sm resize-none leading-relaxed"></textarea>
-        </div>
-      </div>
-
-      <p v-if="error" class="text-sm text-red-600 bg-red-50 rounded-xl px-4 py-3">{{ error }}</p>
-
-      <button type="submit" :disabled="saving"
-        class="w-full py-3.5 bg-purple-600 hover:bg-purple-700 disabled:opacity-60 text-white font-semibold rounded-xl transition-colors">
-        {{ saving ? 'Saving…' : (id ? 'Save changes' : 'Save record') }}
-      </button>
-    </form>
-
-    <BottomNav />
-  </div>
+    <div class="pb-nav">
+        <TopBar :title="id ? 'Edit Thought Record' : 'New Thought Record'" :back="true" />
+        <form @submit.prevent="save" class="px-4 py-4 space-y-3">
+            <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4 space-y-4">
+                <div>
+                    <label class="text-sm font-semibold text-stone-500 block mb-1.5">Title <span class="font-normal">(optional)</span></label>
+                    <input v-model="form.title"
+                           type="text"
+                           placeholder="Brief label…"
+                           class="w-full px-3 py-2.5 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-purple-400 text-stone-800 bg-stone-50 text-sm" />
+                </div>
+                <div>
+                    <label class="text-sm font-semibold text-stone-500 block mb-1.5">Situation</label>
+                    <textarea v-model="form.situation"
+                              rows="3"
+                              placeholder="What happened? Where were you?"
+                              class="w-full px-3 py-2.5 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-purple-400 text-stone-800 bg-stone-50 text-sm resize-none leading-relaxed"></textarea>
+                </div>
+                <div>
+                    <label class="text-sm font-semibold text-stone-500 block mb-1.5">Automatic thoughts</label>
+                    <textarea v-model="form.thoughts"
+                              rows="4"
+                              placeholder="What went through your mind?"
+                              class="w-full px-3 py-2.5 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-purple-400 text-stone-800 bg-stone-50 text-sm resize-none leading-relaxed"></textarea>
+                </div>
+            </div>
+            <p v-if="error"
+               class="text-sm text-red-600 bg-red-50 rounded-xl px-4 py-3">{{ error }}</p>
+            <button type="submit"
+                    :disabled="saving"
+                    class="w-full py-3.5 bg-purple-600 hover:bg-purple-700 disabled:opacity-60 text-white font-semibold rounded-xl transition-colors">
+                {{ saving ? 'Saving…' : (id ? 'Save changes' : 'Save record') }}
+            </button>
+        </form>
+        <BottomNav />
+    </div>
 </template>
-
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'

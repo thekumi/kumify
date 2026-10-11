@@ -1,25 +1,22 @@
 <template>
-  <div class="pb-nav">
-    <TopBar title="Health" />
-
-    <div class="px-4 py-4 space-y-3">
-      <RouterLink v-for="item in sections" :key="item.to" :to="item.to"
-        class="flex items-center gap-4 bg-white rounded-2xl border border-stone-100 shadow-sm p-5 hover:bg-stone-50 transition-colors">
-        <div class="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0" :class="item.bg">
-          <i :class="[item.icon, 'text-2xl', item.iconColor]"></i>
+    <div class="pb-nav">
+        <TopBar title="Health" />
+        <div class="px-4 py-4 space-y-3">
+            <RouterLink v-for="item in sections" :key="item.to" :to="item.to" class="flex items-center gap-4 bg-white rounded-2xl border border-stone-100 shadow-sm p-5 hover:bg-stone-50 transition-colors">
+            <div class="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
+                 :class="item.bg">
+                <i :class="[item.icon, 'text-2xl', item.iconColor]"></i>
+            </div>
+            <div class="flex-1">
+                <p class="font-semibold text-stone-800">{{ item.label }}</p>
+                <p class="text-sm text-stone-400 mt-0.5">{{ item.desc }}</p>
+            </div>
+            <i class="ph ph-caret-right text-stone-300"></i>
+            </RouterLink>
         </div>
-        <div class="flex-1">
-          <p class="font-semibold text-stone-800">{{ item.label }}</p>
-          <p class="text-sm text-stone-400 mt-0.5">{{ item.desc }}</p>
-        </div>
-        <i class="ph ph-caret-right text-stone-300"></i>
-      </RouterLink>
+        <BottomNav />
     </div>
-
-    <BottomNav />
-  </div>
 </template>
-
 <script setup>
 import TopBar from '@/components/TopBar.vue'
 import BottomNav from '@/components/BottomNav.vue'
