@@ -4,6 +4,10 @@ set -eu
 export DJANGO_SETTINGS_MODULE="${DJANGO_SETTINGS_MODULE:-moodyduck.settings}"
 export PYTHONPATH="${PYTHONPATH:-/app}"
 
+if [ -f /etc/moodyduck/requirements.txt ]; then
+    pip install --no-cache-dir -r /etc/moodyduck/requirements.txt
+fi
+
 mkdir -p /app/data /app/data/logs
 cd /app/data
 
