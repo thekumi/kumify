@@ -31,7 +31,7 @@
                         </div>
                         <div class="flex-1 min-w-0">
                             <p class="text-sm font-semibold text-stone-800 truncate">{{ p.name }}</p>
-                            <p class="text-xs text-stone-400 truncate">{{ [p.relationship, p.phone].filter(Boolean).join(' · ') }}</p>
+                            <p class="text-xs text-stone-400 truncate">{{ [p.relationship, firstOf(p.phones, p.phone)].filter(Boolean).join(' · ') }}</p>
                         </div>
                         <i class="ph ph-caret-right text-stone-300 shrink-0"></i>
                         </RouterLink>
@@ -48,7 +48,7 @@
                         </div>
                         <div class="flex-1 min-w-0">
                             <p class="text-sm font-semibold text-stone-800 truncate">{{ p.name }}<span v-if="p.nickname" class="font-normal text-stone-400"> ({{ p.nickname }})</span></p>
-                            <p class="text-xs text-stone-400 truncate">{{ [p.relationship, p.phone].filter(Boolean).join(' · ') }}</p>
+                            <p class="text-xs text-stone-400 truncate">{{ [p.relationship, firstOf(p.phones, p.phone)].filter(Boolean).join(' · ') }}</p>
                         </div>
                         <i class="ph ph-caret-right text-stone-300 shrink-0"></i>
                         </RouterLink>
@@ -70,6 +70,8 @@ const ks = useKeystoreStore()
 const people = ref([])
 const raw = ref([])
 const loading = ref(true)
+
+const firstOf = (arr, fallback) => Array.isArray(arr) ? arr[0] : (fallback ?? null)
 
 const emergency = computed(() => people.value.filter(p => p.emergency_contact))
 const others = computed(() => people.value.filter(p => !p.emergency_contact))

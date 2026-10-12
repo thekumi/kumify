@@ -8,9 +8,11 @@ export async function syncAndroidContacts(ks) {
   const newContacts = JSON.parse(window.Android.getNewContacts())
   for (const c of newContacts) {
     if (!c.name) continue
-    const fields = { name: c.name }
-    if (c.email) fields.email = c.email
-    if (c.phone) fields.phone = c.phone
+    const fields = {}
+    for (const key of ['name', 'nickname', 'phones', 'emails', 'addresses', 'websites', 'notes', 'organization', 'title', 'birthday', 'birthday_monthday']) {
+      const v = c[key]
+      if (Array.isArray(v) ? v.length : v) fields[key] = v
+    }
     const encrypted_payload = await ks.encryptPayload(fields)
     await createPerson({ encrypted_payload }).catch(() => {})
   }
@@ -22,8 +24,10 @@ export async function syncAndroidContacts(ks) {
     .filter(p => p.name)
     .map(p => {
       const c = { id: p.id, name: p.name }
-      if (p.email) c.email = p.email
-      if (p.phone) c.phone = p.phone
+      for (const key of ['nickname', 'phones', 'emails', 'addresses', 'birthday', 'birthday_monthday', 'notes', 'organization', 'title', 'websites']) {
+        const v = p[key]
+        if (Array.isArray(v) ? v.length : v) c[key] = v
+      }
       return c
     })
   window.Android.syncContacts(JSON.stringify(contacts))

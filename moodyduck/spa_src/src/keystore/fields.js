@@ -23,7 +23,8 @@ export async function decryptField(dataKey, ct, iv) {
     b64decode(ct)
   );
   const str = dec.decode(plain);
-  if (str.length > 1 && str.charCodeAt(0) === 123) { // starts with '{'
+  const c = str.charCodeAt(0)
+  if (str.length > 1 && (c === 123 || c === 91)) { // starts with '{' or '['
     try { return JSON.parse(str) } catch {}
   }
   return str;

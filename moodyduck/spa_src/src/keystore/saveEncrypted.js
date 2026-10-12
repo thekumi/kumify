@@ -6,10 +6,19 @@
 // ks:              useKeystoreStore()
 export async function saveEncrypted(updateFn, id, payload, encryptedFields, rawRecord, ks) {
   if (rawRecord?.encrypted_payload) {
-    const toEncrypt = {}
+    // Decrypt the existing payload first so extra keys (e.g. fields added by Android
+    // contact import that aren't in encryptedFields) are preserved through the edit.
+    const decrypted = await ks.decrypt({ encrypted_payload: rawRecord.encrypted_payload })
+    const { encrypted_payload: _ep, ...baseFields } = decrypted
+    const toEncrypt = { ...baseFields }
     for (const field of encryptedFields) {
       const v = payload[field]
-      if (v !== null && v !== undefined && v !== '') toEncrypt[field] = v
+      const filled = Array.isArray(v) ? v.filter(Boolean) : v
+      if (filled !== null && filled !== undefined && filled !== '' && !(Array.isArray(filled) && !filled.length)) {
+        toEncrypt[field] = filled
+      } else {
+        delete toEncrypt[field]
+      }
     }
     const encrypted_payload = await ks.encryptPayload(toEncrypt)
     const patched = { ...payload, encrypted_payload }
