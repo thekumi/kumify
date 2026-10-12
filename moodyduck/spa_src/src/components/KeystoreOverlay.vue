@@ -24,7 +24,7 @@
             </button>
             <button v-if="biometricAvailable && !showPinFallback && ks.lockConfigured"
                     type="button"
-                    @click="showPinFallback = true"
+                    @click="showPinFallback = true; unlocking = false"
                     class="w-full py-2 text-sm text-stone-400 hover:text-stone-600 transition-colors">
                 Use PIN instead
             </button>
@@ -277,11 +277,13 @@ async function unlockWithBiometric() {
     const pin = await window.Android.requestPinBiometricAsync()
     await ks.unlock(pin)
   } catch (e) {
-    lockError.value = e?.message?.includes('No PIN stored')
-      ? 'Biometric unlock is not set up. Use your PIN.'
-      : 'Biometric authentication failed.'
-    showPinFallback.value = true
-    nextTick(() => pinRef.value?.focus())
+    if (!showPinFallback.value) {
+      lockError.value = e?.message?.includes('No PIN stored')
+        ? 'Biometric unlock is not set up. Use your PIN.'
+        : 'Biometric authentication failed.'
+      showPinFallback.value = true
+      nextTick(() => pinRef.value?.focus())
+    }
   } finally {
     unlocking.value = false
   }
