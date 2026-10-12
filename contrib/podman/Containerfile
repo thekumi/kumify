@@ -1,8 +1,8 @@
 FROM docker.io/library/node:22-slim AS spa-builder
 
-WORKDIR /app
-COPY moodyduck/spa_src/ ./moodyduck/spa_src/
-RUN cd moodyduck/spa_src && npm ci && npm run build
+WORKDIR /build
+COPY moodyduck/spa_src/ .
+RUN npm ci && npm run build
 
 
 FROM docker.io/library/python:3.12-slim
@@ -14,7 +14,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 COPY . /app
-COPY --from=spa-builder /app/moodyduck/spa /app/moodyduck/spa
+COPY --from=spa-builder /spa /app/moodyduck/spa
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
