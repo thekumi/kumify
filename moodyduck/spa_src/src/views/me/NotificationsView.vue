@@ -68,7 +68,7 @@
                 <p v-if="subError" class="text-xs text-red-500">{{ subError }}</p>
             </div>
             <!-- Test notification -->
-            <div v-if="subscribed || !!window.Android"
+            <div v-if="subscribed || isAndroid"
                  class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4 space-y-3">
                 <p class="text-xs font-semibold text-stone-400 uppercase tracking-wider">Test</p>
                 <div class="flex items-center gap-3">
@@ -89,7 +89,7 @@
                 <p v-if="testError" class="text-xs text-red-500">{{ testError }}</p>
             </div>
             <!-- Contacts sync (Android only) -->
-            <div v-if="!!window.Android"
+            <div v-if="isAndroid"
                  class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
                 <div class="flex items-center justify-between">
                     <div>
@@ -128,6 +128,7 @@ import { useKeystoreStore } from '@/stores/keystore'
 import { syncAndroidContacts, CONTACTS_ENABLED_KEY } from '@/androidContacts'
 
 const ks = useKeystoreStore()
+const isAndroid = !!window.Android
 
 const form = ref({ daily_reminder: false, daily_reminder_time: '20:00', habits_reminder: false })
 const contactsEnabled = ref(localStorage.getItem(CONTACTS_ENABLED_KEY) === '1')
