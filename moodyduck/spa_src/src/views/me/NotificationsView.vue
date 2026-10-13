@@ -191,9 +191,12 @@ async function subscribe() {
       subError.value = 'Push notifications are not configured on this server.'
       return
     }
-    const reg = await navigator.serviceWorker.getRegistration()
+    let reg = await navigator.serviceWorker.getRegistration()
     if (!reg) {
-      subError.value = 'Service worker is not registered. Push notifications require a production build or a page reload.'
+      reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => null)
+    }
+    if (!reg) {
+      subError.value = 'Push notifications are not available here. Make sure you are using the production build of this app.'
       return
     }
     const sw = await Promise.race([
