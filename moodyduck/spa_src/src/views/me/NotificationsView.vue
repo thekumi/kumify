@@ -132,7 +132,7 @@ const isAndroid = !!window.Android
 
 const form = ref({ daily_reminder: false, daily_reminder_time: '20:00', habits_reminder: false })
 const contactsEnabled = ref(localStorage.getItem(CONTACTS_ENABLED_KEY) === '1')
-const permissionState = ref(Notification.permission)
+const permissionState = ref(typeof Notification !== 'undefined' ? Notification.permission : 'default')
 const subscribed = ref(false)
 const subscribing = ref(false)
 const subError = ref('')
@@ -180,7 +180,7 @@ async function subscribe() {
   subscribing.value = true
   subError.value = ''
   try {
-    const perm = await Notification.requestPermission()
+    const perm = typeof Notification !== 'undefined' ? await Notification.requestPermission() : 'denied'
     permissionState.value = perm
     if (perm !== 'granted') {
       subError.value = 'Permission denied.'
