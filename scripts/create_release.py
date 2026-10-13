@@ -12,7 +12,6 @@ VERSION_PATTERN = re.compile(
 PRE_RELEASE_COMMANDS = (
     ("-m", "ruff", "check", "moodyduck", "scripts"),
     ("-m", "ruff", "format", "--check", "moodyduck", "scripts"),
-    ("-m", "djlint", "moodyduck", "--check"),
     ("-m", "djlint", "moodyduck/spa_src/src", "--check", "--extension", "vue"),
     (
         "-m",
