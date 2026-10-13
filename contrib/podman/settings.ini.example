@@ -22,6 +22,14 @@ URL = redis://moodyduck-redis:6379/0
 ; Bucket = moodyduck
 ; Endpoint = https://s3.example.org
 
+; Uncomment to enable Web Push notifications (run manage.py generate_vapid_keys)
+; [Push]
+; Subject = mailto:you@example.com
+; PublicKey = <base64url public key from generate_vapid_keys>
+; PrivateKey = -----BEGIN EC PRIVATE KEY-----
+;     <key data>
+;     -----END EC PRIVATE KEY-----
+
 ; Uncomment to enable OpenID Connect authentication
 ; [OIDC]
 ; ProviderName = OpenID Connect

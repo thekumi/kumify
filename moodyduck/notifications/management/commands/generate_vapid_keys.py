@@ -25,11 +25,12 @@ class Command(BaseCommand):
         )
         public_b64 = base64.urlsafe_b64encode(public_bytes).rstrip(b"=").decode()
 
+        lines = private_pem.strip().splitlines()
         self.stdout.write(self.style.SUCCESS("Add to settings.ini:"))
         self.stdout.write("")
         self.stdout.write("[Push]")
         self.stdout.write("Subject = mailto:you@example.com")
         self.stdout.write(f"PublicKey = {public_b64}")
-        self.stdout.write("PrivateKey =")
-        for line in private_pem.strip().splitlines():
+        self.stdout.write(f"PrivateKey = {lines[0]}")
+        for line in lines[1:]:
             self.stdout.write(f"    {line}")
