@@ -187,6 +187,10 @@ async function subscribe() {
       return
     }
     const { public_key } = await getVapidPublicKey()
+    if (!public_key) {
+      subError.value = 'Push notifications are not configured on this server.'
+      return
+    }
     const sw = await navigator.serviceWorker.ready
     const pushSub = await sw.pushManager.subscribe({
       userVisibleOnly: true,
