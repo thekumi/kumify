@@ -191,11 +191,26 @@ async function subscribe() {
       subError.value = 'Push notifications are not configured on this server.'
       return
     }
-    const sw = await navigator.serviceWorker.ready
-    const pushSub = await sw.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(public_key),
-    })
+    const reg = await navigator.serviceWorker.getRegistration()
+    if (!reg) {
+      subError.value = 'Service worker is not registered. Push notifications require a production build or a page reload.'
+      return
+    }
+    const sw = await Promise.race([
+      navigator.serviceWorker.ready,
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Service worker is not active — try reloading the page.')), 15000)
+      ),
+    ])
+    const pushSub = await Promise.race([
+      sw.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(public_key),
+      }),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Push service not responding — check your connection and try again.')), 30000)
+      ),
+    ])
     const json = pushSub.toJSON()
     const saved = await registerPushSubscription({
       endpoint: json.endpoint,
@@ -258,7 +273,11 @@ onMounted(async () => {
   if (settings) form.value = settings
 
   // Check if this device already has a subscription registered
-  const sw = await navigator.serviceWorker.ready.catch(() => null)
+  const reg = await navigator.serviceWorker.getRegistration().catch(() => null)
+  const sw = reg ? await Promise.race([
+    navigator.serviceWorker.ready,
+    new Promise(resolve => setTimeout(resolve, 5000, null)),
+  ]) : null
   if (sw) {
     const pushSub = await sw.pushManager.getSubscription().catch(() => null)
     if (pushSub) {
