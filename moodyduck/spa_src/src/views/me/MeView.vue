@@ -62,8 +62,9 @@ const links = [
   { to: '/me/emergency',  label: 'Emergency Info',        icon: 'ph ph-first-aid',           bg: 'bg-red-100',    color: 'text-red-600' },
   { to: '/me/properties',     label: 'Custom Properties',  icon: 'ph ph-sliders-horizontal',  bg: 'bg-purple-100',  color: 'text-purple-600' },
   { to: '/me/notifications',  label: 'Notifications',      icon: 'ph ph-bell',                bg: 'bg-yellow-100',  color: 'text-yellow-600' },
-  { to: '/me/modules',        label: 'Navigation',         icon: 'ph ph-navigation-arrow',    bg: 'bg-teal-100',    color: 'text-teal-600' },
-  { to: '/people',        label: 'People',               icon: 'ph ph-users',               bg: 'bg-violet-100', color: 'text-violet-600' },
+  { to: '/me/modules',           label: 'Navigation',         icon: 'ph ph-navigation-arrow',    bg: 'bg-teal-100',    color: 'text-teal-600' },
+  { to: '/people',               label: 'People',             icon: 'ph ph-users',               bg: 'bg-violet-100',  color: 'text-violet-600' },
+  { to: '/planner/settings',     label: 'Planner',            icon: 'ph ph-calendar-dots',       bg: 'bg-indigo-100',  color: 'text-indigo-600' },
 ]
 
 function handleLogout() {

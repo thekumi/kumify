@@ -58,7 +58,10 @@ const routes = [
   { path: '/people/new',      component: () => import('@/views/people/PersonFormView.vue') },
   { path: '/people/:id/edit', component: () => import('@/views/people/PersonFormView.vue') },
 
-  { path: '/planner',    component: () => import('@/views/planner/CalendarView.vue') },
+  { path: '/planner',              component: () => import('@/views/planner/CalendarView.vue') },
+  { path: '/planner/events/new',   component: () => import('@/views/planner/EventFormView.vue') },
+  { path: '/planner/events/:id',   component: () => import('@/views/planner/EventFormView.vue') },
+  { path: '/planner/settings',     component: () => import('@/views/planner/PlannerSettingsView.vue') },
 
   { path: '/me',         component: () => import('@/views/me/MeView.vue') },
   { path: '/me/profile', component: () => import('@/views/me/ProfileView.vue') },

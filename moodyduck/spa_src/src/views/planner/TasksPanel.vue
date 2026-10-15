@@ -53,6 +53,16 @@
                         <p v-if="task.due_date" class="text-xs text-stone-400 mt-0.5">{{ task.due_date }}</p>
                     </div>
                     <span v-if="task.virtual" class="text-xs text-stone-300 italic shrink-0">auto</span>
+                    <template v-else>
+                        <button @click="openEdit(task)"
+                                class="w-7 h-7 flex items-center justify-center rounded-full hover:bg-stone-100 text-stone-400 transition-colors shrink-0">
+                            <i class="ph ph-pencil-simple text-sm"></i>
+                        </button>
+                        <button @click="removeTask(task)"
+                                class="w-7 h-7 flex items-center justify-center rounded-full hover:bg-red-50 text-stone-300 hover:text-red-400 transition-colors shrink-0">
+                            <i class="ph ph-trash text-sm"></i>
+                        </button>
+                    </template>
                 </li>
             </ul>
             <div class="px-4 mt-3">
@@ -80,12 +90,41 @@
                 </form>
             </div>
         </div>
+        <!-- Edit task sheet -->
+        <div v-if="editingTask"
+             class="fixed inset-0 z-50 flex items-end justify-center bg-black/40"
+             @click.self="closeEdit">
+            <div class="bg-white w-full max-w-lg rounded-t-2xl px-4 pt-5 pb-8 space-y-3">
+                <h3 class="font-semibold text-stone-800">Edit Task</h3>
+                <input v-model="editTaskTitle"
+                       type="text"
+                       placeholder="Task name"
+                       class="w-full px-3 py-2.5 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-violet-400 text-stone-800 bg-stone-50 text-sm" />
+                <div>
+                    <label class="text-xs text-stone-500 font-medium block mb-1">Reminder</label>
+                    <input v-model="editTaskReminder"
+                           type="datetime-local"
+                           class="w-full px-3 py-2 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-violet-400 text-stone-700 bg-stone-50 text-sm" />
+                </div>
+                <div class="flex gap-2 pt-1">
+                    <button @click="saveEdit"
+                            :disabled="!editTaskTitle.trim() || savingEdit"
+                            class="flex-1 py-3 bg-violet-600 hover:bg-violet-700 disabled:opacity-60 text-white font-semibold rounded-xl transition-colors text-sm">
+                        {{ savingEdit ? 'Saving…' : 'Save' }}
+                    </button>
+                    <button @click="closeEdit"
+                            class="px-5 py-3 rounded-xl border border-stone-200 text-stone-600 text-sm font-medium hover:bg-stone-50 transition-colors">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 </template>
 <script setup>
 import { ref, computed, watch, nextTick } from 'vue'
 import { useKeystoreStore } from '@/stores/keystore'
-import { getTasks, createTask, updateTask } from '@/api/planner'
+import { getTasks, createTask, updateTask, deleteTask as apiDeleteTask } from '@/api/planner'
 import { getTaskListProvider } from '@/planner/registry'
 import { scheduleReminder, cancelReminder } from '@/planner/reminders'
 
@@ -103,6 +142,11 @@ const showAddTask = ref(false)
 const newTaskTitle = ref('')
 const newTaskReminder = ref('')
 const newTaskInput = ref(null)
+
+const editingTask = ref(null)
+const editTaskTitle = ref('')
+const editTaskReminder = ref('')
+const savingEdit = ref(false)
 
 watch(visibleLists, (lists) => {
   if (!selectedList.value && lists.length) selectedList.value = lists[0]
@@ -162,14 +206,64 @@ async function addTask() {
   const raw = await createTask(body)
   const dec = await ks.decrypt(raw)
   tasks.value = [...tasks.value, dec]
-  if (reminder_at) scheduleReminder(raw, title)
+  if (reminder_at) {
+    scheduleReminder(raw, title)
+    if (window.Android?.canScheduleExactAlarms?.() === false) {
+      if (confirm('For accurate reminders, grant exact alarm permission. Open settings?')) {
+        window.Android?.requestExactAlarmPermission?.()
+      }
+    }
+  }
   newTaskTitle.value = ''
   newTaskReminder.value = ''
   showAddTask.value = false
 }
 
-async function deleteTask(task) {
+function openEdit(task) {
+  editingTask.value = task
+  editTaskTitle.value = task.title || ''
+  editTaskReminder.value = task.reminder_at
+    ? new Date(task.reminder_at).toISOString().slice(0, 16)
+    : ''
+}
+
+function closeEdit() {
+  editingTask.value = null
+  editTaskTitle.value = ''
+  editTaskReminder.value = ''
+}
+
+async function saveEdit() {
+  if (!editingTask.value || !editTaskTitle.value.trim()) return
+  savingEdit.value = true
+  try {
+    const title = editTaskTitle.value.trim()
+    const encrypted_payload = await ks.encryptPayload({ title })
+    const reminder_at = editTaskReminder.value
+      ? new Date(editTaskReminder.value).toISOString()
+      : null
+    const body = { encrypted_payload, reminder_at }
+    const raw = await updateTask(editingTask.value.id, body)
+    const dec = await ks.decrypt(raw)
+    tasks.value = tasks.value.map(t => t.id === editingTask.value.id ? dec : t)
+    if (reminder_at) scheduleReminder(raw, title)
+    else cancelReminder(editingTask.value.id)
+    closeEdit()
+  } finally {
+    savingEdit.value = false
+  }
+}
+
+async function removeTask(task) {
+  if (!confirm('Delete this task?')) return
+  await apiDeleteTask(task.id)
   cancelReminder(task.id)
   tasks.value = tasks.value.filter(t => t.id !== task.id)
 }
+
+function triggerAddTask() {
+  if (!selectedList.value?.virtual_key) showAddTask.value = true
+}
+
+defineExpose({ triggerAddTask })
 </script>

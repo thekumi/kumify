@@ -2,9 +2,17 @@
     <div class="pb-nav">
         <TopBar title="Planner">
         <template #actions>
-            <RouterLink to="/planner/events/new" class="w-8 h-8 flex items-center justify-center rounded-full bg-violet-100 hover:bg-violet-200 transition-colors">
+            <RouterLink to="/planner/settings" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-stone-100 transition-colors">
+            <i class="ph ph-gear text-stone-500"></i>
+            </RouterLink>
+            <RouterLink v-if="activeTab === 'calendar'" to="/planner/events/new" class="w-8 h-8 flex items-center justify-center rounded-full bg-violet-100 hover:bg-violet-200 transition-colors">
             <i class="ph ph-plus text-violet-700"></i>
             </RouterLink>
+            <button v-else-if="activeTab === 'tasks'"
+                    @click="tasksPanelRef?.triggerAddTask()"
+                    class="w-8 h-8 flex items-center justify-center rounded-full bg-violet-100 hover:bg-violet-200 transition-colors">
+                <i class="ph ph-plus text-violet-700"></i>
+            </button>
         </template>
         </TopBar>
         <div class="flex gap-0 border-b border-stone-100">
@@ -77,21 +85,20 @@
                 <div v-if="!(dayEvents[selectedDay] || []).length"
                      class="px-4 py-5 text-sm text-stone-400 text-center">No events</div>
                 <ul v-else class="divide-y divide-stone-50">
-                    <li v-for="ev in dayEvents[selectedDay]"
-                        :key="ev.id"
-                        class="flex items-center gap-3 px-4 py-3">
-                        <span class="w-2.5 h-2.5 rounded-full shrink-0"
-                              :style="{ background: calendarColor(ev) }"></span>
-                        <div class="flex-1 min-w-0">
-                            <p class="text-sm font-medium text-stone-800 truncate">{{ ev.title || ev.encrypted_payload?.title || '(no title)' }}</p>
-                            <p v-if="!ev.all_day" class="text-xs text-stone-400">{{ formatTime(ev.start) }}</p>
-                        </div>
-                        <span v-if="ev.virtual" class="text-xs text-stone-300 italic shrink-0">auto</span>
-                    </li>
+                    <component :is="ev.virtual ? 'li' : 'RouterLink'" v-for="ev in dayEvents[selectedDay]" :key="ev.id" :to="ev.virtual ? undefined : `/planner/events/${ev.id.split(':')[0]}`" class="flex items-center gap-3 px-4 py-3 hover:bg-stone-50 transition-colors" :class="ev.virtual ? '' : 'cursor-pointer'">
+                    <span class="w-2.5 h-2.5 rounded-full shrink-0"
+                          :style="{ background: calendarColor(ev) }"></span>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-stone-800 truncate">{{ ev.title || ev.encrypted_payload?.title || '(no title)' }}</p>
+                        <p v-if="!ev.all_day" class="text-xs text-stone-400">{{ formatTime(ev.start) }}</p>
+                    </div>
+                    <span v-if="ev.virtual" class="text-xs text-stone-300 italic shrink-0">auto</span>
+                    <i v-else class="ph ph-caret-right text-stone-300 shrink-0"></i>
+                    </component>
                 </ul>
             </div>
         </div>
-        <TasksPanel v-else :calendars="plannerStore.calendars" :task-lists="plannerStore.taskLists" />
+        <TasksPanel v-else ref="tasksPanelRef" :calendars="plannerStore.calendars" :task-lists="plannerStore.taskLists" />
         <BottomNav />
     </div>
 </template>
@@ -104,6 +111,8 @@ import { useKeystoreStore } from '@/stores/keystore'
 import { usePlannerStore } from '@/stores/planner'
 import { getEvents } from '@/api/planner'
 import { getCalendarProvider } from '@/planner/registry'
+import { expandRRule } from '@/planner/rrule'
+import { syncCalendarsToSystem } from '@/planner/calendarSync'
 
 const ks = useKeystoreStore()
 const plannerStore = usePlannerStore()
@@ -111,6 +120,7 @@ const plannerStore = usePlannerStore()
 const activeTab = ref('calendar')
 const loading = ref(true)
 const selectedDay = ref(null)
+const tasksPanelRef = ref(null)
 
 const now = new Date()
 const year = ref(now.getFullYear())
@@ -217,7 +227,8 @@ async function loadEvents() {
         }),
     ])
     const decrypted = await ks.decryptAll(rawEvents)
-    allEvents.value = [...decrypted, ...virtualResults.flat()]
+    const expanded = decrypted.flatMap(ev => ev.rrule ? expandRRule(ev, from, to) : [ev])
+    allEvents.value = [...expanded, ...virtualResults.flat()]
   } finally {
     loading.value = false
   }
@@ -235,6 +246,7 @@ onMounted(async () => {
   if (ks.dataKey) {
     if (!plannerStore.loaded) await plannerStore.load(ks)
     await loadEvents()
+    syncCalendarsToSystem(ks, plannerStore).catch(() => {})
   }
 })
 </script>

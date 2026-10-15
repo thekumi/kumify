@@ -733,7 +733,11 @@ class HabitLogViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return habit_log_queryset_for_request(self.request)
+        qs = habit_log_queryset_for_request(self.request)
+        date = self.request.query_params.get("date")
+        if date:
+            qs = qs.filter(date=date)
+        return qs
 
 
 class HealthParameterViewSet(viewsets.ModelViewSet):

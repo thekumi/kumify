@@ -24,6 +24,9 @@ export const usePlannerStore = defineStore('planner', () => {
 
   async function load(ks) {
     await Promise.all([loadCalendars(ks), loadTaskLists(ks)])
+    if (!calendars.value.some(c => !c.virtual_key)) {
+      await createCalendar(ks, { name: 'Personal', color: '#6366F1' })
+    }
     loaded.value = true
   }
 
@@ -36,15 +39,18 @@ export const usePlannerStore = defineStore('planner', () => {
   }
 
   async function updateCalendar(ks, id, fields) {
-    const { name, ...rest } = fields
+    const { name, sync_to_system, ...rest } = fields
     const body = { ...rest }
-    if (name !== undefined) {
+    if (name !== undefined || sync_to_system !== undefined) {
       const existing = calendars.value.find(c => c.id === id)
       const basePayload = existing?.encrypted_payload
         ? (await ks.decrypt({ encrypted_payload: existing.encrypted_payload }))
         : {}
       const { encrypted_payload: _ep, ...baseFields } = basePayload
-      body.encrypted_payload = await ks.encryptPayload({ ...baseFields, name })
+      const newPayload = { ...baseFields }
+      if (name !== undefined) newPayload.name = name
+      if (sync_to_system !== undefined) newPayload.sync_to_system = sync_to_system
+      body.encrypted_payload = await ks.encryptPayload(newPayload)
     }
     const raw = await apiUpdateCalendar(id, body)
     const dec = await ks.decrypt(raw)
