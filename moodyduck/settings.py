@@ -38,6 +38,7 @@ except NameError:
         "habits",
         "gpslog",
         "environment",
+        "planner",
     ]
 
 CORE_MODULES = [

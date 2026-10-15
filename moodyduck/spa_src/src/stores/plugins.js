@@ -6,6 +6,7 @@ export const CORE_TABS = [
   { to: '/journal', label: 'Journal', icon: 'ph ph-book-open' },
   { to: '/health',  label: 'Health',  icon: 'ph ph-heartbeat' },
   { to: '/people',  label: 'People',  icon: 'ph ph-users' },
+  { to: '/planner', label: 'Planner', icon: 'ph ph-calendar-dots' },
   { to: '/me',      label: 'Me',      icon: 'ph ph-user-circle' },
 ]
 

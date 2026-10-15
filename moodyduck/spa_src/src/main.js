@@ -10,6 +10,10 @@ import '@fontsource/inter/700.css'
 import '@phosphor-icons/web/regular'
 import { isLoggedIn } from '@/api/auth'
 import { usePluginsStore } from '@/stores/plugins'
+import { registerCalendarProvider, registerTaskListProvider } from '@/planner/registry'
+import '@/views/health/plannerProviders'
+import '@/views/people/plannerProviders'
+import '@/views/mood/plannerProviders'
 import TopBar from '@/components/TopBar.vue'
 import BottomNav from '@/components/BottomNav.vue'
 
@@ -30,6 +34,8 @@ window.__moodyduck = {
   vue: { h, markRaw },
   router,
   addNavItem: (item) => pluginsStore.addNavItem(item),
+  registerCalendarProvider,
+  registerTaskListProvider,
   components: { TopBar: markRaw(TopBar), BottomNav: markRaw(BottomNav) },
 }
 

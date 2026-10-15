@@ -58,6 +58,8 @@ const routes = [
   { path: '/people/new',      component: () => import('@/views/people/PersonFormView.vue') },
   { path: '/people/:id/edit', component: () => import('@/views/people/PersonFormView.vue') },
 
+  { path: '/planner',    component: () => import('@/views/planner/CalendarView.vue') },
+
   { path: '/me',         component: () => import('@/views/me/MeView.vue') },
   { path: '/me/profile', component: () => import('@/views/me/ProfileView.vue') },
   { path: '/me/devices',    component: () => import('@/views/me/DevicesView.vue') },

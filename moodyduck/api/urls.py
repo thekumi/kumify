@@ -69,6 +69,7 @@ router.register(
 )
 
 urlpatterns = [
+    path("planner/", include("moodyduck.planner.urls")),
     path("", include(router.urls)),
     path("profile/", CurrentProfileView.as_view(), name="profile"),
     path(
