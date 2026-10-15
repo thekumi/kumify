@@ -4,7 +4,7 @@ After=network-online.target
 Wants=network-online.target
 
 [Container]
-Image=docker.io/library/mariadb:11
+Image=docker.io/library/mariadb:13
 ContainerName=moodyduck-mariadb
 Network=moodyduck.network
 Volume=moodyduck-db-data:/var/lib/mysql:Z
