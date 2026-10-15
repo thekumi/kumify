@@ -127,8 +127,9 @@ async function applyDecryption() {
   status.value = ds
   decryptedMoods.value = dm
   decryptedProperties.value = dp
-  const ids = ds.activity_ids != null
-    ? JSON.parse(ds.activity_ids).map(Number)
+  const rawIds = ds.activity_ids
+  const ids = rawIds != null
+    ? (Array.isArray(rawIds) ? rawIds : JSON.parse(rawIds)).map(Number)
     : (ds.activities ?? []).map(a => a.id)
   decryptedActivities.value = da.filter(a => ids.includes(a.id))
 }
