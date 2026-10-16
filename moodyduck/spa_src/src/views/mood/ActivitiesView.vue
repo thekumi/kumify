@@ -33,11 +33,13 @@
                     <ul class="bg-white rounded-2xl border border-stone-100 shadow-sm divide-y divide-stone-50 overflow-hidden">
                         <li v-for="a in group.items"
                             :key="a.id"
-                            class="flex items-center gap-3 px-4 py-3.5">
+                            class="flex items-center gap-3 px-4 py-3.5"
+                            :class="a.hidden ? 'opacity-50' : ''">
                             <i :class="a.icon || 'ph ph-check'"
                                :style="a.color ? `color:${a.color}` : ''"
                                class="text-2xl shrink-0"></i>
                             <p class="flex-1 font-medium text-stone-800 truncate">{{ a.name || '—' }}</p>
+                            <span v-if="a.hidden" class="text-xs text-stone-400 font-medium shrink-0">disabled</span>
                             <RouterLink :to="`/mood/settings/activities/${a.id}/edit`" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-stone-100 transition-colors">
                             <i class="ph ph-pencil-simple text-stone-400"></i>
                             </RouterLink>
@@ -97,7 +99,7 @@ const grouped = computed(() => {
 })
 
 onMounted(async () => {
-  ;[raw.value, rawCategories.value] = await Promise.all([getActivities().catch(() => []), getActivityCategories().catch(() => [])])
+  ;[raw.value, rawCategories.value] = await Promise.all([getActivities({ include_hidden: 'true' }).catch(() => []), getActivityCategories().catch(() => [])])
   await applyDecryption()
   loading.value = false
 })

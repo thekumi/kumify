@@ -646,7 +646,10 @@ class ActivityViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return Activity.objects.filter(user=self.request.user)
+        qs = Activity.objects.filter(user=self.request.user)
+        if self.request.query_params.get("include_hidden") != "true":
+            qs = qs.filter(hidden=False)
+        return qs
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)

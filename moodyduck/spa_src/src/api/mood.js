@@ -11,7 +11,10 @@ export const createActivityCategory  = (d)      => api.post('/activity-categorie
 export const updateActivityCategory  = (id, d)  => api.patch(`/activity-categories/${id}/`, d)
 export const deleteActivityCategory  = (id)     => api.delete(`/activity-categories/${id}/`)
 
-export const getActivities   = ()       => api.getAll('/activities/')
+export const getActivities   = (params) => {
+  const q = params ? '?' + new URLSearchParams(params).toString() : ''
+  return api.getAll(`/activities/${q}`)
+}
 export const createActivity  = (d)      => api.post('/activities/', d)
 export const updateActivity  = (id, d)  => api.patch(`/activities/${id}/`, d)
 export const deleteActivity  = (id)     => api.delete(`/activities/${id}/`)

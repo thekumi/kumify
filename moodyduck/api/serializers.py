@@ -205,7 +205,15 @@ class ActivityCategorySerializer(serializers.ModelSerializer):
 class ActivitySerializer(serializers.ModelSerializer):
     class Meta:
         model = Activity
-        fields = ["id", "name", "icon", "color", "category", "encrypted_payload"]
+        fields = [
+            "id",
+            "name",
+            "icon",
+            "color",
+            "category",
+            "hidden",
+            "encrypted_payload",
+        ]
         read_only_fields = ["id"]
         extra_kwargs = {
             "name": {"required": False, "allow_null": True, "allow_blank": True},

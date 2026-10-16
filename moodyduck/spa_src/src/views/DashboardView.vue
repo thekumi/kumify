@@ -113,7 +113,7 @@ onMounted(async () => {
     getDashboard().catch(() => null),
     getStatuses(1).catch(() => ({ results: [] })),
     getMoods().catch(() => []),
-    getActivities().catch(() => []),
+    getActivities({ include_hidden: 'true' }).catch(() => []),
   ])
   rawStats.value = s
   stats.value = s

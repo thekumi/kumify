@@ -517,7 +517,7 @@ async function load() {
     const [rawStatuses, rawMoods, rawActivities, rawDreams, habitLogs, rawHabitsData, rawProps] = await Promise.all([
       getAllStatuses(),
       getMoods(),
-      getActivities(),
+      getActivities({ include_hidden: 'true' }),
       getAllDreams(),
       getAllHabitLogs(),
       getHabits(),

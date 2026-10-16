@@ -32,6 +32,19 @@
                         <span class="text-sm text-stone-500 font-mono">{{ form.color }}</span>
                     </div>
                 </div>
+                <div v-if="id" class="flex items-center justify-between pt-1">
+                    <div>
+                        <p class="text-sm font-semibold text-stone-700">Disabled</p>
+                        <p class="text-xs text-stone-400 mt-0.5">Won't appear when logging moods</p>
+                    </div>
+                    <button type="button"
+                            @click="form.hidden = !form.hidden"
+                            class="relative w-10 h-5 rounded-full transition-colors shrink-0"
+                            :class="form.hidden ? 'bg-stone-400' : 'bg-clay-600'">
+                        <span class="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform"
+                              :class="form.hidden ? 'translate-x-5' : 'translate-x-0'"></span>
+                    </button>
+                </div>
             </div>
             <p v-if="error"
                class="text-sm text-red-600 bg-red-50 rounded-xl px-4 py-3">{{ error }}</p>
@@ -64,7 +77,7 @@ const ks = useKeystoreStore()
 const route = useRoute()
 const router = useRouter()
 const id = route.params.id
-const form = ref({ name: '', icon: 'ph ph-check', color: '#488460', category: null })
+const form = ref({ name: '', icon: 'ph ph-check', color: '#488460', category: null, hidden: false })
 const categories = ref([])
 const saving = ref(false)
 const error = ref('')
@@ -72,7 +85,7 @@ let rawActivity = null
 
 async function fillForm(activity) {
   const a = await ks.decrypt(activity)
-  form.value = { name: a.name ?? '', icon: a.icon ?? 'ph ph-check', color: a.color ?? '#488460', category: activity.category ?? null }
+  form.value = { name: a.name ?? '', icon: a.icon ?? 'ph ph-check', color: a.color ?? '#488460', category: activity.category ?? null, hidden: activity.hidden ?? false }
 }
 
 watch(() => ks.dataKey, async (key) => { if (key && rawActivity) await fillForm(rawActivity) })
@@ -99,7 +112,7 @@ async function remove() {
 }
 
 onMounted(async () => {
-  const [all, rawCats] = await Promise.all([getActivities(), getActivityCategories()])
+  const [all, rawCats] = await Promise.all([getActivities({ include_hidden: 'true' }), getActivityCategories()])
   categories.value = await ks.decryptAll(rawCats)
   if (id) {
     rawActivity = all.find(a => String(a.id) === String(id))
