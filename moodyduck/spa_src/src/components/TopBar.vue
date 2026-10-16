@@ -1,5 +1,6 @@
 <template>
-    <header class="sticky top-0 z-40 bg-clay-50/90 backdrop-blur-sm">
+    <header class="sticky top-0 z-40 bg-clay-50/90 backdrop-blur-sm"
+            style="padding-top: var(--sat, 0px)">
         <div class="flex items-center h-14 px-4 gap-3">
             <button type="button"
                     v-if="back"
