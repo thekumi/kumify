@@ -510,15 +510,28 @@ const dreamBarOptions = {
 
 // Data loading
 
+function fetchFrom() {
+  if (rangeDays.value === 0) return null
+  const today = new Date()
+  const heatmapFrom = new Date(today)
+  heatmapFrom.setDate(heatmapFrom.getDate() - 365)
+  const rangeFrom = new Date(rangeEnd.value ? new Date(rangeEnd.value + 'T23:59:59') : today)
+  rangeFrom.setDate(rangeFrom.getDate() - rangeDays.value)
+  const from = rangeFrom < heatmapFrom ? rangeFrom : heatmapFrom
+  return from.toISOString().slice(0, 10)
+}
+
 async function load() {
   if (!ks.dataKey) return
   loading.value = true
   try {
+    const after = fetchFrom()
+    const dateParams = after ? { timestamp_after: after } : undefined
     const [rawStatuses, rawMoods, rawActivities, rawDreams, habitLogs, rawHabitsData, rawProps] = await Promise.all([
-      getAllStatuses(),
+      getAllStatuses(dateParams),
       getMoods(),
       getActivities({ include_hidden: 'true' }),
-      getAllDreams(),
+      getAllDreams(dateParams),
       getAllHabitLogs(),
       getHabits(),
       getProperties().catch(() => []),
@@ -549,5 +562,6 @@ async function load() {
 }
 
 watch(() => ks.dataKey, (k) => { if (k) load() })
+watch([rangeDays, rangeEnd], () => { if (ks.dataKey) load() })
 onMounted(() => { if (ks.dataKey) load() })
 </script>

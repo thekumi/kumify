@@ -660,7 +660,11 @@ class StatusViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return Status.objects.filter(user=self.request.user).order_by("-timestamp")
+        qs = Status.objects.filter(user=self.request.user).order_by("-timestamp")
+        after = self.request.query_params.get("timestamp_after")
+        if after:
+            qs = qs.filter(timestamp__date__gte=after)
+        return qs
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
@@ -797,11 +801,15 @@ class DreamViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return (
+        qs = (
             Dream.objects.filter(user=self.request.user)
             .prefetch_related("dreamtheme_set__theme")
             .order_by("-timestamp")
         )
+        after = self.request.query_params.get("timestamp_after")
+        if after:
+            qs = qs.filter(timestamp__date__gte=after)
+        return qs
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)

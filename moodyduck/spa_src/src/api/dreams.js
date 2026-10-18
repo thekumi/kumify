@@ -2,7 +2,10 @@ import { api } from './client'
 import { b64encode } from '@/keystore/util'
 
 export const getDreams    = (page=1) => api.get(`/dreams/?page=${page}`)
-export const getAllDreams  = ()       => api.getAll('/dreams/')
+export const getAllDreams  = (params) => {
+  const q = params ? '?' + new URLSearchParams(params).toString() : ''
+  return api.getAll(`/dreams/${q}`)
+}
 export const getDream     = (id)     => api.get(`/dreams/${id}/`)
 export const createDream  = (d)      => api.post('/dreams/', d)
 export const updateDream  = (id, d)  => api.patch(`/dreams/${id}/`, d)
