@@ -3,6 +3,7 @@
         <RouterView />
         <KeystoreOverlay />
         <SyncBanner />
+        <PluginPermissionDialog />
     </div>
     <div v-else
          class="min-h-screen bg-clay-50 flex items-center justify-center">
@@ -16,6 +17,7 @@ import { useKeystoreStore } from '@/stores/keystore'
 import { useOfflineStore } from '@/stores/offline'
 import KeystoreOverlay from '@/components/KeystoreOverlay.vue'
 import SyncBanner from '@/components/SyncBanner.vue'
+import PluginPermissionDialog from '@/components/PluginPermissionDialog.vue'
 import { syncAndroidContacts, CONTACTS_ENABLED_KEY } from '@/androidContacts'
 
 const auth = useAuthStore()

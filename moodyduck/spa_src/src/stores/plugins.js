@@ -12,6 +12,7 @@ export const CORE_TABS = [
 
 export const usePluginsStore = defineStore('plugins', () => {
   const navItems    = ref([])
+  const modules     = ref([])  // raw list from /api/modules/
   const visibility  = ref({})  // nav_path → bool, from /api/modules/
   const navOrder    = ref([])  // ordered list of `to` paths, from /api/nav-order/
 
@@ -19,8 +20,12 @@ export const usePluginsStore = defineStore('plugins', () => {
     navItems.value.push(item)
   }
 
-  function setVisibility(modules) {
-    visibility.value = Object.fromEntries(modules.map(m => [m.nav_path, m.visible]))
+  function setModules(mods) {
+    modules.value = mods
+  }
+
+  function setVisibility(mods) {
+    visibility.value = Object.fromEntries(mods.map(m => [m.nav_path, m.visible]))
   }
 
   function setNavOrder(order) {
@@ -49,7 +54,9 @@ export const usePluginsStore = defineStore('plugins', () => {
 
   return {
     navItems,
+    modules,
     addNavItem,
+    setModules,
     setVisibility,
     setNavOrder,
     allNavItemsOrdered,

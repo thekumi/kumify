@@ -37,12 +37,41 @@
             </div>
             <p v-if="error"
                class="text-sm text-red-600 bg-red-50 rounded-xl px-4 py-3">{{ error }}</p>
+            <template v-if="pluginModules.length">
+                <p class="text-sm font-semibold text-stone-500 px-1 pt-2">Plugin permissions</p>
+                <p class="text-sm text-stone-500 -mt-2">Control which plugins can access your encrypted data.</p>
+                <div class="bg-white rounded-2xl border border-stone-100 shadow-sm overflow-hidden divide-y divide-stone-50">
+                    <div v-for="mod in pluginModules"
+                         :key="mod.slug"
+                         class="flex items-center gap-3 px-4 py-3.5">
+                        <div class="w-8 h-8 rounded-full bg-clay-100 flex items-center justify-center shrink-0">
+                            <i class="ph ph-lock-key text-clay-600 text-base"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-medium text-stone-700">{{ mod.name }}</p>
+                            <p class="text-xs text-stone-400">Encrypted data access</p>
+                        </div>
+                        <button type="button"
+                                @click="togglePerm(mod.slug)"
+                                class="relative w-11 h-6 rounded-full transition-colors shrink-0"
+                                :class="pluginPerms[mod.slug] === 'granted' ? 'bg-clay-600' : 'bg-stone-200'">
+                            <span class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform"
+                                  :class="pluginPerms[mod.slug] === 'granted' ? 'translate-x-5' : 'translate-x-0'"></span>
+                        </button>
+                    </div>
+                </div>
+                <p v-if="needsReload"
+                   class="text-xs text-amber-700 bg-amber-50 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
+                    <span>Changes take effect after reload.</span>
+                    <button @click="location.reload()" class="font-semibold underline shrink-0">Reload now</button>
+                </p>
+            </template>
         </div>
         <BottomNav />
     </div>
 </template>
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import TopBar from '@/components/TopBar.vue'
 import BottomNav from '@/components/BottomNav.vue'
 import { setModuleVisible, setNavOrder } from '@/api/modules'
@@ -52,6 +81,22 @@ const pluginsStore = usePluginsStore()
 const localItems = ref([])
 const loading = ref(true)
 const error = ref('')
+
+const pluginModules = computed(() => pluginsStore.modules.filter(m => m.bundle_url))
+const pluginPerms = ref({})
+const needsReload = ref(false)
+
+function togglePerm(slug) {
+  const current = pluginPerms.value[slug]
+  if (current === 'granted') {
+    localStorage.removeItem(`moodyduck:perm:${slug}:keystore`)
+    pluginPerms.value = { ...pluginPerms.value, [slug]: null }
+  } else {
+    localStorage.setItem(`moodyduck:perm:${slug}:keystore`, 'granted')
+    pluginPerms.value = { ...pluginPerms.value, [slug]: 'granted' }
+  }
+  needsReload.value = true
+}
 
 let dragIndex = null
 const dragOverIndex = ref(null)
@@ -112,5 +157,8 @@ async function saveOrder() {
 onMounted(() => {
   localItems.value = pluginsStore.allNavItemsOrdered.map(item => ({ ...item }))
   loading.value = false
+  pluginPerms.value = Object.fromEntries(
+    pluginModules.value.map(m => [m.slug, localStorage.getItem(`moodyduck:perm:${m.slug}:keystore`)])
+  )
 })
 </script>
