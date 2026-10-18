@@ -69,6 +69,10 @@ def run_python(*args: str, repo_root: Path) -> None:
     )
 
 
+def run_npm(*args: str, cwd: Path) -> None:
+    subprocess.run(["npm", *args], cwd=cwd, check=True)
+
+
 def ensure_clean_worktree(repo_root: Path) -> None:
     status = run_git("status", "--short", repo_root=repo_root)
     if status:
@@ -121,6 +125,12 @@ def ensure_pre_release_checks_pass(repo_root: Path) -> None:
             raise SystemExit(
                 "Pre-release checks failed. Fix the errors or re-run with --skip-checks."
             ) from exc
+    try:
+        run_npm("run", "build", cwd=repo_root / "moodyduck" / "spa_src")
+    except subprocess.CalledProcessError as exc:
+        raise SystemExit(
+            "SPA build failed. Fix the errors or re-run with --skip-checks."
+        ) from exc
 
 
 def create_release_commit(repo_root: Path, tag_name: str) -> None:
