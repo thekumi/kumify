@@ -2,7 +2,7 @@ import { api } from './client'
 
 export async function getErrorLogs(resolved = null) {
   const qs = resolved !== null ? `?resolved=${resolved ? 'true' : 'false'}` : ''
-  return api.get(`/error-logs/${qs}`)
+  return api.getAll(`/error-logs/${qs}`)
 }
 
 export async function patchErrorLog(id, data) {
