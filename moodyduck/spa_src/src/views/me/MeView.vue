@@ -34,6 +34,13 @@
                 <p class="flex-1 text-sm font-medium text-stone-700">Modules</p>
                 <i class="ph ph-caret-right text-stone-300"></i>
                 </RouterLink>
+                <RouterLink to="/me/error-log" class="flex items-center gap-3 px-4 py-4 hover:bg-stone-50 transition-colors">
+                <div class="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+                    <i class="ph ph-warning text-lg text-red-500"></i>
+                </div>
+                <p class="flex-1 text-sm font-medium text-stone-700">Error Log</p>
+                <i class="ph ph-caret-right text-stone-300"></i>
+                </RouterLink>
             </div>
             <!-- Logout -->
             <button type="button"

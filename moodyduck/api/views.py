@@ -18,6 +18,7 @@ from rest_framework.views import APIView
 
 from moodyduck.cbt.models import ThoughtRecord
 from moodyduck.common.helpers import get_upload_path
+from moodyduck.common.models import ErrorLog
 from moodyduck.dreams.models import Dream, DreamMedia, Theme
 from moodyduck.friends.models import Person
 from moodyduck.gpslog.models import GPSPoint
@@ -60,6 +61,7 @@ from .serializers import (
     EmergencyAccessLogSerializer,
     EmergencyContactSerializer,
     EmergencyVaccinationSerializer,
+    ErrorLogSerializer,
     HabitLogSerializer,
     HabitSerializer,
     HealthLogSerializer,
@@ -1096,6 +1098,20 @@ class TestPushView(APIView):
             },
         )
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ErrorLogViewSet(viewsets.ModelViewSet):
+    serializer_class = ErrorLogSerializer
+    permission_classes = [permissions.IsAdminUser]
+    http_method_names = ["get", "patch", "head", "options"]
+
+    def get_queryset(self):
+        qs = ErrorLog.objects.all()
+        if self.request.query_params.get("resolved") == "true":
+            qs = qs.filter(resolved=True)
+        elif self.request.query_params.get("resolved") == "false":
+            qs = qs.filter(resolved=False)
+        return qs
 
 
 class UnifiedPushSubscriptionView(APIView):

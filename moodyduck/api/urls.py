@@ -12,6 +12,7 @@ from .views import (
     DreamMediaEncryptView,
     DreamViewSet,
     EmergencyAccessLogViewSet,
+    ErrorLogViewSet,
     HabitLogViewSet,
     HabitViewSet,
     HealthLogViewSet,
@@ -67,6 +68,7 @@ router.register("devices", UserDeviceViewSet, basename="device")
 router.register(
     "push-subscriptions", PushSubscriptionViewSet, basename="push-subscription"
 )
+router.register("error-logs", ErrorLogViewSet, basename="error-log")
 
 urlpatterns = [
     path("planner/", include("moodyduck.planner.urls")),

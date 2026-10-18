@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from moodyduck.cbt.models import ThoughtRecord
+from moodyduck.common.models import ErrorLog
 from moodyduck.dreams.models import Dream, DreamMedia, DreamTheme, Theme
 from moodyduck.friends.models import Person
 from moodyduck.habits.models import Habit, HabitLog
@@ -651,3 +652,33 @@ class NotificationSettingsSerializer(serializers.ModelSerializer):
     class Meta:
         model = NotificationSettings
         fields = ["daily_reminder", "daily_reminder_time", "habits_reminder"]
+
+
+class ErrorLogSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(
+        source="user.username", default=None, read_only=True
+    )
+
+    class Meta:
+        model = ErrorLog
+        fields = [
+            "id",
+            "timestamp",
+            "method",
+            "path",
+            "username",
+            "exception_type",
+            "exception_value",
+            "traceback",
+            "resolved",
+        ]
+        read_only_fields = [
+            "id",
+            "timestamp",
+            "method",
+            "path",
+            "username",
+            "exception_type",
+            "exception_value",
+            "traceback",
+        ]
