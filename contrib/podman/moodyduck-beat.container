@@ -8,9 +8,9 @@ Requires=moodyduck-redis.service moodyduck-mariadb.service moodyduck-web.service
 Image=git.private.coffee/kumi/moodyduck:latest
 ContainerName=moodyduck-beat
 Network=moodyduck.network
-Volume=/etc/moodyduck/settings.ini:/app/moodyduck.ini:ro,Z
+Volume=/etc/moodyduck:/etc/moodyduck:ro,Z
 Volume=moodyduck-data:/app/data:Z
-Environment=MOODYDUCK_SETTINGS=/app/moodyduck.ini
+Environment=MOODYDUCK_SETTINGS=/etc/moodyduck/settings.ini
 Exec=beat
 AutoUpdate=registry
 
