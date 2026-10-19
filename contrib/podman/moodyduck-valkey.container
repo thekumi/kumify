@@ -4,7 +4,7 @@ After=network-online.target
 Wants=network-online.target
 
 [Container]
-Image=docker.io/valkey/valkey:8-alpine
+Image=docker.io/valkey/valkey:9-alpine
 ContainerName=moodyduck-valkey
 Network=moodyduck.network
 Volume=moodyduck-valkey-data:/data:Z
