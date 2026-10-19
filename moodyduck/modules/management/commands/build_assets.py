@@ -35,11 +35,6 @@ class Command(BaseCommand):
             if not build_dir:
                 continue
             path = Path(build_dir)
-            if not (path / "package.json").exists():
-                self.stderr.write(
-                    self.style.WARNING(f"  {slug}: no package.json in {path}, skipping")
-                )
-                continue
 
             if not force:
                 bundle_url = cfg.get("bundle_url", "")
@@ -48,6 +43,15 @@ class Command(BaseCommand):
                     if finders.find(static_rel):
                         self.stdout.write(f"  {slug}: pre-built bundle found, skipping")
                         continue
+
+            if not (path / "package.json").exists():
+                self.stderr.write(
+                    self.style.WARNING(
+                        f"  {slug}: bundle missing from installed package"
+                        f" and no build source found at {path}"
+                    )
+                )
+                continue
 
             self.stdout.write(f"Building plugin: {slug} ({path})")
 
