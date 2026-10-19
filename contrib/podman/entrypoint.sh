@@ -18,7 +18,7 @@ run_django() {
 case "${1:-web}" in
     web)
         run_django migrate --noinput
-        run_django collectstatic --noinput
+        run_django build_assets
         exec gunicorn moodyduck.wsgi:application \
             --bind 0.0.0.0:9000 \
             --workers "${GUNICORN_WORKERS:-4}" \
