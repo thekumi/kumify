@@ -222,6 +222,24 @@ export function propertyOverTime(statuses, propertyId, days = 0, end = null) {
     .map(([day, vals]) => ({ x: day, y: vals.reduce((a, b) => a + b, 0) / vals.length }))
 }
 
+export function healthParameterOverTime(logs, parameterId, days = 0, end = null) {
+  const filtered = filterByDays(logs, days, l => l.recorded_at, end)
+  const byDay = {}
+  for (const log of filtered) {
+    for (const r of (log.records ?? [])) {
+      if (String(r.parameter?.id) !== String(parameterId)) continue
+      const val = parseFloat(r.value)
+      if (isNaN(val)) continue
+      const day = new Date(log.recorded_at).toISOString().slice(0, 10)
+      if (!byDay[day]) byDay[day] = []
+      byDay[day].push(val)
+    }
+  }
+  return Object.entries(byDay)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([day, vals]) => ({ x: day, y: +(vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(4) }))
+}
+
 export function buildCalendarWeeks(weeks = 52) {
   const today = new Date()
   today.setHours(0, 0, 0, 0)

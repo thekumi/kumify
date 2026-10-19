@@ -22,9 +22,10 @@ import TopBar from '@/components/TopBar.vue'
 import BottomNav from '@/components/BottomNav.vue'
 
 const sections = [
-  { to: '/health/logs',         label: 'Health Logs',    desc: 'Track your vital signs and measurements',    icon: 'ph ph-heartbeat',    bg: 'bg-green-100', iconColor: 'text-green-600' },
-  { to: '/health/medications',  label: 'Medications',    desc: 'Manage your medications and schedules',      icon: 'ph ph-pill',         bg: 'bg-blue-100',  iconColor: 'text-blue-600' },
-  { to: '/health/vaccinations', label: 'Vaccinations',   desc: 'Keep track of your vaccination history',     icon: 'ph ph-syringe',      bg: 'bg-purple-100',iconColor: 'text-purple-600' },
-{ to: '/health/parameters',  label: 'Parameters',     desc: 'Define what you track in health logs',        icon: 'ph ph-chart-line',   bg: 'bg-teal-100',   iconColor: 'text-teal-600' },
+  { to: '/health/logs',         label: 'Health Logs',    desc: 'Track your vital signs and measurements',    icon: 'ph ph-heartbeat',    bg: 'bg-green-100',  iconColor: 'text-green-600' },
+  { to: '/health/stats',        label: 'Statistics',     desc: 'Trends and summaries for your parameters',   icon: 'ph ph-chart-line',   bg: 'bg-emerald-100',iconColor: 'text-emerald-600' },
+  { to: '/health/medications',  label: 'Medications',    desc: 'Manage your medications and schedules',      icon: 'ph ph-pill',         bg: 'bg-blue-100',   iconColor: 'text-blue-600' },
+  { to: '/health/vaccinations', label: 'Vaccinations',   desc: 'Keep track of your vaccination history',     icon: 'ph ph-syringe',      bg: 'bg-purple-100', iconColor: 'text-purple-600' },
+  { to: '/health/parameters',   label: 'Parameters',     desc: 'Define what you track in health logs',       icon: 'ph ph-sliders',      bg: 'bg-teal-100',   iconColor: 'text-teal-600' },
 ]
 </script>

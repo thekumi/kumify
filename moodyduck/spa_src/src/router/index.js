@@ -41,6 +41,7 @@ const routes = [
   { path: '/journal/history/memories', component: () => import('@/views/history/MemoriesView.vue') },
 
   { path: '/health',                     component: () => import('@/views/health/HealthView.vue') },
+  { path: '/health/stats',               component: () => import('@/views/health/HealthStatsView.vue') },
   { path: '/health/logs',                component: () => import('@/views/health/LogsView.vue') },
   { path: '/health/logs/new',            component: () => import('@/views/health/LogFormView.vue') },
   { path: '/health/logs/:id/edit',       component: () => import('@/views/health/LogFormView.vue') },
