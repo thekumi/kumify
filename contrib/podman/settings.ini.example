@@ -5,7 +5,7 @@ Host = moodyduck.example.org
 StaticRoot = /app/data/static
 
 [Redis]
-URL = redis://moodyduck-redis:6379/0
+URL = redis://moodyduck-valkey:6379/0
 
 ; Uncomment to use MySQL instead of SQLite
 ; [MySQL]

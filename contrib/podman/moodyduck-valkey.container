@@ -1,13 +1,13 @@
 [Unit]
-Description=MoodyDuck Redis container
+Description=MoodyDuck Valkey container
 After=network-online.target
 Wants=network-online.target
 
 [Container]
-Image=docker.io/library/redis:7-alpine
-ContainerName=moodyduck-redis
+Image=docker.io/valkey/valkey:8-alpine
+ContainerName=moodyduck-valkey
 Network=moodyduck.network
-Volume=moodyduck-redis-data:/data:Z
+Volume=moodyduck-valkey-data:/data:Z
 
 [Service]
 Restart=always
