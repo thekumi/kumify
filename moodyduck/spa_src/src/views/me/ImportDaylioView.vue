@@ -200,22 +200,39 @@ function mapGoalPeriod(repeatType, repeatValue) {
   return { period: 'weekly', target_count: 1 }
 }
 
-// ZIP parsing — scans local file headers and builds a name → entry map.
+// ZIP parsing — reads the central directory (always has correct sizes, unlike local headers
+// which may have compSz=0 when the data descriptor flag is set by Android ZipOutputStream).
 function buildZipIndex(buffer) {
   const view  = new DataView(buffer)
   const bytes = new Uint8Array(buffer)
+
+  // Find End of Central Directory record by scanning backwards for its signature.
+  let eocd = -1
+  for (let i = bytes.length - 22; i >= 0; i--) {
+    if (view.getUint32(i, true) === 0x06054b50) { eocd = i; break }
+  }
+  if (eocd === -1) throw new Error('Not a valid ZIP file (EOCD not found)')
+
+  const cdOffset = view.getUint32(eocd + 16, true)
+  const cdCount  = view.getUint16(eocd + 10, true)
+
   const index = {}
-  let offset  = 0
-  while (offset + 30 < bytes.length) {
-    if (view.getUint32(offset, true) !== 0x04034b50) break
-    const compression = view.getUint16(offset + 8,  true)
-    const compSz      = view.getUint32(offset + 18, true)
-    const fnLen       = view.getUint16(offset + 26, true)
-    const extraLen    = view.getUint16(offset + 28, true)
-    const filename    = new TextDecoder().decode(bytes.slice(offset + 30, offset + 30 + fnLen))
-    const dataStart   = offset + 30 + fnLen + extraLen
+  let pos = cdOffset
+  for (let i = 0; i < cdCount; i++) {
+    if (view.getUint32(pos, true) !== 0x02014b50) break
+    const compression = view.getUint16(pos + 10, true)
+    const compSz      = view.getUint32(pos + 20, true)
+    const fnLen       = view.getUint16(pos + 28, true)
+    const extraLen    = view.getUint16(pos + 30, true)
+    const commentLen  = view.getUint16(pos + 32, true)
+    const localOff    = view.getUint32(pos + 42, true)
+    const filename    = new TextDecoder().decode(bytes.slice(pos + 46, pos + 46 + fnLen))
+    // Resolve actual data start from local file header (its extra field may differ in length).
+    const lfnLen      = view.getUint16(localOff + 26, true)
+    const lextraLen   = view.getUint16(localOff + 28, true)
+    const dataStart   = localOff + 30 + lfnLen + lextraLen
     index[filename]   = { compression, compSz, dataStart }
-    offset            = dataStart + compSz
+    pos += 46 + fnLen + extraLen + commentLen
   }
   return index
 }
@@ -226,11 +243,12 @@ async function extractZipEntry(buffer, entry) {
   if (entry.compression === 0) return raw
   if (entry.compression === 8) {
     const ds = new DecompressionStream('deflate-raw')
-    const w  = ds.writable.getWriter()
-    const r  = ds.readable.getReader()
-    w.write(raw); w.close()
+    const inputStream = new ReadableStream({
+      start(controller) { controller.enqueue(raw); controller.close() },
+    })
+    const reader = inputStream.pipeThrough(ds).getReader()
     const chunks = []
-    for (;;) { const { done, value } = await r.read(); if (done) break; chunks.push(value) }
+    for (;;) { const { done, value } = await reader.read(); if (done) break; chunks.push(value) }
     const out = new Uint8Array(chunks.reduce((n, c) => n + c.length, 0))
     let p = 0; for (const c of chunks) { out.set(c, p); p += c.length }
     return out
