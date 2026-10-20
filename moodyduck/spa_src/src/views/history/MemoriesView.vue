@@ -3,11 +3,21 @@
         <TopBar title="Memories" :back="true" />
         <!-- Date picker + milestones -->
         <div class="px-4 pt-4 space-y-3">
-            <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
-                <label class="text-sm font-semibold text-stone-500 block mb-2">Browse a date</label>
+            <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-3 flex items-center gap-2">
+                <button type="button"
+                        @click="prevDay"
+                        class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-stone-100 transition-colors shrink-0">
+                    <i class="ph ph-caret-left text-stone-500 text-lg"></i>
+                </button>
                 <input type="date"
                        v-model="selectedDate"
-                       class="w-full text-stone-800 text-sm border border-stone-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-400" />
+                       class="flex-1 text-stone-800 text-sm border border-stone-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-400 text-center" />
+                <button type="button"
+                        @click="nextDay"
+                        :disabled="selectedDate >= todayStr()"
+                        class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-stone-100 transition-colors disabled:opacity-30 shrink-0">
+                    <i class="ph ph-caret-right text-stone-500 text-lg"></i>
+                </button>
             </div>
             <div class="flex flex-wrap gap-2">
                 <button type="button"
@@ -113,6 +123,19 @@ const milestones = computed(() => {
     { label: '5 years ago',  date: offset(today, -5, 0, 0) },
   ].filter(m => m.date < todayStr())
 })
+
+function prevDay() {
+  const d = new Date(selectedDate.value + 'T12:00:00')
+  d.setDate(d.getDate() - 1)
+  selectedDate.value = d.toISOString().slice(0, 10)
+}
+
+function nextDay() {
+  const d = new Date(selectedDate.value + 'T12:00:00')
+  d.setDate(d.getDate() + 1)
+  const next = d.toISOString().slice(0, 10)
+  if (next <= todayStr()) selectedDate.value = next
+}
 
 function offset(base, years, months, days) {
   const d = new Date(base)

@@ -12,14 +12,31 @@
                 <button type="button"
                         v-for="d in [7, 30, 90, 365, 0]"
                         :key="d"
-                        @click="rangeDays = d"
+                        @click="isCustom = false; rangeDays = d"
                         class="flex-1 text-xs py-2 rounded-xl font-medium transition-colors"
-                        :class="rangeDays === d ? 'bg-violet-100 text-violet-700' : 'text-stone-400 hover:text-stone-600'">
+                        :class="!isCustom && rangeDays === d ? 'bg-violet-100 text-violet-700' : 'text-stone-400 hover:text-stone-600'">
                     {{ d === 0 ? 'All' : d + 'd' }}
                 </button>
+                <button type="button"
+                        @click="isCustom = true"
+                        class="flex-1 text-xs py-2 rounded-xl font-medium transition-colors"
+                        :class="isCustom ? 'bg-violet-100 text-violet-700' : 'text-stone-400 hover:text-stone-600'">
+                    Custom
+                </button>
+            </div>
+            <!-- Custom date range picker -->
+            <div v-if="isCustom"
+                 class="bg-white rounded-2xl border border-stone-100 shadow-sm px-3 py-2.5 flex items-center gap-2">
+                <input v-model="customFrom"
+                       type="date"
+                       class="flex-1 text-sm text-stone-700 border border-stone-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-violet-400 bg-stone-50" />
+                <span class="text-xs text-stone-400 shrink-0">to</span>
+                <input v-model="customTo"
+                       type="date"
+                       class="flex-1 text-sm text-stone-700 border border-stone-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-violet-400 bg-stone-50" />
             </div>
             <!-- Time navigation -->
-            <div v-if="rangeDays"
+            <div v-if="rangeDays && !isCustom"
                  class="bg-white rounded-2xl border border-stone-100 shadow-sm px-3 py-2 flex items-center gap-2">
                 <button type="button"
                         @click="goBack"
@@ -251,6 +268,10 @@ const ks = useKeystoreStore()
 const loading = ref(true)
 const rangeDays = ref(30)
 const rangeEnd  = ref(null)
+const isCustom  = ref(false)
+const customFrom = ref('')
+const customTo   = ref(new Date().toISOString().slice(0, 10))
+const loadedFrom = ref(null) // null = not yet loaded; '' = all time; date = loaded from that date
 const calMode = ref('activity')
 
 watch(rangeDays, () => { rangeEnd.value = null })
@@ -304,8 +325,23 @@ const calendarMonthLabels = computed(() => {
 
 // Summary
 
-const filteredStatuses = computed(() => filterByDays(allStatuses.value, rangeDays.value, s => s.timestamp, rangeEnd.value))
-const filteredDreams   = computed(() => filterByDays(allDreams.value, rangeDays.value, d => d.timestamp, rangeEnd.value))
+function customFilter(items, getTs) {
+  if (!customFrom.value || !customTo.value) return items
+  const start = new Date(customFrom.value + 'T00:00:00')
+  const end   = new Date(customTo.value   + 'T23:59:59.999')
+  return items.filter(i => { const t = new Date(getTs(i)); return t >= start && t <= end })
+}
+
+const filteredStatuses = computed(() =>
+  isCustom.value
+    ? customFilter(allStatuses.value, s => s.timestamp)
+    : filterByDays(allStatuses.value, rangeDays.value, s => s.timestamp, rangeEnd.value)
+)
+const filteredDreams = computed(() =>
+  isCustom.value
+    ? customFilter(allDreams.value, d => d.timestamp)
+    : filterByDays(allDreams.value, rangeDays.value, d => d.timestamp, rangeEnd.value)
+)
 
 const totalEntries = computed(() => filteredStatuses.value.length)
 const totalDreams  = computed(() => filteredDreams.value.length)
@@ -510,15 +546,41 @@ const dreamBarOptions = {
 
 // Data loading
 
-async function load() {
+function neededFrom() {
+  if (!isCustom.value && rangeDays.value === 0) return null
+  const today = new Date()
+  const heatmapCutoff = new Date(today)
+  heatmapCutoff.setDate(heatmapCutoff.getDate() - 365)
+  let chartCutoff
+  if (isCustom.value && customFrom.value) {
+    chartCutoff = new Date(customFrom.value + 'T00:00:00')
+  } else {
+    const end = rangeEnd.value ? new Date(rangeEnd.value + 'T23:59:59') : today
+    chartCutoff = new Date(end)
+    chartCutoff.setDate(chartCutoff.getDate() - rangeDays.value)
+  }
+  const from = chartCutoff < heatmapCutoff ? chartCutoff : heatmapCutoff
+  return from.toISOString().slice(0, 10)
+}
+
+function checkAndLoad() {
+  if (!ks.dataKey) return
+  const needed = neededFrom()
+  if (loadedFrom.value === null) { load(needed); return }
+  if (needed === null && loadedFrom.value !== '') { load(null); return }
+  if (needed !== null && loadedFrom.value !== '' && needed < loadedFrom.value) { load(needed); return }
+}
+
+async function load(fromDate) {
   if (!ks.dataKey) return
   loading.value = true
   try {
+    const dateParams = fromDate ? { timestamp_after: fromDate } : undefined
     const [rawStatuses, rawMoods, rawActivities, rawDreams, habitLogs, rawHabitsData, rawProps] = await Promise.all([
-      getAllStatuses(),
+      getAllStatuses(dateParams),
       getMoods(),
       getActivities({ include_hidden: 'true' }),
-      getAllDreams(),
+      getAllDreams(dateParams),
       getAllHabitLogs(),
       getHabits(),
       getProperties().catch(() => []),
@@ -543,11 +605,13 @@ async function load() {
       name: activityMap.value[h.activity_id]?.name ?? h.name ?? '?',
     }))
     allProperties.value = props
+    loadedFrom.value = fromDate ?? ''
   } finally {
     loading.value = false
   }
 }
 
-watch(() => ks.dataKey, (k) => { if (k) load() })
-onMounted(() => { if (ks.dataKey) load() })
+watch(() => ks.dataKey, (k) => { if (k) checkAndLoad() })
+watch([rangeDays, rangeEnd, isCustom, customFrom, customTo], checkAndLoad)
+onMounted(() => { if (ks.dataKey) checkAndLoad() })
 </script>
