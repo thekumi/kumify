@@ -9,6 +9,17 @@
                 <StatCard v-if="stats?.closest_mood" :label="`Avg mood (7d)`" :value="stats.closest_mood.name || '—'" :icon="stats.closest_mood.icon || 'ph ph-smiley'" :icon-color="stats.closest_mood.color" color="bg-sage-50 text-sage-700" />
                 <StatCard v-if="stats?.top_activity" :label="`Top activity (7d)`" :value="stats.top_activity.name || '—'" :sub="`${stats.top_activity.count}×`" :icon="stats.top_activity.icon || 'ph ph-star'" :icon-color="stats.top_activity.color" color="bg-violet-50 text-violet-700" />
             </div>
+            <!-- Apps grid -->
+            <div v-if="appItems.length"
+                 class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
+                <p class="text-xs font-semibold text-stone-400 uppercase tracking-wider mb-3">Apps</p>
+                <div class="grid grid-cols-4 gap-2">
+                    <RouterLink v-for="item in appItems" :key="item.to" :to="item.to" class="flex flex-col items-center gap-1.5 py-3 rounded-xl hover:bg-stone-50 transition-colors">
+                    <i :class="[item.icon, 'text-2xl text-stone-600']"></i>
+                    <span class="text-xs font-medium text-stone-600">{{ item.label }}</span>
+                    </RouterLink>
+                </div>
+            </div>
             <!-- Quick actions -->
             <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
                 <p class="text-xs font-semibold text-stone-400 uppercase tracking-wider mb-3">Quick add</p>
@@ -60,13 +71,16 @@
     </div>
 </template>
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import TopBar from '@/components/TopBar.vue'
 import BottomNav from '@/components/BottomNav.vue'
 import { getDashboard, getStatuses, getMoods, getActivities } from '@/api/mood'
 import { useKeystoreStore } from '@/stores/keystore'
+import { usePluginsStore } from '@/stores/plugins'
 
 const ks = useKeystoreStore()
+const pluginsStore = usePluginsStore()
+const appItems = computed(() => pluginsStore.orderedVisibleNavItems.filter(i => i.to !== '/' && i.to !== '/me'))
 const rawStats = ref(null)
 const stats = ref(null)
 const recent = ref([])

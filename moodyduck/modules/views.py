@@ -6,6 +6,24 @@ from rest_framework.views import APIView
 from .models import Feature, UserFeaturePreference, UserNavOrder
 from .registry import registry
 
+BUILTIN_NAV_ITEMS = {
+    "journal": {"name": "Journal", "icon": "ph ph-book-open", "nav_path": "/journal"},
+    "health": {"name": "Health", "icon": "ph ph-heartbeat", "nav_path": "/health"},
+    "people": {"name": "People", "icon": "ph ph-users", "nav_path": "/people"},
+    "planner": {
+        "name": "Planner",
+        "icon": "ph ph-calendar-dots",
+        "nav_path": "/planner",
+    },
+}
+
+
+def _all_module_cfgs():
+    for slug, cfg in registry.items():
+        yield slug, cfg, cfg.get("bundle_url")
+    for slug, cfg in BUILTIN_NAV_ITEMS.items():
+        yield slug, cfg, None
+
 
 class ModulesListView(APIView):
     def get(self, request):
@@ -20,7 +38,7 @@ class ModulesListView(APIView):
         }
 
         result = []
-        for slug, cfg in registry.items():
+        for slug, cfg, bundle_url in _all_module_cfgs():
             feature = feature_map.get(slug)
             if feature and not feature.is_enabled_for(user):
                 continue
@@ -34,7 +52,7 @@ class ModulesListView(APIView):
                     "name": cfg.get("name", slug),
                     "icon": cfg.get("icon", ""),
                     "nav_path": cfg.get("nav_path", f"/plugins/{slug}"),
-                    "bundle_url": cfg.get("bundle_url"),
+                    "bundle_url": bundle_url,
                     "visible": visible,
                 }
             )
@@ -44,10 +62,10 @@ class ModulesListView(APIView):
 
 class ModulePreferenceView(APIView):
     def patch(self, request, slug):
-        if slug not in registry:
+        if slug not in registry and slug not in BUILTIN_NAV_ITEMS:
             raise NotFound()
 
-        cfg = registry[slug]
+        cfg = registry.get(slug) or BUILTIN_NAV_ITEMS[slug]
         feature, _ = Feature.objects.get_or_create(
             slug=slug,
             defaults={
@@ -98,7 +116,7 @@ class FeatureAdminView(APIView):
 
     def get(self, request):
         result = []
-        for slug, cfg in registry.items():
+        for slug, cfg, _ in _all_module_cfgs():
             feature = Feature.objects.filter(slug=slug).first()
             result.append(
                 {
@@ -112,10 +130,10 @@ class FeatureAdminView(APIView):
         return Response(result)
 
     def patch(self, request, slug):
-        if slug not in registry:
+        if slug not in registry and slug not in BUILTIN_NAV_ITEMS:
             raise NotFound()
 
-        cfg = registry[slug]
+        cfg = registry.get(slug) or BUILTIN_NAV_ITEMS[slug]
         feature, _ = Feature.objects.get_or_create(
             slug=slug,
             defaults={"name": cfg.get("name", slug), "icon": cfg.get("icon", "")},

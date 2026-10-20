@@ -2,12 +2,8 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 export const CORE_TABS = [
-  { to: '/',        label: 'Home',    icon: 'ph ph-house' },
-  { to: '/journal', label: 'Journal', icon: 'ph ph-book-open' },
-  { to: '/health',  label: 'Health',  icon: 'ph ph-heartbeat' },
-  { to: '/people',  label: 'People',  icon: 'ph ph-users' },
-  { to: '/planner', label: 'Planner', icon: 'ph ph-calendar-dots' },
-  { to: '/me',      label: 'Me',      icon: 'ph ph-user-circle' },
+  { to: '/',   label: 'Home', icon: 'ph ph-house' },
+  { to: '/me', label: 'Me',   icon: 'ph ph-user-circle' },
 ]
 
 export const usePluginsStore = defineStore('plugins', () => {

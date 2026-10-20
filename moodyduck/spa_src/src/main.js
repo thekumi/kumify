@@ -88,6 +88,12 @@ async function loadPlugins() {
   pluginsStore.setVisibility(modules)
 
   for (const mod of modules) {
+    if (!mod.bundle_url && mod.nav_path && mod.name) {
+      pluginsStore.addNavItem({ to: mod.nav_path, label: mod.name, icon: mod.icon || '' })
+    }
+  }
+
+  for (const mod of modules) {
     if (!mod.bundle_url) continue
     try {
       const plugin = await import(/* @vite-ignore */ mod.bundle_url)
