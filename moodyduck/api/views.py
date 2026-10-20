@@ -671,6 +671,16 @@ class StatusViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
+    @action(detail=False, methods=["get"], url_path="sources")
+    def sources(self, request):
+        prefix = request.query_params.get("prefix", "")
+        qs = (
+            Status.objects.filter(user=request.user, source__startswith=prefix)
+            .values_list("source", flat=True)
+            .distinct()
+        )
+        return Response(list(qs))
+
     @action(
         detail=True,
         methods=["post"],

@@ -37,6 +37,7 @@ class Status(models.Model):
     mood = models.ForeignKey(Mood, models.SET_NULL, null=True)
     title = models.CharField(max_length=64, null=True, blank=True)
     text = models.TextField(null=True, blank=True)
+    source = models.CharField(max_length=128, null=True, blank=True, db_index=True)
     encrypted_payload = models.JSONField(null=True, blank=True)
 
     @property

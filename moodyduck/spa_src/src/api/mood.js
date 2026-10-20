@@ -25,9 +25,10 @@ export const getAllStatuses   = (params) => {
   return api.getAll(`/statuses/${q}`)
 }
 export const getStatus       = (id)     => api.get(`/statuses/${id}/`)
-export const createStatus    = (d)      => api.post('/statuses/', d)
-export const updateStatus    = (id, d)  => api.patch(`/statuses/${id}/`, d)
-export const deleteStatus    = (id)     => api.delete(`/statuses/${id}/`)
+export const createStatus     = (d)         => api.post('/statuses/', d)
+export const updateStatus     = (id, d)     => api.patch(`/statuses/${id}/`, d)
+export const deleteStatus     = (id)        => api.delete(`/statuses/${id}/`)
+export const getStatusSources = (prefix='') => api.get(`/statuses/sources/?prefix=${encodeURIComponent(prefix)}`)
 
 export const getDashboard    = ()       => api.get('/stats/dashboard/')
 

@@ -4,7 +4,13 @@
         <div class="px-4 py-4 space-y-4">
             <!-- pick -->
             <template v-if="stage === 'pick'">
-                <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-5 space-y-4">
+                <div v-if="mapLoading"
+                     class="flex items-center justify-center gap-3 py-12">
+                    <div class="w-5 h-5 border-2 border-stone-200 border-t-clay-600 rounded-full animate-spin shrink-0"></div>
+                    <p class="text-sm text-stone-500">Analysing file…</p>
+                </div>
+                <div v-else
+                     class="bg-white rounded-2xl border border-stone-100 shadow-sm p-5 space-y-4">
                     <p class="text-sm text-stone-500">
                         Import from a Daylio
                         <code class="bg-stone-100 px-1 rounded text-xs">.daylio</code>
@@ -23,6 +29,73 @@
                 <p v-if="parseError"
                    class="text-sm text-red-600 bg-red-50 rounded-xl px-4 py-3">{{ parseError }}</p>
             </template>
+            <!-- map -->
+            <template v-if="stage === 'map'">
+                <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4 grid grid-cols-2 gap-3 text-center">
+                    <div>
+                        <p class="text-2xl font-bold text-stone-800">{{ mappedMoods.filter(m => m.matchId != null).length }}</p>
+                        <p class="text-xs text-stone-400">Moods matched</p>
+                    </div>
+                    <div>
+                        <p class="text-2xl font-bold text-clay-600">{{ mappedMoods.filter(m => m.matchId == null).length }}</p>
+                        <p class="text-xs text-stone-400">Moods new</p>
+                    </div>
+                    <div>
+                        <p class="text-2xl font-bold text-stone-800">{{ mappedActivities.filter(a => a.matchId != null).length }}</p>
+                        <p class="text-xs text-stone-400">Activities matched</p>
+                    </div>
+                    <div>
+                        <p class="text-2xl font-bold text-clay-600">{{ mappedActivities.filter(a => a.matchId == null).length }}</p>
+                        <p class="text-xs text-stone-400">Activities new</p>
+                    </div>
+                </div>
+                <div>
+                    <p class="text-xs font-semibold text-stone-400 uppercase tracking-wider px-1 mb-2">Moods</p>
+                    <div class="bg-white rounded-2xl border border-stone-100 shadow-sm overflow-hidden divide-y divide-stone-50">
+                        <div v-for="m in mappedMoods"
+                             :key="m.daylio.id"
+                             class="flex items-center gap-3 px-4 py-3">
+                            <div class="w-3 h-3 rounded-full shrink-0"
+                                 :style="`background:${m.daylio.color}`"></div>
+                            <p class="flex-1 text-sm font-medium text-stone-700">{{ m.daylio.name }}</p>
+                            <i :class="m.matchId != null ? 'ph ph-check text-green-500' : 'ph ph-plus text-stone-300'"
+                               class="text-sm shrink-0"></i>
+                            <select v-model="m.matchId"
+                                    class="text-sm border border-stone-200 rounded-lg px-2 py-1.5 bg-white text-stone-700 max-w-[160px]">
+                                <option :value="null">Create new</option>
+                                <option v-for="em in existingMoods" :key="em.id" :value="em.id">{{ em.name }}</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <p class="text-xs font-semibold text-stone-400 uppercase tracking-wider px-1 mb-2">Activities</p>
+                    <div class="bg-white rounded-2xl border border-stone-100 shadow-sm overflow-hidden divide-y divide-stone-50">
+                        <div v-for="a in mappedActivities"
+                             :key="a.daylio.id"
+                             class="flex items-center gap-3 px-4 py-3">
+                            <p class="flex-1 text-sm font-medium text-stone-700">{{ a.daylio.name }}</p>
+                            <i :class="a.matchId != null ? 'ph ph-check text-green-500' : 'ph ph-plus text-stone-300'"
+                               class="text-sm shrink-0"></i>
+                            <select v-model="a.matchId"
+                                    class="text-sm border border-stone-200 rounded-lg px-2 py-1.5 bg-white text-stone-700 max-w-[160px]">
+                                <option :value="null">Create new</option>
+                                <option v-for="ea in existingActivities"
+                                        :key="ea.id"
+                                        :value="ea.id">{{ ea.name }}</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <button @click="confirmMapping"
+                        class="w-full py-3.5 bg-clay-600 hover:bg-clay-700 text-white font-semibold rounded-xl transition-colors">
+                    Continue
+                </button>
+                <button @click="resetPick"
+                        class="w-full py-2.5 text-sm text-stone-500 hover:text-stone-700 transition-colors">
+                    Choose a different file
+                </button>
+            </template>
             <!-- preview -->
             <template v-if="stage === 'preview'">
                 <div class="bg-white rounded-2xl border border-stone-100 shadow-sm overflow-hidden divide-y divide-stone-50">
@@ -34,13 +107,14 @@
                         <p class="text-sm font-semibold text-stone-800">{{ totals[s.key] }}</p>
                     </div>
                 </div>
-                <p class="text-xs text-stone-400 px-1">
-                    Moods, categories, activities, scales, and goals with matching names won't be duplicated.
-                    Entries are always created — don't import the same backup twice.
-                </p>
+                <p class="text-xs text-stone-400 px-1">Mappings confirmed. Already-imported entries will be skipped automatically.</p>
                 <button @click="startImport"
                         class="w-full py-3.5 bg-clay-600 hover:bg-clay-700 text-white font-semibold rounded-xl transition-colors">
                     Start import
+                </button>
+                <button @click="stage = 'map'"
+                        class="w-full py-2.5 text-sm text-stone-500 hover:text-stone-700 transition-colors">
+                    Back to mapping
                 </button>
                 <button @click="resetPick"
                         class="w-full py-2.5 text-sm text-stone-500 hover:text-stone-700 transition-colors">
@@ -118,7 +192,7 @@ import {
   getMoods, createMood,
   getActivityCategories, createActivityCategory,
   getActivities, createActivity,
-  createStatus,
+  createStatus, getStatusSources,
 } from '@/api/mood'
 import { getProperties, createProperty } from '@/api/properties'
 import { getHabits, createHabit } from '@/api/habits'
@@ -153,16 +227,21 @@ const ZERO = () => ({ moods: 0, categories: 0, activities: 0, scales: 0, goals: 
 
 const ks = useKeystoreStore()
 
-const stage       = ref('pick')
-const fileInput   = ref(null)
-const parseError  = ref('')
-const parsed      = ref(null)
-const zipBuffer   = ref(null)
-const zipIdx      = ref(null)
-const totals      = ref(ZERO())
-const progress    = ref(ZERO())
-const importError = ref('')
-const results     = ref(null)
+const stage              = ref('pick')
+const fileInput          = ref(null)
+const parseError         = ref('')
+const mapLoading         = ref(false)
+const parsed             = ref(null)
+const zipBuffer          = ref(null)
+const zipIdx             = ref(null)
+const existingMoods      = ref([])
+const existingActivities = ref([])
+const mappedMoods        = ref([])
+const mappedActivities   = ref([])
+const totals             = ref(ZERO())
+const progress           = ref(ZERO())
+const importError        = ref('')
+const results            = ref(null)
 
 const activeSteps = computed(() => STEPS.filter(s => totals.value[s.key] > 0))
 
@@ -184,6 +263,11 @@ function resetPick() {
   parseError.value = ''
   importError.value = ''
   results.value = null
+  existingMoods.value = []
+  existingActivities.value = []
+  mappedMoods.value = []
+  mappedActivities.value = []
+  mapLoading.value = false
   if (fileInput.value) fileInput.value.value = ''
 }
 
@@ -275,6 +359,7 @@ async function onFileChange(e) {
   const file = e.target.files[0]
   if (!file) return
   parseError.value = ''
+  mapLoading.value = true
   try {
     const { data, buffer, index } = await parseDaylioFile(file)
     if (!Array.isArray(data.dayEntries) || !Array.isArray(data.customMoods)) {
@@ -283,19 +368,48 @@ async function onFileChange(e) {
     parsed.value    = data
     zipBuffer.value = buffer
     zipIdx.value    = index
-    totals.value = {
-      moods:       data.customMoods.filter(m => m.state === 0).length,
-      categories:  (data.tag_groups ?? []).length,
-      activities:  data.tags.filter(t => t.state === 0).length,
-      scales:      (data.scales ?? []).filter(s => s.state === 0).length,
-      goals:       (data.goals ?? []).filter(g => g.state === 0).length,
-      entries:     data.dayEntries.length,
-      attachments: index !== null ? (data.assets?.length ?? 0) : 0,
-    }
-    stage.value = 'preview'
+
+    const [rawM, rawA] = await Promise.all([getMoods(), getActivities({ include_hidden: 'true' })])
+    const [exMoods, exActs] = await Promise.all([ks.decryptAll(rawM), ks.decryptAll(rawA)])
+    existingMoods.value      = exMoods
+    existingActivities.value = exActs
+
+    mappedMoods.value = data.customMoods
+      .filter(dm => dm.state === 0)
+      .map(dm => {
+        const pre   = PREDEFINED_MOODS[dm.predefined_name_id] ?? { name: 'Unknown', color: '#888888', value: '128' }
+        const name  = dm.custom_name || pre.name
+        const match = exMoods.find(m => m.name?.toLowerCase() === name.toLowerCase())
+        return { daylio: { id: dm.id, name, color: pre.color, value: pre.value }, matchId: match?.id ?? null }
+      })
+
+    mappedActivities.value = data.tags
+      .filter(t => t.state === 0)
+      .map(tag => {
+        const match = exActs.find(a => a.name?.toLowerCase() === tag.name.toLowerCase())
+        return { daylio: { id: tag.id, name: tag.name, groupId: tag.id_tag_group }, matchId: match?.id ?? null }
+      })
+
+    stage.value = 'map'
   } catch (err) {
     parseError.value = err.message || 'Could not read the file.'
+  } finally {
+    mapLoading.value = false
   }
+}
+
+function confirmMapping() {
+  const data = parsed.value
+  totals.value = {
+    moods:       mappedMoods.value.length,
+    categories:  (data.tag_groups ?? []).length,
+    activities:  mappedActivities.value.length,
+    scales:      (data.scales ?? []).filter(s => s.state === 0).length,
+    goals:       (data.goals ?? []).filter(g => g.state === 0).length,
+    entries:     data.dayEntries.length,
+    attachments: zipIdx.value !== null ? (data.assets?.length ?? 0) : 0,
+  }
+  stage.value = 'preview'
 }
 
 async function startImport() {
@@ -311,33 +425,27 @@ async function startImport() {
   const data    = parsed.value
 
   try {
-    const [rawM, rawC, rawA, rawP, rawH] = await Promise.all([
-      getMoods(),
+    const [rawC, rawP, rawH] = await Promise.all([
       getActivityCategories(),
-      getActivities({ include_hidden: 'true' }),
       getProperties(),
       getHabits(),
     ])
-    const [exMoods, exCats, exActs, exProps, exHabits] = await Promise.all([
-      ks.decryptAll(rawM),
+    const [exCats, exProps, exHabits] = await Promise.all([
       ks.decryptAll(rawC),
-      ks.decryptAll(rawA),
       ks.decryptAll(rawP),
       ks.decryptAll(rawH),
     ])
 
-    // 1. Moods
+    // 1. Moods — use confirmed mapping from map stage
     const moodIdMap = {}
-    for (const dm of data.customMoods) {
-      if (dm.state !== 0) continue
-      const pre  = PREDEFINED_MOODS[dm.predefined_name_id] ?? { name: 'Unknown', color: '#888888', value: '128' }
-      const name = dm.custom_name || pre.name
-      const ex   = exMoods.find(m => m.name === name)
-      if (ex) {
-        moodIdMap[dm.id] = ex.id; skipped.moods++
+    for (const m of mappedMoods.value) {
+      if (m.matchId != null) {
+        moodIdMap[m.daylio.id] = m.matchId
+        skipped.moods++
       } else {
-        const m = await createMood({ encrypted_payload: await ks.encryptPayload({ name, icon: 'ph ph-smiley', color: pre.color, value: pre.value }) })
-        moodIdMap[dm.id] = m.id; created.moods++
+        const nm = await createMood({ encrypted_payload: await ks.encryptPayload({ name: m.daylio.name, icon: 'ph ph-smiley', color: m.daylio.color, value: m.daylio.value }) })
+        moodIdMap[m.daylio.id] = nm.id
+        created.moods++
       }
       progress.value.moods++
     }
@@ -355,19 +463,19 @@ async function startImport() {
       progress.value.categories++
     }
 
-    // 3. Activities
+    // 3. Activities — use confirmed mapping from map stage
     const activityIdMap = {}
-    for (const tag of data.tags) {
-      if (tag.state !== 0) continue
-      const ex = exActs.find(a => a.name === tag.name)
-      if (ex) {
-        activityIdMap[tag.id] = ex.id; skipped.activities++
+    for (const a of mappedActivities.value) {
+      if (a.matchId != null) {
+        activityIdMap[a.daylio.id] = a.matchId
+        skipped.activities++
       } else {
-        const payload = { encrypted_payload: await ks.encryptPayload({ name: tag.name, icon: 'ph ph-circle' }) }
-        const catId = categoryIdMap[tag.id_tag_group] ?? null
+        const payload = { encrypted_payload: await ks.encryptPayload({ name: a.daylio.name, icon: 'ph ph-circle' }) }
+        const catId = categoryIdMap[a.daylio.groupId] ?? null
         if (catId != null) payload.category = catId
-        const a = await createActivity(payload)
-        activityIdMap[tag.id] = a.id; created.activities++
+        const act = await createActivity(payload)
+        activityIdMap[a.daylio.id] = act.id
+        created.activities++
       }
       progress.value.activities++
     }
@@ -405,12 +513,18 @@ async function startImport() {
     }
 
     // 6. Entries
-    // Build asset lookup: id → asset record
+    const importedSources = new Set(await getStatusSources('daylio:'))
     const assetById = Object.fromEntries((data.assets ?? []).map(a => [a.id, a]))
-    // Collect entries that need attachment uploads
     const pendingAttachments = []
 
     for (const entry of data.dayEntries) {
+      const source = `daylio:${entry.datetime}`
+      if (importedSources.has(source)) {
+        skipped.entries++
+        progress.value.entries++
+        continue
+      }
+
       const moodId = moodIdMap[entry.mood]
       const actIds = (entry.tags ?? []).filter(t => activityIdMap[t] != null).map(t => activityIdMap[t])
       const toEncrypt = {}
@@ -418,7 +532,6 @@ async function startImport() {
       if (actIds.length)   toEncrypt.activity_ids = JSON.stringify(actIds)
       if (entry.note)      toEncrypt.text          = entry.note
 
-      // Scale values → custom properties
       if ((entry.scaleValues ?? []).length) {
         const props = {}
         for (const sv of entry.scaleValues) {
@@ -431,6 +544,7 @@ async function startImport() {
       const status = await createStatus({
         encrypted_payload: await ks.encryptPayload(toEncrypt),
         timestamp: new Date(entry.datetime).toISOString(),
+        source,
       })
       created.entries++
       progress.value.entries++

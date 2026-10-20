@@ -139,6 +139,7 @@ class StatusSerializer(serializers.ModelSerializer):
             "mood",
             "title",
             "text",
+            "source",
             "encrypted_payload",
             "timestamp",
             "activities",
@@ -149,6 +150,7 @@ class StatusSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             "title": {"required": False, "allow_null": True, "allow_blank": True},
             "text": {"required": False, "allow_null": True, "allow_blank": True},
+            "source": {"required": False, "allow_null": True, "allow_blank": True},
         }
 
     def __init__(self, *args, **kwargs):
