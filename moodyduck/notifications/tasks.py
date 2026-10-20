@@ -69,25 +69,34 @@ def send_push_to_user(user, payload: dict) -> None:
 
 @shared_task
 def send_scheduled_notifications():
-    """Send wake-up push to users whose reminder time has just passed."""
+    """Send wake-up push to users for each configured reminder time."""
     now = timezone.localtime()
-    current_time = now.time().replace(second=0, microsecond=0)
-    today = now.date()
+    current_minute = now.hour * 60 + now.minute
+    today_str = str(now.date())
 
     for ns in NotificationSettings.objects.filter(daily_reminder=True).select_related(
         "user"
     ):
-        reminder = ns.daily_reminder_time.replace(second=0, microsecond=0)
-        delta = (current_time.hour * 60 + current_time.minute) - (
-            reminder.hour * 60 + reminder.minute
-        )
-        if not (0 <= delta < 15):
+        times = ns.daily_reminder_times or []
+        if not times:
             continue
-        if ns.last_daily_sent == today:
-            continue
-
-        send_push_to_user(
-            ns.user, {"title": "MoodyDuck", "body": "Time to log your mood!"}
-        )
-        ns.last_daily_sent = today
-        ns.save(update_fields=["last_daily_sent"])
+        sent_today = set((ns.daily_reminder_sent or {}).get(today_str, []))
+        fired = False
+        for time_str in times:
+            if time_str in sent_today:
+                continue
+            try:
+                h, m = map(int, time_str.split(":"))
+            except (ValueError, AttributeError):
+                continue
+            delta = current_minute - (h * 60 + m)
+            if not (0 <= delta < 15):
+                continue
+            send_push_to_user(
+                ns.user, {"title": "MoodyDuck", "body": "Time to log your mood!"}
+            )
+            sent_today.add(time_str)
+            fired = True
+        if fired:
+            ns.daily_reminder_sent = {today_str: list(sent_today)}
+            ns.save(update_fields=["daily_reminder_sent"])

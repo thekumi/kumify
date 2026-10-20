@@ -59,7 +59,10 @@ self.addEventListener('push', event => {
         icon: '/static/spa/icons/icon.svg',
         badge: '/static/spa/icons/icon.svg',
         tag: 'moodyduck-reminder',
-        data: { url: '/' },
+        actions: [
+          { action: 'log', title: 'Log mood' },
+        ],
+        data: { url: '/', actionUrls: { log: '/mood/new' } },
       })
     })()
   )
@@ -67,7 +70,8 @@ self.addEventListener('push', event => {
 
 self.addEventListener('notificationclick', event => {
   event.notification.close()
-  const url = event.notification.data?.url ?? '/'
+  const data = event.notification.data ?? {}
+  const url = (event.action && data.actionUrls?.[event.action]) ?? data.url ?? '/'
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(windowClients => {
       const existing = windowClients.find(c => 'focus' in c)

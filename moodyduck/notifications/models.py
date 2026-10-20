@@ -39,10 +39,11 @@ class NotificationSettings(models.Model):
         related_name="notification_settings",
     )
     daily_reminder = models.BooleanField(default=False)
-    # Stored as "HH:MM" in the user's local time (best-effort; server uses UTC)
-    daily_reminder_time = models.TimeField(default="20:00")
+    # List of "HH:MM" strings in the user's local time (best-effort; server uses UTC)
+    daily_reminder_times = models.JSONField(default=list, blank=True)
     habits_reminder = models.BooleanField(default=False)
-    last_daily_sent = models.DateField(null=True, blank=True)
+    # {date_str: [sent_time_strs]} — tracks which times already fired today
+    daily_reminder_sent = models.JSONField(default=dict, blank=True)
 
     class Meta:
         verbose_name_plural = "notification settings"

@@ -653,7 +653,7 @@ class PushSubscriptionSerializer(serializers.ModelSerializer):
 class NotificationSettingsSerializer(serializers.ModelSerializer):
     class Meta:
         model = NotificationSettings
-        fields = ["daily_reminder", "daily_reminder_time", "habits_reminder"]
+        fields = ["daily_reminder", "daily_reminder_times", "habits_reminder"]
 
 
 class ErrorLogSerializer(serializers.ModelSerializer):

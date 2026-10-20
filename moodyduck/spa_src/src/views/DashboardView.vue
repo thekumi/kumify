@@ -100,6 +100,10 @@ async function applyDecryption() {
   ])
   const moodMap = Object.fromEntries(decryptedMoods.map(m => [m.id, m]))
   const activityMap = Object.fromEntries(decryptedActivities.map(a => [a.id, a]))
+  if (window.Android?.cacheMoods) {
+    const sorted = [...decryptedMoods].sort((a, b) => (Number(b.value) || 0) - (Number(a.value) || 0))
+    window.Android.cacheMoods(JSON.stringify(sorted.map(m => ({ id: m.id, name: m.name || '' }))))
+  }
 
   recent.value = decryptedStatuses.slice(0, 5).map(st => ({
     ...st,

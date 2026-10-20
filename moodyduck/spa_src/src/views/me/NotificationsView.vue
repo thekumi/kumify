@@ -22,11 +22,27 @@
                               :class="form.daily_reminder ? 'translate-x-5' : 'translate-x-0'"></span>
                     </button>
                 </div>
-                <div v-if="form.daily_reminder" class="flex items-center gap-3 pt-1">
-                    <i class="ph ph-clock text-stone-400 text-lg shrink-0"></i>
-                    <input v-model="form.daily_reminder_time"
-                           type="time"
-                           class="flex-1 text-sm text-stone-700 border-0 outline-none bg-transparent" />
+                <div v-if="form.daily_reminder" class="space-y-2 pt-1">
+                    <div v-for="(t, i) in form.daily_reminder_times"
+                         :key="i"
+                         class="flex items-center gap-2">
+                        <i class="ph ph-clock text-stone-400 text-lg shrink-0"></i>
+                        <input :value="t"
+                               @change="updateTime(i, $event.target.value)"
+                               type="time"
+                               class="flex-1 text-sm text-stone-700 border border-stone-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-clay-400" />
+                        <button type="button"
+                                @click="removeTime(i)"
+                                :disabled="form.daily_reminder_times.length <= 1"
+                                class="w-7 h-7 flex items-center justify-center rounded-full hover:bg-red-50 text-stone-300 hover:text-red-400 transition-colors disabled:opacity-30 shrink-0">
+                            <i class="ph ph-minus-circle text-lg"></i>
+                        </button>
+                    </div>
+                    <button type="button"
+                            @click="addTime"
+                            class="flex items-center gap-1.5 text-sm text-clay-600 hover:text-clay-700 font-medium transition-colors pl-7">
+                        <i class="ph ph-plus-circle"></i> Add time
+                    </button>
                 </div>
             </div>
             <!-- Habits reminder -->
@@ -130,7 +146,7 @@ import { syncAndroidContacts, CONTACTS_ENABLED_KEY } from '@/androidContacts'
 const ks = useKeystoreStore()
 const isAndroid = !!window.Android
 
-const form = ref({ daily_reminder: false, daily_reminder_time: '20:00', habits_reminder: false })
+const form = ref({ daily_reminder: false, daily_reminder_times: ['20:00'], habits_reminder: false })
 const contactsEnabled = ref(localStorage.getItem(CONTACTS_ENABLED_KEY) === '1')
 const permissionState = ref(typeof Notification !== 'undefined' ? Notification.permission : 'default')
 const subscribed = ref(false)
@@ -160,9 +176,41 @@ async function save() {
 
 async function toggleDaily() {
   form.value.daily_reminder = !form.value.daily_reminder
-  if (form.value.daily_reminder && !subscribed.value) {
+  if (form.value.daily_reminder && !subscribed.value && !isAndroid) {
     await subscribe()
   }
+  syncAndroidCheckIns()
+}
+
+function addTime() {
+  form.value.daily_reminder_times = [...form.value.daily_reminder_times, '20:00']
+  syncAndroidCheckIns()
+}
+
+function removeTime(i) {
+  if (form.value.daily_reminder_times.length <= 1) return
+  form.value.daily_reminder_times = form.value.daily_reminder_times.filter((_, idx) => idx !== i)
+  syncAndroidCheckIns()
+}
+
+function updateTime(i, value) {
+  const times = [...form.value.daily_reminder_times]
+  times[i] = value
+  form.value.daily_reminder_times = times
+  syncAndroidCheckIns()
+}
+
+function syncAndroidCheckIns() {
+  if (!window.Android?.scheduleDailyCheckIns) return
+  if (!form.value.daily_reminder) {
+    window.Android.cancelDailyCheckIns?.()
+    return
+  }
+  const payload = form.value.daily_reminder_times.map(t => {
+    const [h, m] = t.split(':').map(Number)
+    return { hour: h, minute: m }
+  })
+  window.Android.scheduleDailyCheckIns(JSON.stringify(payload))
 }
 
 function urlBase64ToUint8Array(base64String) {
@@ -273,7 +321,13 @@ onMounted(async () => {
     getNotificationSettings().catch(() => null),
     getPushSubscriptions().catch(() => []),
   ])
-  if (settings) form.value = settings
+  if (settings) {
+    form.value = {
+      ...settings,
+      daily_reminder_times: settings.daily_reminder_times?.length ? settings.daily_reminder_times : ['20:00'],
+    }
+  }
+  syncAndroidCheckIns()
 
   // Check if this device already has a subscription registered
   const reg = await navigator.serviceWorker.getRegistration().catch(() => null)

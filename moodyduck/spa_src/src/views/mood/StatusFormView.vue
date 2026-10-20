@@ -314,6 +314,8 @@ async function applyDecryption() {
     )
     form.value.properties = (s.properties && typeof s.properties === 'object') ? s.properties : {}
     form.value.timestamp = rawStatus.timestamp ? toLocalDatetime(rawStatus.timestamp) : localNow()
+  } else if (!isEdit && route.query.mood) {
+    form.value.mood = Number(route.query.mood)
   }
 }
 
