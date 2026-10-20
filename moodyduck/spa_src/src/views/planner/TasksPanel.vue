@@ -52,6 +52,9 @@
                            :class="task.done ? 'line-through text-stone-400' : ''">{{ task.title || '(task)' }}</p>
                         <p v-if="task.due_date" class="text-xs text-stone-400 mt-0.5">{{ task.due_date }}</p>
                     </div>
+                    <i v-if="!task.virtual && PRIORITY_INDICATOR[task.priority]"
+                       :class="[PRIORITY_INDICATOR[task.priority].icon, 'text-sm shrink-0']"
+                       :style="{ color: PRIORITY_INDICATOR[task.priority].color }"></i>
                     <span v-if="task.virtual" class="text-xs text-stone-300 italic shrink-0">auto</span>
                     <template v-else>
                         <button @click="openEdit(task)"
@@ -77,6 +80,16 @@
                            type="text"
                            placeholder="Task name"
                            class="w-full px-3 py-2.5 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-violet-400 text-stone-800 bg-stone-50 text-sm" />
+                    <div class="flex gap-1.5">
+                        <button v-for="p in PRIORITIES"
+                                :key="p.value"
+                                type="button"
+                                @click="newTaskPriority = p.value"
+                                class="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                                :class="newTaskPriority === p.value ? p.activeClass : 'bg-stone-100 text-stone-400'">
+                            <i :class="p.icon" class="text-xs"></i>{{ p.label }}
+                        </button>
+                    </div>
                     <div class="flex gap-2">
                         <input v-model="newTaskReminder"
                                type="datetime-local"
@@ -100,6 +113,19 @@
                        type="text"
                        placeholder="Task name"
                        class="w-full px-3 py-2.5 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-violet-400 text-stone-800 bg-stone-50 text-sm" />
+                <div>
+                    <label class="text-xs text-stone-500 font-medium block mb-1">Priority</label>
+                    <div class="flex gap-1.5">
+                        <button v-for="p in PRIORITIES"
+                                :key="p.value"
+                                type="button"
+                                @click="editTaskPriority = p.value"
+                                class="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                                :class="editTaskPriority === p.value ? p.activeClass : 'bg-stone-100 text-stone-400'">
+                            <i :class="p.icon" class="text-xs"></i>{{ p.label }}
+                        </button>
+                    </div>
+                </div>
                 <div>
                     <label class="text-xs text-stone-500 font-medium block mb-1">Reminder</label>
                     <input v-model="editTaskReminder"
@@ -134,6 +160,22 @@ const props = defineProps({
 
 const ks = useKeystoreStore()
 
+const PRIORITIES = [
+  { value: 0, label: 'None',   icon: 'ph ph-minus',     activeClass: 'bg-stone-200 text-stone-600' },
+  { value: 1, label: 'Low',    icon: 'ph ph-flag',       activeClass: 'bg-blue-100 text-blue-600'   },
+  { value: 2, label: 'Medium', icon: 'ph ph-flag',       activeClass: 'bg-amber-100 text-amber-600' },
+  { value: 3, label: 'High',   icon: 'ph ph-flag-fill',  activeClass: 'bg-red-100 text-red-600'     },
+]
+const PRIORITY_INDICATOR = {
+  1: { icon: 'ph ph-flag',      color: '#93c5fd' },
+  2: { icon: 'ph ph-flag',      color: '#fbbf24' },
+  3: { icon: 'ph ph-flag-fill', color: '#ef4444' },
+}
+
+function sortedTasks(arr) {
+  return [...arr].sort((a, b) => (b.priority || 0) - (a.priority || 0))
+}
+
 const visibleLists = computed(() => props.taskLists.filter(l => l.is_visible))
 const selectedList = ref(null)
 const tasks = ref([])
@@ -141,11 +183,13 @@ const loadingTasks = ref(false)
 const showAddTask = ref(false)
 const newTaskTitle = ref('')
 const newTaskReminder = ref('')
+const newTaskPriority = ref(0)
 const newTaskInput = ref(null)
 
 const editingTask = ref(null)
 const editTaskTitle = ref('')
 const editTaskReminder = ref('')
+const editTaskPriority = ref(0)
 const savingEdit = ref(false)
 
 watch(visibleLists, (lists) => {
@@ -179,7 +223,7 @@ async function loadTasksForList() {
       tasks.value = fn ? await fn(ks).catch(() => []) : []
     } else {
       const raw = await getTasks({ task_list: list.id })
-      tasks.value = await ks.decryptAll(raw)
+      tasks.value = sortedTasks(await ks.decryptAll(raw))
     }
   } finally {
     loadingTasks.value = false
@@ -200,12 +244,14 @@ async function addTask() {
   if (!newTaskTitle.value.trim() || !selectedList.value) return
   const title = newTaskTitle.value.trim()
   const reminder_at = newTaskReminder.value ? new Date(newTaskReminder.value).toISOString() : null
-  const encrypted_payload = await ks.encryptPayload({ title })
+  const payload = { title }
+  if (newTaskPriority.value > 0) payload.priority = newTaskPriority.value
+  const encrypted_payload = await ks.encryptPayload(payload)
   const body = { task_list: selectedList.value.id, encrypted_payload }
   if (reminder_at) body.reminder_at = reminder_at
   const raw = await createTask(body)
   const dec = await ks.decrypt(raw)
-  tasks.value = [...tasks.value, dec]
+  tasks.value = sortedTasks([...tasks.value, dec])
   if (reminder_at) {
     scheduleReminder(raw, title)
     if (window.Android?.canScheduleExactAlarms?.() === false) {
@@ -216,6 +262,7 @@ async function addTask() {
   }
   newTaskTitle.value = ''
   newTaskReminder.value = ''
+  newTaskPriority.value = 0
   showAddTask.value = false
 }
 
@@ -225,12 +272,14 @@ function openEdit(task) {
   editTaskReminder.value = task.reminder_at
     ? new Date(task.reminder_at).toISOString().slice(0, 16)
     : ''
+  editTaskPriority.value = task.priority || 0
 }
 
 function closeEdit() {
   editingTask.value = null
   editTaskTitle.value = ''
   editTaskReminder.value = ''
+  editTaskPriority.value = 0
 }
 
 async function saveEdit() {
@@ -238,14 +287,15 @@ async function saveEdit() {
   savingEdit.value = true
   try {
     const title = editTaskTitle.value.trim()
-    const encrypted_payload = await ks.encryptPayload({ title })
+    const payload = { title, priority: editTaskPriority.value || undefined }
+    const encrypted_payload = await ks.encryptPayload(payload)
     const reminder_at = editTaskReminder.value
       ? new Date(editTaskReminder.value).toISOString()
       : null
     const body = { encrypted_payload, reminder_at }
     const raw = await updateTask(editingTask.value.id, body)
     const dec = await ks.decrypt(raw)
-    tasks.value = tasks.value.map(t => t.id === editingTask.value.id ? dec : t)
+    tasks.value = sortedTasks(tasks.value.map(t => t.id === editingTask.value.id ? dec : t))
     if (reminder_at) scheduleReminder(raw, title)
     else cancelReminder(editingTask.value.id)
     closeEdit()
