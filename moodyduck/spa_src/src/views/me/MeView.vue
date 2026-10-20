@@ -72,6 +72,7 @@ const links = [
   { to: '/me/modules',           label: 'Navigation',         icon: 'ph ph-navigation-arrow',    bg: 'bg-teal-100',    color: 'text-teal-600' },
   { to: '/people',               label: 'People',             icon: 'ph ph-users',               bg: 'bg-violet-100',  color: 'text-violet-600' },
   { to: '/planner/settings',     label: 'Planner',            icon: 'ph ph-calendar-dots',       bg: 'bg-indigo-100',  color: 'text-indigo-600' },
+  { to: '/me/import/daylio',   label: 'Import from Daylio', icon: 'ph ph-download-simple',     bg: 'bg-orange-100',  color: 'text-orange-600' },
 ]
 
 function handleLogout() {

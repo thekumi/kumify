@@ -75,6 +75,7 @@ const routes = [
   { path: '/me/modules',        component: () => import('@/views/me/ModulesView.vue') },
   { path: '/me/module-admin',   component: () => import('@/views/me/ModuleAdminView.vue') },
   { path: '/me/error-log',      component: () => import('@/views/me/ErrorLogView.vue') },
+  { path: '/me/import/daylio',  component: () => import('@/views/me/ImportDaylioView.vue') },
 ]
 
 const router = createRouter({
