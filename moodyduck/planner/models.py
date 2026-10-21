@@ -59,6 +59,18 @@ class TaskList(models.Model):
         return str(self.pk)
 
 
+class Medication(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
+    user = models.ForeignKey(User, models.CASCADE, related_name="medications")
+    encrypted_payload = models.JSONField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["pk"]
+
+    def __str__(self):
+        return str(self.pk)
+
+
 class Task(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
     task_list = models.ForeignKey(TaskList, models.CASCADE, related_name="tasks")

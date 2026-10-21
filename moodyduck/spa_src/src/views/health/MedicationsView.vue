@@ -28,10 +28,12 @@
                 </div>
                 <div class="flex-1 min-w-0">
                     <p class="font-medium text-stone-800 truncate">{{ m.name || '—' }}</p>
-                    <div class="flex gap-2 mt-0.5">
+                    <div class="flex items-center gap-2 mt-0.5 flex-wrap">
                         <span v-if="m.prn"
                               class="text-xs px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded-md font-medium">PRN</span>
-                        <span v-if="m.supply != null" class="text-xs text-stone-400">Supply: {{ m.supply }}</span>
+                        <span v-else-if="scheduleLabel(m)"
+                              class="text-xs text-stone-400 truncate">{{ scheduleLabel(m) }}</span>
+                        <span v-if="m.dosage" class="text-xs text-stone-400">· {{ m.dosage }}</span>
                     </div>
                 </div>
                 <RouterLink :to="`/health/medications/${m.id}/edit`" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-stone-100 transition-colors shrink-0">
@@ -49,10 +51,29 @@ import BottomNav from '@/components/BottomNav.vue'
 import { getMedications } from '@/api/health'
 import { useKeystoreStore } from '@/stores/keystore'
 
+const DAY_NAMES = { MO: 'Mon', TU: 'Tue', WE: 'Wed', TH: 'Thu', FR: 'Fri', SA: 'Sat', SU: 'Sun' }
+
 const ks = useKeystoreStore()
 const meds = ref([])
 const raw = ref([])
 const loading = ref(true)
+
+function scheduleLabel(med) {
+  if (!med.rrule && !med.times?.length) return null
+  const parts = []
+  if (med.rrule) {
+    const r = Object.fromEntries(med.rrule.split(';').map(p => p.split('=')))
+    const freqMap = { DAILY: 'Daily', WEEKLY: 'Weekly', MONTHLY: 'Monthly', YEARLY: 'Yearly' }
+    const freq = freqMap[r.FREQ] || r.FREQ
+    const interval = r.INTERVAL > 1 ? ` every ${r.INTERVAL}` : ''
+    const days = r.BYDAY
+      ? ` on ${r.BYDAY.split(',').map(d => DAY_NAMES[d] || d).join(', ')}`
+      : ''
+    parts.push(`${freq}${interval}${days}`)
+  }
+  if (med.times?.length) parts.push(`at ${med.times.join(', ')}`)
+  return parts.join(' ') || null
+}
 
 async function applyDecryption() { meds.value = await ks.decryptAll(raw.value) }
 watch(() => ks.dataKey, (key) => { if (key) applyDecryption() })

@@ -5,47 +5,16 @@ from .models import (
     HealthParameter,
     HealthRecord,
     Medication,
-    MedicationCalendar,
-    MedicationSchedule,
-    MedicationSettings,
     Vaccination,
 )
 
 
-@admin.register(MedicationSettings)
-class MedicationSettingsAdmin(admin.ModelAdmin):
-    list_display = ("user",)
-    search_fields = ("user__username",)
-    raw_id_fields = ("user",)
-
-
-class MedicationScheduleInline(admin.TabularInline):
-    model = MedicationSchedule
-    extra = 0
-
-
 @admin.register(Medication)
 class MedicationAdmin(admin.ModelAdmin):
-    list_display = ("name", "user", "supply", "prn", "icon")
-    list_filter = ("user", "prn")
-    search_fields = ("name", "user__username")
-    inlines = (MedicationScheduleInline,)
+    list_display = ("pk", "user")
+    list_filter = ("user",)
+    search_fields = ("user__username",)
     raw_id_fields = ("user",)
-
-
-@admin.register(MedicationSchedule)
-class MedicationScheduleAdmin(admin.ModelAdmin):
-    list_display = ("medication", "cycle_type", "cycle_count", "first", "last")
-    list_filter = ("cycle_type",)
-    raw_id_fields = ("medication",)
-
-
-@admin.register(MedicationCalendar)
-class MedicationCalendarAdmin(admin.ModelAdmin):
-    list_display = ("medication", "date", "taken")
-    list_filter = ("taken",)
-    date_hierarchy = "date"
-    raw_id_fields = ("medication",)
 
 
 @admin.register(HealthParameter)

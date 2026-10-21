@@ -203,7 +203,6 @@ _SCRUB_FIELDS = {
             "last_contact",
         ],
     ),
-    "medications": (Medication, "user", ["name", "remarks"]),
     "health_parameters": (HealthParameter, "user", ["name", "unit", "icon"]),
     "habit_logs": (HabitLog, "habit__user", ["note"]),
     "health_records": (HealthRecord, "log__user", ["value"]),

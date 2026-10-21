@@ -368,13 +368,8 @@ class HealthLogWriteSerializer(serializers.ModelSerializer):
 class MedicationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Medication
-        fields = ["id", "name", "icon", "supply", "prn", "remarks", "encrypted_payload"]
+        fields = ["id", "encrypted_payload"]
         read_only_fields = ["id"]
-        extra_kwargs = {
-            "name": {"required": False, "allow_null": True, "allow_blank": True},
-            "supply": {"required": False, "allow_null": True},
-            "remarks": {"required": False, "allow_null": True, "allow_blank": True},
-        }
 
 
 class VaccinationSerializer(serializers.ModelSerializer):
