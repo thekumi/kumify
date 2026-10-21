@@ -22,6 +22,19 @@
                               :class="form.daily_reminder ? 'translate-x-5' : 'translate-x-0'"></span>
                     </button>
                 </div>
+                <div v-if="form.daily_reminder && needsAlarmPermission"
+                     class="flex items-start gap-3 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2.5">
+                    <i class="ph ph-warning text-amber-500 text-lg shrink-0 mt-0.5"></i>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-xs text-amber-800 font-medium">Exact alarm permission needed</p>
+                        <p class="text-xs text-amber-700 mt-0.5">Without it, reminders may fire late. Grant it in Settings to get notified at the exact time you set.</p>
+                    </div>
+                    <button type="button"
+                            @click="requestAlarmPermission"
+                            class="text-xs font-semibold text-amber-700 hover:text-amber-900 shrink-0 mt-0.5 transition-colors">
+                        Grant
+                    </button>
+                </div>
                 <div v-if="form.daily_reminder" class="space-y-2 pt-1">
                     <div v-for="(t, i) in form.daily_reminder_times"
                          :key="i"
@@ -149,6 +162,7 @@ const isAndroid = !!window.Android
 const form = ref({ daily_reminder: false, daily_reminder_times: ['20:00'], habits_reminder: false })
 const contactsEnabled = ref(localStorage.getItem(CONTACTS_ENABLED_KEY) === '1')
 const permissionState = ref(typeof Notification !== 'undefined' ? Notification.permission : 'default')
+const needsAlarmPermission = ref(false)
 const subscribed = ref(false)
 const subscribing = ref(false)
 const subError = ref('')
@@ -204,13 +218,20 @@ function syncAndroidCheckIns() {
   if (!window.Android?.scheduleDailyCheckIns) return
   if (!form.value.daily_reminder) {
     window.Android.cancelDailyCheckIns?.()
+    needsAlarmPermission.value = false
     return
   }
+  const canExact = window.Android.canScheduleExactAlarms?.() ?? true
+  needsAlarmPermission.value = !canExact
   const payload = form.value.daily_reminder_times.map(t => {
     const [h, m] = t.split(':').map(Number)
     return { hour: h, minute: m }
   })
   window.Android.scheduleDailyCheckIns(JSON.stringify(payload))
+}
+
+function requestAlarmPermission() {
+  window.Android.requestExactAlarmPermission?.()
 }
 
 function urlBase64ToUint8Array(base64String) {
@@ -329,6 +350,10 @@ onMounted(async () => {
     }
   }
   syncAndroidCheckIns()
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') syncAndroidCheckIns()
+  })
 
   // Check if this device already has a subscription registered
   const reg = await navigator.serviceWorker.getRegistration().catch(() => null)
