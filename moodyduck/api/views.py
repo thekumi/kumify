@@ -665,7 +665,7 @@ class StatusViewSet(viewsets.ModelViewSet):
         qs = Status.objects.filter(user=self.request.user).order_by("-timestamp")
         after = self.request.query_params.get("timestamp_after")
         if after:
-            qs = qs.filter(timestamp__date__gte=after)
+            qs = qs.filter(timestamp__gte=after)
         return qs
 
     def perform_create(self, serializer):
@@ -820,7 +820,7 @@ class DreamViewSet(viewsets.ModelViewSet):
         )
         after = self.request.query_params.get("timestamp_after")
         if after:
-            qs = qs.filter(timestamp__date__gte=after)
+            qs = qs.filter(timestamp__gte=after)
         return qs
 
     def perform_create(self, serializer):
