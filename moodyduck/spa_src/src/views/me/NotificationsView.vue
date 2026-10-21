@@ -241,11 +241,12 @@ async function subscribe() {
     }
     let reg = await navigator.serviceWorker.getRegistration()
     if (!reg) {
-      reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => null)
-    }
-    if (!reg) {
-      subError.value = 'Push notifications are not available here. Make sure you are using the production build of this app.'
-      return
+      try {
+        reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' })
+      } catch (err) {
+        subError.value = `Service worker registration failed: ${err.message}`
+        return
+      }
     }
     const sw = await Promise.race([
       navigator.serviceWorker.ready,
