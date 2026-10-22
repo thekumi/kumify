@@ -112,6 +112,20 @@ class Command(BaseCommand):
             sys.exit(1)
 
         if not options["no_collect"]:
+            # settings.STATICFILES_DIRS was evaluated at process startup before the
+            # SPA was built, so spa/ may not have been included. Patch it now so
+            # collectstatic picks up the freshly-built output.
+            spa_out = settings.BASE_DIR / "spa"
+            if spa_out.exists():
+                already = any(
+                    Path(d[1] if isinstance(d, tuple) else d) == spa_out
+                    for d in settings.STATICFILES_DIRS
+                )
+                if not already:
+                    settings.STATICFILES_DIRS = list(settings.STATICFILES_DIRS) + [
+                        ("spa", spa_out)
+                    ]
+
             self.stdout.write("Collecting static files")
             call_command("collectstatic", interactive=False, verbosity=0)
             self.stdout.write(self.style.SUCCESS("  collectstatic: ok"))
