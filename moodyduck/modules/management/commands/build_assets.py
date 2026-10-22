@@ -3,6 +3,7 @@ import sys
 from pathlib import Path
 
 from django.conf import settings
+from django.contrib.staticfiles import finders
 from django.core.management import call_command
 from django.core.management.base import BaseCommand
 
@@ -112,9 +113,9 @@ class Command(BaseCommand):
             sys.exit(1)
 
         if not options["no_collect"]:
-            # settings.STATICFILES_DIRS was evaluated at process startup before the
-            # SPA was built, so spa/ may not have been included. Patch it now so
-            # collectstatic picks up the freshly-built output.
+            # STATICFILES_DIRS is evaluated once at process startup, before the SPA
+            # is built. Patch it now and clear the finder cache so collectstatic
+            # picks up the freshly-built spa/ directory.
             spa_out = settings.BASE_DIR / "spa"
             if spa_out.exists():
                 already = any(
@@ -125,6 +126,7 @@ class Command(BaseCommand):
                     settings.STATICFILES_DIRS = list(settings.STATICFILES_DIRS) + [
                         ("spa", spa_out)
                     ]
+                    finders.get_finder.cache_clear()
 
             self.stdout.write("Collecting static files")
             call_command("collectstatic", interactive=False, verbosity=0)
