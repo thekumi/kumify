@@ -27,6 +27,7 @@ export default defineConfig({
       injectManifest: {
         globPatterns: ['**/*.{js,css,html,woff,woff2,ttf,svg}'],
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
+        modifyURLPrefix: { '': '/static/spa/' },
       },
     }),
   ],

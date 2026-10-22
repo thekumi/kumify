@@ -5,6 +5,7 @@ import { NetworkFirst } from 'workbox-strategies'
 import { ExpirationPlugin } from 'workbox-expiration'
 import { CacheableResponsePlugin } from 'workbox-cacheable-response'
 
+self.skipWaiting()
 clientsClaim()
 precacheAndRoute(self.__WB_MANIFEST)
 
