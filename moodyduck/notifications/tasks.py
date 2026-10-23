@@ -1,9 +1,16 @@
+import base64
 import json
 import logging
 import urllib.error
 import urllib.request
 
 from celery import shared_task
+from cryptography.hazmat.primitives.serialization import (
+    Encoding,
+    NoEncryption,
+    PrivateFormat,
+    load_pem_private_key,
+)
 from django.conf import settings
 from django.utils import timezone
 
@@ -16,6 +23,16 @@ except ImportError:
 from .models import NotificationSettings, UnifiedPushSubscription
 
 logger = logging.getLogger(__name__)
+
+
+def _vapid_key(raw: str) -> str:
+    if not raw.strip().startswith("-----"):
+        return raw
+    key = load_pem_private_key(raw.encode(), password=None)
+    der = key.private_bytes(
+        Encoding.DER, PrivateFormat.TraditionalOpenSSL, NoEncryption()
+    )
+    return base64.urlsafe_b64encode(der).rstrip(b"=").decode()
 
 
 def _send_up(endpoint, payload: dict) -> None:
@@ -41,7 +58,7 @@ def _send_up(endpoint, payload: dict) -> None:
 
 def send_push_to_user(user, payload: dict) -> None:
     """Send a push notification to all of a user's subscriptions."""
-    vapid_private_key = getattr(settings, "VAPID_PRIVATE_KEY", "")
+    vapid_private_key = _vapid_key(getattr(settings, "VAPID_PRIVATE_KEY", ""))
     vapid_claims = {
         "sub": getattr(settings, "VAPID_CLAIMS_SUB", "mailto:admin@example.com")
     }
