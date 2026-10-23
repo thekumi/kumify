@@ -58,9 +58,13 @@ def send_push_to_user(user, payload: dict) -> None:
                     vapid_private_key=vapid_private_key,
                     vapid_claims=vapid_claims,
                 )
-            except WebPushException as e:
+            except Exception as e:  # noqa: BLE001
                 logger.warning("Web Push failed for %s: %s", sub.endpoint[:60], e)
-                if e.response and e.response.status_code in (404, 410):
+                if (
+                    isinstance(e, WebPushException)
+                    and e.response
+                    and e.response.status_code in (404, 410)
+                ):
                     sub.delete()
 
     for sub in user.up_subscriptions.all():
