@@ -1,5 +1,6 @@
-function tryParseIds(str) {
-  try { return JSON.parse(str).map(Number) } catch { return [] }
+function tryParseIds(val) {
+  if (Array.isArray(val)) return val.map(Number)
+  try { return JSON.parse(val).map(Number) } catch { return [] }
 }
 
 function moodId(s) {

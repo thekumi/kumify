@@ -309,7 +309,7 @@ async function applyDecryption() {
     form.value.mood = s.mood_id != null ? Number(s.mood_id) : (rawStatus.mood ?? null)
     selectedActivities.value = new Set(
       s.activity_ids != null
-        ? JSON.parse(s.activity_ids)
+        ? (Array.isArray(s.activity_ids) ? s.activity_ids : JSON.parse(s.activity_ids))
         : (rawStatus.activities?.map(a => a.id) ?? [])
     )
     form.value.properties = (s.properties && typeof s.properties === 'object') ? s.properties : {}
