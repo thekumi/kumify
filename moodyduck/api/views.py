@@ -740,10 +740,8 @@ class StatusViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=["get"], url_path="sources")
     def sources(self, request):
         prefix = request.query_params.get("prefix", "")
-        qs = (
-            Status.objects.filter(user=request.user, source__startswith=prefix)
-            .values_list("source", flat=True)
-            .distinct()
+        qs = Status.objects.filter(user=request.user, source__startswith=prefix).values(
+            "id", "source"
         )
         return Response(list(qs))
 
@@ -765,8 +763,19 @@ class StatusViewSet(viewsets.ModelViewSet):
 
         ep_raw = request.data.get("encrypted_payload")
         ep = json.loads(ep_raw) if ep_raw else None
+        source = request.data.get("source") or None
 
-        attachment = StatusMedia(status=status_obj, encrypted_payload=ep)
+        if source:
+            existing = StatusMedia.objects.filter(
+                status=status_obj, source=source
+            ).first()
+            if existing:
+                return Response(
+                    StatusMediaSerializer(existing, context={"request": request}).data,
+                    status=200,
+                )
+
+        attachment = StatusMedia(status=status_obj, encrypted_payload=ep, source=source)
         attachment.file.save(get_upload_path(status_obj, upload.name), upload)
         attachment.save()
 

@@ -32,7 +32,7 @@ export const getStatusSources = (prefix='') => api.get(`/statuses/sources/?prefi
 
 export const getDashboard    = ()       => api.get('/stats/dashboard/')
 
-export async function uploadAttachment(statusId, file, dataKey, isPrivate = false) {
+export async function uploadAttachment(statusId, file, dataKey, isPrivate = false, source = null) {
   const fileBytes = await file.arrayBuffer()
   const fileIv = crypto.getRandomValues(new Uint8Array(12))
   const encryptedFile = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: fileIv }, dataKey, fileBytes)
@@ -47,6 +47,7 @@ export async function uploadAttachment(statusId, file, dataKey, isPrivate = fals
   const form = new FormData()
   form.append('file', new Blob([encryptedFile], { type: 'application/octet-stream' }), file.name)
   form.append('encrypted_payload', JSON.stringify(ep))
+  if (source) form.append('source', source)
   const res = await fetch(`/api/statuses/${statusId}/attachments/`, {
     method: 'POST',
     headers: token ? { Authorization: `Token ${token}` } : {},

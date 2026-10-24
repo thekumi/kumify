@@ -89,6 +89,7 @@ class StatusMedia(models.Model):
     status = models.ForeignKey(Status, models.CASCADE)
     file = models.FileField(get_upload_path)
     encrypted_payload = models.JSONField(null=True, blank=True)
+    source = models.CharField(max_length=255, null=True, blank=True)
 
     @property
     def basename(self):

@@ -513,15 +513,33 @@ async function startImport() {
     }
 
     // 6. Entries
-    const importedSources = new Set(await getStatusSources('daylio:'))
+    const sourcesRaw = await getStatusSources('daylio:')
+    const importedSources = new Map(sourcesRaw.map(s => [s.source, s.id]))
     const assetById = Object.fromEntries((data.assets ?? []).map(a => [a.id, a]))
     const pendingAttachments = []
+
+    // Build checksum→entry map using only the basename so folder-prefixed
+    // asset paths (e.g. "assets/CHECKSUM") resolve correctly.
+    const zipByChecksum = {}
+    if (zipIdx.value) {
+      for (const [path, ent] of Object.entries(zipIdx.value)) {
+        if (path === 'backup.daylio') continue
+        zipByChecksum[path.split('/').pop()] = ent
+      }
+    }
 
     for (const entry of data.dayEntries) {
       const source = `daylio:${entry.datetime}`
       if (importedSources.has(source)) {
         skipped.entries++
         progress.value.entries++
+        const existingId = importedSources.get(source)
+        if ((entry.assets ?? []).length && zipIdx.value && existingId != null) {
+          for (const assetId of entry.assets) {
+            const asset = assetById[assetId]
+            if (asset) pendingAttachments.push({ statusId: existingId, asset })
+          }
+        }
         continue
       }
 
@@ -559,14 +577,14 @@ async function startImport() {
 
     // 7. Attachments
     for (const { statusId, asset } of pendingAttachments) {
-      const entry = zipIdx.value?.[asset.checksum]
-      if (!entry) { skipped.attachments++; progress.value.attachments++; continue }
+      const zipEntry = zipByChecksum[asset.checksum]
+      if (!zipEntry) { skipped.attachments++; progress.value.attachments++; continue }
       try {
-        const bytes = await extractZipEntry(zipBuffer.value, entry)
+        const bytes = await extractZipEntry(zipBuffer.value, zipEntry)
         let name = asset.checksum
         try { name = JSON.parse(asset.android_metadata || '{}').Name || name } catch {}
         const file = new File([bytes], name, { type: guessType(name) })
-        await uploadAttachment(statusId, file, ks.dataKey)
+        await uploadAttachment(statusId, file, ks.dataKey, false, `daylio:${asset.checksum}`)
         created.attachments++
       } catch {
         skipped.attachments++
