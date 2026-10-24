@@ -767,6 +767,23 @@ class StatusViewSet(SinceFilterMixin, viewsets.ModelViewSet):
             qs = qs.filter(timestamp__lte=before)
         return qs
 
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        source = serializer.validated_data.get("source")
+        if source:
+            existing = Status.objects.filter(user=request.user, source=source).first()
+            if existing:
+                return Response(
+                    self.get_serializer(existing).data,
+                    status=status.HTTP_200_OK,
+                )
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(
+            serializer.data, status=status.HTTP_201_CREATED, headers=headers
+        )
+
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 

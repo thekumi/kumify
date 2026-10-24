@@ -532,7 +532,9 @@ async function startImport() {
 
     // 6. Entries
     const sourcesRaw = await getStatusSources('daylio:')
-    const importedSources = new Map(sourcesRaw.map(s => [s.source, s.id]))
+    const importedSources = new Map(
+      sourcesRaw.map(s => typeof s === 'string' ? [s, null] : [s.source, s.id])
+    )
     const assetById = Object.fromEntries((data.assets ?? []).map(a => [a.id, a]))
     const pendingAttachments = []
 
