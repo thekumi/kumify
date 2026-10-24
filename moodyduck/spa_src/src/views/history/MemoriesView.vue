@@ -103,8 +103,8 @@ const dataLoaded = ref(false)
 const selectedDate = ref(todayStr())
 const blobsToRevoke = []
 
-const allStatuses = ref([])
-const allDreams = ref([])
+const dayStatuses = ref([])
+const dayDreams = ref([])
 const moodMap = ref({})
 
 function todayStr() {
@@ -158,11 +158,10 @@ function moodFor(entry) {
 }
 
 const memories = computed(() => {
-  if (!selectedDate.value || !dataLoaded.value) return []
+  if (!dataLoaded.value) return []
   const results = []
 
-  for (const s of allStatuses.value) {
-    if (s.timestamp?.slice(0, 10) !== selectedDate.value) continue
+  for (const s of dayStatuses.value) {
     results.push({
       id: `status-${s.id}`,
       type: 'status',
@@ -176,8 +175,7 @@ const memories = computed(() => {
     })
   }
 
-  for (const d of allDreams.value) {
-    if (d.timestamp?.slice(0, 10) !== selectedDate.value) continue
+  for (const d of dayDreams.value) {
     results.push({
       id: `dream-${d.id}`,
       type: 'dream',
@@ -229,18 +227,23 @@ watch(memories, async (entries) => {
   }
 }, { deep: false })
 
-async function load() {
-  if (!ks.dataKey) return
+async function load(date) {
+  if (!ks.dataKey || !date) return
   loading.value = true
+  dataLoaded.value = false
   try {
+    const after = `${date}T00:00:00`
+    const before = `${date}T23:59:59`
     const [rawStatuses, rawMoods, rawDreams] = await Promise.all([
-      getAllStatuses(), getMoods(), getAllDreams(),
+      getAllStatuses({ timestamp_after: after, timestamp_before: before }),
+      getMoods(),
+      getAllDreams({ timestamp_after: after, timestamp_before: before }),
     ])
     const [statuses, moods, dreams] = await Promise.all([
       ks.decryptAll(rawStatuses), ks.decryptAll(rawMoods), ks.decryptAll(rawDreams),
     ])
-    allStatuses.value = statuses
-    allDreams.value = dreams
+    dayStatuses.value = statuses
+    dayDreams.value = dreams
     moodMap.value = Object.fromEntries(moods.map(m => [m.id, m]))
     dataLoaded.value = true
   } finally {
@@ -248,7 +251,8 @@ async function load() {
   }
 }
 
-watch(() => ks.dataKey, (k) => { if (k) load() })
-onMounted(() => { if (ks.dataKey) load() })
+watch(selectedDate, (date) => { if (ks.dataKey) load(date) })
+watch(() => ks.dataKey, (k) => { if (k) load(selectedDate.value) })
+onMounted(() => { if (ks.dataKey) load(selectedDate.value) })
 onUnmounted(() => { for (const url of blobsToRevoke) URL.revokeObjectURL(url) })
 </script>

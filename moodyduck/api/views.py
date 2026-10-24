@@ -732,6 +732,9 @@ class StatusViewSet(viewsets.ModelViewSet):
         after = self.request.query_params.get("timestamp_after")
         if after:
             qs = qs.filter(timestamp__gte=after)
+        before = self.request.query_params.get("timestamp_before")
+        if before:
+            qs = qs.filter(timestamp__lte=before)
         return qs
 
     def perform_create(self, serializer):
@@ -896,6 +899,9 @@ class DreamViewSet(viewsets.ModelViewSet):
         after = self.request.query_params.get("timestamp_after")
         if after:
             qs = qs.filter(timestamp__gte=after)
+        before = self.request.query_params.get("timestamp_before")
+        if before:
+            qs = qs.filter(timestamp__lte=before)
         return qs
 
     def perform_create(self, serializer):
