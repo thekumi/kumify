@@ -93,19 +93,34 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import TopBar from '@/components/TopBar.vue'
 import BottomNav from '@/components/BottomNav.vue'
 import { useKeystoreStore } from '@/stores/keystore'
-import { getAllStatuses, getMoods } from '@/api/mood'
-import { getAllDreams } from '@/api/dreams'
+import { useSyncStore } from '@/stores/sync'
+import { dbGetAll } from '@/lib/db'
 import { b64decode } from '@/keystore/util'
 
 const ks = useKeystoreStore()
+const syncStore = useSyncStore()
 const loading = ref(false)
 const dataLoaded = ref(false)
 const selectedDate = ref(todayStr())
 const blobsToRevoke = []
+const thumbCache = ref({})
 
-const dayStatuses = ref([])
-const dayDreams = ref([])
+const allStatuses = ref([])
+const allDreams = ref([])
 const moodMap = ref({})
+
+const dayStatuses = computed(() => {
+  if (!selectedDate.value) return []
+  const after  = new Date(selectedDate.value + 'T00:00:00').getTime()
+  const before = new Date(selectedDate.value + 'T23:59:59.999').getTime()
+  return allStatuses.value.filter(s => { const t = new Date(s.timestamp).getTime(); return t >= after && t <= before })
+})
+const dayDreams = computed(() => {
+  if (!selectedDate.value) return []
+  const after  = new Date(selectedDate.value + 'T00:00:00').getTime()
+  const before = new Date(selectedDate.value + 'T23:59:59.999').getTime()
+  return allDreams.value.filter(d => { const t = new Date(d.timestamp).getTime(); return t >= after && t <= before })
+})
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10)
@@ -162,6 +177,7 @@ const memories = computed(() => {
   const results = []
 
   for (const s of dayStatuses.value) {
+    const firstAtt = (s.attachments ?? [])[0] ?? null
     results.push({
       id: `status-${s.id}`,
       type: 'status',
@@ -170,12 +186,13 @@ const memories = computed(() => {
       title: s.title ?? null,
       text: s.text ?? null,
       timeStr: new Date(s.timestamp).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }),
-      firstAttachment: (s.attachments ?? [])[0] ?? null,
-      thumbUrl: null,
+      firstAttachment: firstAtt,
+      thumbUrl: firstAtt ? (thumbCache.value[firstAtt.id] ?? null) : null,
     })
   }
 
   for (const d of dayDreams.value) {
+    const firstAtt = (d.attachments ?? [])[0] ?? null
     results.push({
       id: `dream-${d.id}`,
       type: 'dream',
@@ -184,8 +201,8 @@ const memories = computed(() => {
       title: d.title ?? null,
       text: d.content ?? null,
       timeStr: new Date(d.timestamp).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }),
-      firstAttachment: (d.attachments ?? [])[0] ?? null,
-      thumbUrl: null,
+      firstAttachment: firstAtt,
+      thumbUrl: firstAtt ? (thumbCache.value[firstAtt.id] ?? null) : null,
     })
   }
 
@@ -193,10 +210,10 @@ const memories = computed(() => {
   return results
 })
 
-// Decrypt first-attachment thumbnails reactively
+// Decrypt first-attachment thumbnails, cached by attachment id
 watch(memories, async (entries) => {
   for (const entry of entries) {
-    if (!entry.firstAttachment || entry.thumbUrl) continue
+    if (!entry.firstAttachment || thumbCache.value[entry.firstAttachment.id] !== undefined) continue
     const att = entry.firstAttachment
     const ep = att.encrypted_payload
     if (!ep?.iv || !ks.dataKey) continue
@@ -220,30 +237,26 @@ watch(memories, async (entries) => {
       )
       const blobUrl = URL.createObjectURL(new Blob([decrypted], { type: mime }))
       blobsToRevoke.push(blobUrl)
-      entry.thumbUrl = blobUrl
+      thumbCache.value = { ...thumbCache.value, [att.id]: blobUrl }
     } catch (e) {
       console.warn('[memories] thumb load failed', att.id, e)
     }
   }
 }, { deep: false })
 
-async function load(date) {
-  if (!ks.dataKey || !date) return
+async function load() {
+  if (!ks.dataKey) return
   loading.value = true
   dataLoaded.value = false
   try {
-    const after = `${date}T00:00:00`
-    const before = `${date}T23:59:59`
     const [rawStatuses, rawMoods, rawDreams] = await Promise.all([
-      getAllStatuses({ timestamp_after: after, timestamp_before: before }),
-      getMoods(),
-      getAllDreams({ timestamp_after: after, timestamp_before: before }),
+      dbGetAll('statuses'), dbGetAll('moods'), dbGetAll('dreams'),
     ])
     const [statuses, moods, dreams] = await Promise.all([
       ks.decryptAll(rawStatuses), ks.decryptAll(rawMoods), ks.decryptAll(rawDreams),
     ])
-    dayStatuses.value = statuses
-    dayDreams.value = dreams
+    allStatuses.value = statuses
+    allDreams.value = dreams
     moodMap.value = Object.fromEntries(moods.map(m => [m.id, m]))
     dataLoaded.value = true
   } finally {
@@ -251,8 +264,8 @@ async function load(date) {
   }
 }
 
-watch(selectedDate, (date) => { if (ks.dataKey) load(date) })
-watch(() => ks.dataKey, (k) => { if (k) load(selectedDate.value) })
-onMounted(() => { if (ks.dataKey) load(selectedDate.value) })
+watch(() => ks.dataKey, k => { if (k) load() })
+watch(() => syncStore.revision, () => { if (ks.dataKey) load() })
+onMounted(() => { if (ks.dataKey) load() })
 onUnmounted(() => { for (const url of blobsToRevoke) URL.revokeObjectURL(url) })
 </script>

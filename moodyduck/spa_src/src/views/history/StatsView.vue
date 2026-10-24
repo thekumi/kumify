@@ -251,9 +251,8 @@ import 'chartjs-adapter-date-fns'
 import TopBar from '@/components/TopBar.vue'
 import BottomNav from '@/components/BottomNav.vue'
 import { useKeystoreStore } from '@/stores/keystore'
-import { getAllStatuses, getMoods, getActivities } from '@/api/mood'
-import { getAllDreams } from '@/api/dreams'
-import { getAllHabitLogs, getHabits } from '@/api/habits'
+import { useSyncStore } from '@/stores/sync'
+import { dbGetAll } from '@/lib/db'
 import { getProperties } from '@/api/properties'
 import {
   filterByDays,
@@ -265,13 +264,13 @@ import {
 ChartJS.register(CategoryScale, LinearScale, TimeScale, PointElement, LineElement, ArcElement, BarElement, Title, Tooltip, Legend, Filler)
 
 const ks = useKeystoreStore()
+const syncStore = useSyncStore()
 const loading = ref(true)
 const rangeDays = ref(30)
 const rangeEnd  = ref(null)
 const isCustom  = ref(false)
 const customFrom = ref('')
 const customTo   = ref(new Date().toISOString().slice(0, 10))
-const loadedFrom = ref(null) // null = not yet loaded; '' = all time; date = loaded from that date
 const calMode = ref('activity')
 
 watch(rangeDays, () => { rangeEnd.value = null })
@@ -546,72 +545,45 @@ const dreamBarOptions = {
 
 // Data loading
 
-function neededFrom() {
-  if (!isCustom.value && rangeDays.value === 0) return null
-  const today = new Date()
-  const heatmapCutoff = new Date(today)
-  heatmapCutoff.setDate(heatmapCutoff.getDate() - 365)
-  let chartCutoff
-  if (isCustom.value && customFrom.value) {
-    chartCutoff = new Date(customFrom.value + 'T00:00:00')
-  } else {
-    const end = rangeEnd.value ? new Date(rangeEnd.value + 'T23:59:59') : today
-    chartCutoff = new Date(end)
-    chartCutoff.setDate(chartCutoff.getDate() - rangeDays.value)
-  }
-  const from = chartCutoff < heatmapCutoff ? chartCutoff : heatmapCutoff
-  return from.toISOString().slice(0, 10)
-}
-
-function checkAndLoad() {
-  if (!ks.dataKey) return
-  const needed = neededFrom()
-  if (loadedFrom.value === null) { load(needed); return }
-  if (needed === null && loadedFrom.value !== '') { load(null); return }
-  if (needed !== null && loadedFrom.value !== '' && needed < loadedFrom.value) { load(needed); return }
-}
-
-async function load(fromDate) {
+async function load() {
   if (!ks.dataKey) return
   loading.value = true
   try {
-    const dateParams = fromDate ? { timestamp_after: fromDate } : undefined
-    const [rawStatuses, rawMoods, rawActivities, rawDreams, habitLogs, rawHabitsData, rawProps] = await Promise.all([
-      getAllStatuses(dateParams),
-      getMoods(),
-      getActivities({ include_hidden: 'true' }),
-      getAllDreams(dateParams),
-      getAllHabitLogs(),
-      getHabits(),
+    const [rawSt, rawMo, rawAc, rawDr, habitLogsRaw, rawHab, rawProps] = await Promise.all([
+      dbGetAll('statuses'),
+      dbGetAll('moods'),
+      dbGetAll('activities'),
+      dbGetAll('dreams'),
+      dbGetAll('habit_logs'),
+      dbGetAll('habits'),
       getProperties().catch(() => []),
     ])
     const [statuses, moods, activities, dreams, habits, props] = await Promise.all([
-      ks.decryptAll(rawStatuses),
-      ks.decryptAll(rawMoods),
-      ks.decryptAll(rawActivities),
-      ks.decryptAll(rawDreams),
-      ks.decryptAll(rawHabitsData),
+      ks.decryptAll(rawSt),
+      ks.decryptAll(rawMo),
+      ks.decryptAll(rawAc),
+      ks.decryptAll(rawDr),
+      ks.decryptAll(rawHab),
       ks.decryptAll(rawProps),
     ])
 
-    allStatuses.value  = statuses
-    allDreams.value    = dreams
-    moodMap.value      = Object.fromEntries(moods.map(m => [m.id, m]))
-    activityMap.value  = Object.fromEntries(activities.map(a => [a.id, a]))
-    calData.value      = calendarData(statuses, moodMap.value)
-    rawHabitLogs.value  = habitLogs
-    rawHabits.value     = habits.map(h => ({
+    allStatuses.value = statuses
+    allDreams.value   = dreams
+    moodMap.value     = Object.fromEntries(moods.map(m => [m.id, m]))
+    activityMap.value = Object.fromEntries(activities.map(a => [a.id, a]))
+    calData.value     = calendarData(statuses, moodMap.value)
+    rawHabitLogs.value = habitLogsRaw
+    rawHabits.value    = habits.map(h => ({
       ...h,
       name: activityMap.value[h.activity_id]?.name ?? h.name ?? '?',
     }))
     allProperties.value = props
-    loadedFrom.value = fromDate ?? ''
   } finally {
     loading.value = false
   }
 }
 
-watch(() => ks.dataKey, (k) => { if (k) checkAndLoad() })
-watch([rangeDays, rangeEnd, isCustom, customFrom, customTo], checkAndLoad)
-onMounted(() => { if (ks.dataKey) checkAndLoad() })
+watch(() => ks.dataKey, k => { if (k) load() })
+watch(() => syncStore.revision, () => { if (ks.dataKey) load() })
+onMounted(() => { if (ks.dataKey) load() })
 </script>

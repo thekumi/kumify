@@ -114,11 +114,12 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import TopBar from '@/components/TopBar.vue'
 import BottomNav from '@/components/BottomNav.vue'
 import { useKeystoreStore } from '@/stores/keystore'
-import { getAllStatuses } from '@/api/mood'
-import { getAllDreams } from '@/api/dreams'
+import { useSyncStore } from '@/stores/sync'
+import { dbGetAll } from '@/lib/db'
 import { b64decode } from '@/keystore/util'
 
 const ks = useKeystoreStore()
+const syncStore = useSyncStore()
 const loading = ref(true)
 const typeFilter = ref('all')
 const sortMode = ref('newest')
@@ -220,14 +221,15 @@ async function load() {
   if (!ks.dataKey) return
   loading.value = true
   try {
-    const [rawStatuses, rawDreams] = await Promise.all([getAllStatuses(), getAllDreams()])
+    const [rawStatuses, rawDreams] = await Promise.all([dbGetAll('statuses'), dbGetAll('dreams')])
+    const [statuses, dreams] = await Promise.all([ks.decryptAll(rawStatuses), ks.decryptAll(rawDreams)])
     const items = []
-    for (const s of rawStatuses) {
+    for (const s of statuses) {
       for (const att of (s.attachments ?? [])) {
         items.push({ attachment: att, timestamp: s.timestamp, sourceType: 'status', sourceId: s.id, sourceUrl: `/mood/${s.id}` })
       }
     }
-    for (const d of rawDreams) {
+    for (const d of dreams) {
       for (const att of (d.attachments ?? [])) {
         items.push({ attachment: att, timestamp: d.timestamp, sourceType: 'dream', sourceId: d.id, sourceUrl: `/journal/dreams/${d.id}` })
       }
@@ -240,6 +242,7 @@ async function load() {
 }
 
 watch(() => ks.dataKey, (k) => { if (k) load() })
+watch(() => syncStore.revision, () => { if (ks.dataKey) load() })
 watch(showPrivate, () => {
   // Re-evaluate items that were skipped due to privacy filter
   for (const item of allItems.value) {
