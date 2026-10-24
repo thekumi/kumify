@@ -2,6 +2,55 @@
     <div class="pb-nav">
         <TopBar title="Privacy & Security" :back="true" />
         <div class="px-4 py-4 space-y-4">
+            <!-- Account password -->
+            <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4 space-y-3">
+                <div class="flex items-center gap-2 mb-1">
+                    <i class="ph ph-key text-stone-400 text-lg"></i>
+                    <p class="text-sm font-semibold text-stone-700">Account password</p>
+                </div>
+                <p class="text-xs text-stone-400 leading-relaxed">Change the password you use to sign in to MoodyDuck.</p>
+                <template v-if="pwMode === 'change'">
+                    <input v-model="pwCurrent"
+                           type="password"
+                           placeholder="Current password"
+                           autocomplete="current-password"
+                           class="w-full px-3 py-2.5 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-clay-400 text-stone-800 bg-stone-50 text-sm" />
+                    <input v-model="pwNew"
+                           type="password"
+                           placeholder="New password"
+                           autocomplete="new-password"
+                           class="w-full px-3 py-2.5 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-clay-400 text-stone-800 bg-stone-50 text-sm" />
+                    <input v-model="pwConfirm"
+                           type="password"
+                           placeholder="Confirm new password"
+                           autocomplete="new-password"
+                           class="w-full px-3 py-2.5 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-clay-400 text-stone-800 bg-stone-50 text-sm" />
+                    <p v-if="pwError"
+                       class="text-xs text-red-600 bg-red-50 rounded-xl px-3 py-2">{{ pwError }}</p>
+                    <p v-if="pwSuccess"
+                       class="text-xs text-green-700 bg-green-50 rounded-xl px-3 py-2">{{ pwSuccess }}</p>
+                    <div class="flex gap-2">
+                        <button type="button"
+                                @click="pwMode = 'idle'; pwCurrent = ''; pwNew = ''; pwConfirm = ''; pwError = ''; pwSuccess = ''"
+                                class="flex-1 py-2.5 rounded-xl border border-stone-200 text-stone-600 text-sm font-medium hover:bg-stone-50 transition-colors">Cancel</button>
+                        <button type="button"
+                                @click="doChangePassword"
+                                :disabled="pwBusy"
+                                class="flex-1 py-2.5 bg-clay-600 hover:bg-clay-700 disabled:opacity-60 text-white text-sm font-semibold rounded-xl transition-colors">
+                            {{ pwBusy ? 'Saving…' : 'Change password' }}
+                        </button>
+                    </div>
+                </template>
+                <template v-else>
+                    <p v-if="pwSuccess"
+                       class="text-xs text-green-700 bg-green-50 rounded-xl px-3 py-2">{{ pwSuccess }}</p>
+                    <button type="button"
+                            @click="pwMode = 'change'; pwError = ''"
+                            class="w-full py-2.5 rounded-xl border border-stone-200 text-stone-600 text-sm font-medium hover:bg-stone-50 transition-colors">
+                        Change password
+                    </button>
+                </template>
+            </div>
             <!-- Lock PIN -->
             <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4 space-y-3">
                 <div class="flex items-center gap-2 mb-1">
@@ -234,9 +283,38 @@ import { ref, computed } from 'vue'
 import TopBar from '@/components/TopBar.vue'
 import BottomNav from '@/components/BottomNav.vue'
 import { useKeystoreStore } from '@/stores/keystore'
+import { useAuthStore } from '@/stores/auth'
+import { changePassword } from '@/api/auth'
 import { checkScrub, runScrub } from '@/keystore/scrub.js'
 
 const ks = useKeystoreStore()
+const auth = useAuthStore()
+
+// Account password change
+const pwMode = ref('idle')
+const pwCurrent = ref('')
+const pwNew = ref('')
+const pwConfirm = ref('')
+const pwError = ref('')
+const pwSuccess = ref('')
+const pwBusy = ref(false)
+
+async function doChangePassword() {
+  if (pwNew.value !== pwConfirm.value) { pwError.value = 'New passwords do not match.'; return }
+  pwBusy.value = true; pwError.value = ''
+  try {
+    const { token } = await changePassword(pwCurrent.value, pwNew.value)
+    localStorage.setItem('authToken', token)
+    pwMode.value = 'idle'
+    pwCurrent.value = ''; pwNew.value = ''; pwConfirm.value = ''
+    pwSuccess.value = 'Password changed successfully.'
+  } catch (e) {
+    const data = e.data ?? {}
+    pwError.value = data.current_password?.[0] ?? data.new_password?.[0] ?? 'Could not change password.'
+  } finally {
+    pwBusy.value = false
+  }
+}
 
 // PIN management
 const mode = ref('idle') // idle | set | change | remove

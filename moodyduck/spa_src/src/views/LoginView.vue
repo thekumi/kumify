@@ -35,13 +35,18 @@
                     <span v-else>Sign in</span>
                 </button>
             </form>
+            <p v-if="serverInfo?.registration_open"
+               class="text-center text-sm text-stone-500 mt-4">
+                Don't have an account?
+                <RouterLink to="/register" class="text-clay-600 font-medium hover:underline">Register</RouterLink>
+            </p>
         </div>
     </div>
 </template>
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { login } from '@/api/auth'
+import { ref, onMounted } from 'vue'
+import { useRouter, RouterLink } from 'vue-router'
+import { login, getServerInfo } from '@/api/auth'
 import { useAuthStore } from '@/stores/auth'
 import DuckIcon from '@/components/DuckIcon.vue'
 
@@ -50,6 +55,11 @@ const auth = useAuthStore()
 const form = ref({ username: '', password: '' })
 const loading = ref(false)
 const error = ref('')
+const serverInfo = ref(null)
+
+onMounted(async () => {
+  try { serverInfo.value = await getServerInfo() } catch { /* server unreachable */ }
+})
 
 async function submit() {
   loading.value = true

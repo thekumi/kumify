@@ -3,6 +3,7 @@ import { isLoggedIn } from '@/api/auth'
 
 const routes = [
   { path: '/login', component: () => import('@/views/LoginView.vue'), meta: { public: true } },
+  { path: '/register', component: () => import('@/views/RegisterView.vue'), meta: { public: true } },
 
   { path: '/',           component: () => import('@/views/DashboardView.vue') },
 

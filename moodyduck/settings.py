@@ -18,6 +18,12 @@ DEBUG = CONFIG_FILE.config.getboolean("MOODYDUCK", "Debug", fallback=False)
 REGISTRATION_OPEN = CONFIG_FILE.config.getboolean(
     "MOODYDUCK", "AllowRegistration", fallback=False
 )
+REGISTRATION_REQUIRE_APPROVAL = CONFIG_FILE.config.getboolean(
+    "MOODYDUCK", "RequireRegistrationApproval", fallback=False
+)
+REGISTRATION_REQUIRE_REASON = CONFIG_FILE.config.getboolean(
+    "MOODYDUCK", "RequireRegistrationReason", fallback=False
+)
 
 ALLOWED_HOSTS = [CONFIG_FILE.config.get("MOODYDUCK", "Host")]
 CSRF_TRUSTED_ORIGINS = [f"https://{ALLOWED_HOSTS[0]}"]

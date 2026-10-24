@@ -19,6 +19,19 @@ class UserProfile(models.Model):
         return self.display_name or self.user.username
 
 
+class RegistrationReason(models.Model):
+    user = models.OneToOneField(
+        get_user_model(),
+        on_delete=models.CASCADE,
+        related_name="registration_reason",
+    )
+    reason = models.TextField(blank=True)
+    requested_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Registration reason for {self.user.username}"
+
+
 class EmergencyAccessLog(models.Model):
     class Meta:
         ordering = ["-accessed_at"]

@@ -4,12 +4,16 @@ import uuid
 from collections import Counter
 
 from django.conf import settings as django_settings
+from django.contrib.auth import get_user_model
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 from django.db.models import Prefetch, Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.views import View
 from rest_framework import permissions, status, viewsets
+from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.decorators import action
 from rest_framework.parsers import FormParser, MultiPartParser
@@ -48,7 +52,11 @@ from moodyduck.notifications.models import (
     UnifiedPushSubscription,
 )
 from moodyduck.notifications.tasks import send_push_to_user
-from moodyduck.profiles.models import EmergencyAccessLog, UserProfile
+from moodyduck.profiles.models import (
+    EmergencyAccessLog,
+    RegistrationReason,
+    UserProfile,
+)
 
 from .serializers import (
     ActivityCategorySerializer,
@@ -90,6 +98,65 @@ from .serializers import (
 class StatusCheckView(View):
     def get(self, request):
         return JsonResponse({"status": "OK"})
+
+
+class ServerInfoView(View):
+    def get(self, request):
+        return JsonResponse(
+            {
+                "registration_open": django_settings.REGISTRATION_OPEN,
+                "require_approval": django_settings.REGISTRATION_REQUIRE_APPROVAL,
+                "require_reason": django_settings.REGISTRATION_REQUIRE_REASON,
+            }
+        )
+
+
+class RegisterView(View):
+    def post(self, request):
+        if not django_settings.REGISTRATION_OPEN:
+            return JsonResponse({"detail": "Registration is not open."}, status=403)
+
+        try:
+            data = json.loads(request.body)
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            return JsonResponse({"detail": "Invalid request body."}, status=400)
+
+        username = data.get("username", "").strip()
+        email = data.get("email", "").strip()
+        password = data.get("password", "")
+        reason = data.get("reason", "").strip()
+
+        errors = {}
+        if not username:
+            errors["username"] = ["This field is required."]
+        if not password:
+            errors["password"] = ["This field is required."]
+        if django_settings.REGISTRATION_REQUIRE_REASON and not reason:
+            errors["reason"] = ["A registration reason is required."]
+
+        User = get_user_model()
+        if username and User.objects.filter(username=username).exists():
+            errors["username"] = ["A user with that username already exists."]
+
+        if errors:
+            return JsonResponse(errors, status=400)
+
+        try:
+            validate_password(password)
+        except ValidationError as e:
+            return JsonResponse({"password": list(e.messages)}, status=400)
+
+        is_active = not django_settings.REGISTRATION_REQUIRE_APPROVAL
+        user = User.objects.create_user(
+            username=username, email=email, password=password, is_active=is_active
+        )
+
+        if reason:
+            RegistrationReason.objects.create(user=user, reason=reason)
+
+        if is_active:
+            return JsonResponse({"status": "active"})
+        return JsonResponse({"status": "pending"})
 
 
 class UserDeviceViewSet(viewsets.ModelViewSet):
@@ -1050,6 +1117,51 @@ class TokenLoginView(ObtainAuthToken):
     # here means no authentication runs at all on this endpoint — only the
     # username/password in the request body is checked.
     authentication_classes = []
+
+    def post(self, request, *args, **kwargs):
+        User = get_user_model()
+        username = request.data.get("username", "")
+        password = request.data.get("password", "")
+        if username and password:
+            try:
+                u = User.objects.get(username=username)
+                if not u.is_active and u.check_password(password):
+                    return Response(
+                        {"non_field_errors": ["Your account is pending approval."]},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+            except User.DoesNotExist:
+                pass
+        return super().post(request, *args, **kwargs)
+
+
+class ChangePasswordView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        current = request.data.get("current_password", "")
+        new = request.data.get("new_password", "")
+
+        if not request.user.check_password(current):
+            return Response(
+                {"current_password": ["Incorrect password."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            validate_password(new, user=request.user)
+        except ValidationError as e:
+            return Response(
+                {"new_password": list(e.messages)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        request.user.set_password(new)
+        request.user.save()
+
+        Token.objects.filter(user=request.user).delete()
+        token = Token.objects.create(user=request.user)
+        return Response({"token": token.key})
 
 
 class PushSubscriptionViewSet(viewsets.ModelViewSet):
