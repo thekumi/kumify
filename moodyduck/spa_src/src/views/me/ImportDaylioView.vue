@@ -107,7 +107,17 @@
                         <p class="text-sm font-semibold text-stone-800">{{ totals[s.key] }}</p>
                     </div>
                 </div>
-                <p class="text-xs text-stone-400 px-1">Mappings confirmed. Already-imported entries will be skipped automatically.</p>
+                <label class="flex items-start gap-3 px-1 cursor-pointer">
+                    <input type="checkbox"
+                           v-model="updateExisting"
+                           class="mt-0.5 accent-clay-600" />
+                    <span class="text-xs text-stone-500">
+                        Update existing entries
+                        <span class="text-stone-400">(re-imports already-imported entries to repair corrupted text from the previous encoding bug)</span>
+                    </span>
+                </label>
+                <p v-if="!updateExisting"
+                   class="text-xs text-stone-400 px-1">Already-imported entries will be skipped automatically.</p>
                 <button @click="startImport"
                         class="w-full py-3.5 bg-clay-600 hover:bg-clay-700 text-white font-semibold rounded-xl transition-colors">
                     Start import
@@ -192,7 +202,7 @@ import {
   getMoods, createMood,
   getActivityCategories, createActivityCategory,
   getActivities, createActivity,
-  createStatus, getStatusSources,
+  createStatus, updateStatus, getStatusSources,
 } from '@/api/mood'
 import { getProperties, createProperty } from '@/api/properties'
 import { getHabits, createHabit } from '@/api/habits'
@@ -242,6 +252,7 @@ const totals             = ref(ZERO())
 const progress           = ref(ZERO())
 const importError        = ref('')
 const results            = ref(null)
+const updateExisting     = ref(false)
 
 const activeSteps = computed(() => STEPS.filter(s => totals.value[s.key] > 0))
 
@@ -268,6 +279,7 @@ function resetPick() {
   mappedMoods.value = []
   mappedActivities.value = []
   mapLoading.value = false
+  updateExisting.value = false
   if (fileInput.value) fileInput.value.value = ''
 }
 
@@ -340,6 +352,12 @@ async function extractZipEntry(buffer, entry) {
   throw new Error(`Unsupported ZIP compression method: ${entry.compression}`)
 }
 
+function decodeBase64Json(b64) {
+  const binary = atob(b64)
+  const decoded = Uint8Array.from(binary, c => c.charCodeAt(0))
+  return JSON.parse(new TextDecoder().decode(decoded))
+}
+
 async function parseDaylioFile(file) {
   const buf   = await file.arrayBuffer()
   const bytes = new Uint8Array(buf)
@@ -349,10 +367,10 @@ async function parseDaylioFile(file) {
     if (!entry) throw new Error('backup.daylio not found inside the ZIP archive')
     const jsonBytes = await extractZipEntry(buf, entry)
     const text      = new TextDecoder().decode(jsonBytes)
-    return { data: JSON.parse(atob(text.trim())), buffer: buf, index }
+    return { data: decodeBase64Json(text.trim()), buffer: buf, index }
   }
   const text = new TextDecoder().decode(bytes)
-  return { data: JSON.parse(atob(text.trim())), buffer: null, index: null }
+  return { data: decodeBase64Json(text.trim()), buffer: null, index: null }
 }
 
 async function onFileChange(e) {
@@ -530,19 +548,6 @@ async function startImport() {
 
     for (const entry of data.dayEntries) {
       const source = `daylio:${entry.datetime}`
-      if (importedSources.has(source)) {
-        skipped.entries++
-        progress.value.entries++
-        const existingId = importedSources.get(source)
-        if ((entry.assets ?? []).length && zipIdx.value && existingId != null) {
-          for (const assetId of entry.assets) {
-            const asset = assetById[assetId]
-            if (asset) pendingAttachments.push({ statusId: existingId, asset })
-          }
-        }
-        continue
-      }
-
       const moodId = moodIdMap[entry.mood]
       const actIds = (entry.tags ?? []).filter(t => activityIdMap[t] != null).map(t => activityIdMap[t])
       const toEncrypt = {}
@@ -557,6 +562,24 @@ async function startImport() {
           if (propId != null) props[String(propId)] = sv.value
         }
         if (Object.keys(props).length) toEncrypt.properties = props
+      }
+
+      if (importedSources.has(source)) {
+        const existingId = importedSources.get(source)
+        if (updateExisting.value) {
+          await updateStatus(existingId, { encrypted_payload: await ks.encryptPayload(toEncrypt) })
+          created.entries++
+        } else {
+          skipped.entries++
+        }
+        progress.value.entries++
+        if ((entry.assets ?? []).length && zipIdx.value && existingId != null) {
+          for (const assetId of entry.assets) {
+            const asset = assetById[assetId]
+            if (asset) pendingAttachments.push({ statusId: existingId, asset })
+          }
+        }
+        continue
       }
 
       const status = await createStatus({
