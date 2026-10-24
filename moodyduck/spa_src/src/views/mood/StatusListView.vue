@@ -13,7 +13,7 @@
         <div v-if="loading" class="flex justify-center py-16">
             <div class="w-8 h-8 border-4 border-clay-200 border-t-clay-600 rounded-full animate-spin"></div>
         </div>
-        <div v-else-if="!statuses.length"
+        <div v-else-if="!paged.length"
              class="flex flex-col items-center justify-center py-20 px-6 text-center">
             <i class="ph ph-smiley text-6xl text-stone-300 mb-4"></i>
             <p class="text-stone-500 font-medium">No entries yet</p>
@@ -24,7 +24,7 @@
         </div>
         <div v-else>
             <ul class="divide-y divide-stone-100 bg-white mx-4 mt-4 rounded-2xl border border-stone-100 shadow-sm overflow-hidden">
-                <li v-for="s in statuses" :key="s.id">
+                <li v-for="s in paged" :key="s.id">
                     <RouterLink :to="`/mood/${s.id}`" class="flex items-center gap-3 px-4 py-4 hover:bg-stone-50 transition-colors">
                     <div class="w-11 h-11 rounded-full flex items-center justify-center shrink-0"
                          :style="moodFor(s)?.color ? `background:${moodFor(s).color}22` : 'background:#f5f5f4'">
@@ -43,10 +43,9 @@
             </ul>
             <div v-if="hasMore" class="px-4 py-4">
                 <button type="button"
-                        @click="loadMore"
-                        :disabled="loadingMore"
-                        class="w-full py-3 rounded-xl border border-stone-200 text-stone-600 text-sm font-medium hover:bg-stone-50 transition-colors disabled:opacity-50">
-                    {{ loadingMore ? 'Loading…' : 'Load more' }}
+                        @click="visibleCount += PAGE_SIZE"
+                        class="w-full py-3 rounded-xl border border-stone-200 text-stone-600 text-sm font-medium hover:bg-stone-50 transition-colors">
+                    Load more
                 </button>
             </div>
         </div>
@@ -54,21 +53,26 @@
     </div>
 </template>
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import TopBar from '@/components/TopBar.vue'
 import BottomNav from '@/components/BottomNav.vue'
-import { getStatuses, getMoods } from '@/api/mood'
+import { dbGetAll } from '@/lib/db'
 import { useKeystoreStore } from '@/stores/keystore'
+import { useSyncStore } from '@/stores/sync'
 
 const ks = useKeystoreStore()
-const statuses = ref([])
+const syncStore = useSyncStore()
+
+const PAGE_SIZE = 20
+const visibleCount = ref(PAGE_SIZE)
 const rawStatuses = ref([])
-const moodMap = ref({})
 const rawMoods = ref([])
+const statuses = ref([])
+const moodMap = ref({})
 const loading = ref(true)
-const loadingMore = ref(false)
-const page = ref(1)
-const hasMore = ref(false)
+
+const paged = computed(() => statuses.value.slice(0, visibleCount.value))
+const hasMore = computed(() => statuses.value.length > visibleCount.value)
 
 function moodFor(s) {
   const id = s.mood_id != null ? Number(s.mood_id) : s.mood
@@ -87,28 +91,18 @@ async function applyDecryption() {
   moodMap.value = Object.fromEntries(dm.map(m => [m.id, m]))
 }
 
-async function load(p = 1) {
-  const [res, moods] = await Promise.all([
-    getStatuses(p),
-    p === 1 ? getMoods() : Promise.resolve(null),
-  ])
-  if (moods) rawMoods.value = moods
-  rawStatuses.value.push(...(res.results ?? []))
-  hasMore.value = !!res.next
-  page.value = p
+async function loadFromDB() {
+  const [ss, ms] = await Promise.all([dbGetAll('statuses'), dbGetAll('moods')])
+  rawStatuses.value = ss.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+  rawMoods.value = ms
   await applyDecryption()
 }
 
-async function loadMore() {
-  loadingMore.value = true
-  await load(page.value + 1).catch(() => {})
-  loadingMore.value = false
-}
-
-watch(() => ks.dataKey, (key) => { if (key) applyDecryption() })
+watch(() => ks.dataKey, key => { if (key) applyDecryption() })
+watch(() => syncStore.revision, () => loadFromDB())
 
 onMounted(async () => {
-  await load().catch(() => {})
+  await loadFromDB().catch(() => {})
   loading.value = false
 })
 </script>

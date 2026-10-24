@@ -15,6 +15,7 @@ class Habit(models.Model):
 
     user = models.ForeignKey(get_user_model(), models.CASCADE)
     encrypted_payload = models.JSONField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.name or str(self.pk)
@@ -90,6 +91,7 @@ class HabitLog(models.Model):
     date = models.DateField(default=date.today)
     note = models.TextField(null=True, blank=True)
     encrypted_payload = models.JSONField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"{self.habit} – {self.date}"

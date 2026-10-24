@@ -23,6 +23,7 @@ class Mood(models.Model):
         blank=True,
     )
     encrypted_payload = models.JSONField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.name or ""
@@ -39,6 +40,7 @@ class Status(models.Model):
     text = models.TextField(null=True, blank=True)
     source = models.CharField(max_length=128, null=True, blank=True, db_index=True)
     encrypted_payload = models.JSONField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     @property
     def short_text(self):
@@ -64,6 +66,7 @@ class ActivityCategory(models.Model):
     icon = models.CharField(default="ph ph-check", max_length=64, null=True, blank=True)
     color = ColorField(null=True, blank=True)
     encrypted_payload = models.JSONField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.name or ""
@@ -80,6 +83,7 @@ class Activity(models.Model):
     category = models.ForeignKey(ActivityCategory, models.SET_NULL, null=True)
     hidden = models.BooleanField(default=False)
     encrypted_payload = models.JSONField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.name or ""

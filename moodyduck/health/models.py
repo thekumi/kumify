@@ -49,6 +49,7 @@ class HealthLog(models.Model):
     recorded_at = models.DateTimeField(default=timezone.now)
     notes = models.TextField(null=True, blank=True)
     encrypted_payload = models.JSONField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"Health log — {self.recorded_at:%Y-%m-%d %H:%M}"

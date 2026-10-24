@@ -23,3 +23,4 @@ class ThoughtRecord(models.Model):
     emotions_now = models.ManyToManyField(EmotionRecord, related_name="emotions_now")
     complete = models.BooleanField(default=False)
     encrypted_payload = models.JSONField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)

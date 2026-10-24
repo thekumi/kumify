@@ -22,7 +22,7 @@ from rest_framework.views import APIView
 
 from moodyduck.cbt.models import ThoughtRecord
 from moodyduck.common.helpers import get_upload_path
-from moodyduck.common.models import ErrorLog
+from moodyduck.common.models import DeletionLog, ErrorLog
 from moodyduck.dreams.models import Dream, DreamMedia, Theme
 from moodyduck.friends.models import Person
 from moodyduck.gpslog.models import GPSPoint
@@ -93,6 +93,36 @@ from .serializers import (
     habit_log_queryset_for_request,
     habit_queryset_for_request,
 )
+
+
+class SinceFilterMixin:
+    """Adds ?since=<iso_datetime> filtering on updated_at to list actions."""
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        since = self.request.query_params.get("since")
+        if since and self.action == "list":
+            try:
+                since_dt = timezone.datetime.fromisoformat(since.replace("Z", "+00:00"))
+                qs = qs.filter(updated_at__gt=since_dt)
+            except (ValueError, AttributeError):
+                pass
+        return qs
+
+
+class SyncDeletionsView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        qs = DeletionLog.objects.filter(user=request.user)
+        since = request.query_params.get("since")
+        if since:
+            try:
+                since_dt = timezone.datetime.fromisoformat(since.replace("Z", "+00:00"))
+                qs = qs.filter(deleted_at__gt=since_dt)
+            except ValueError:
+                pass
+        return Response(list(qs.values("resource_type", "resource_id", "deleted_at")))
 
 
 class StatusCheckView(View):
@@ -687,7 +717,7 @@ class PersonViewSet(viewsets.ModelViewSet):
         serializer.save(user=self.request.user)
 
 
-class MoodViewSet(viewsets.ModelViewSet):
+class MoodViewSet(SinceFilterMixin, viewsets.ModelViewSet):
     serializer_class = MoodSerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -698,7 +728,7 @@ class MoodViewSet(viewsets.ModelViewSet):
         serializer.save(user=self.request.user)
 
 
-class ActivityCategoryViewSet(viewsets.ModelViewSet):
+class ActivityCategoryViewSet(SinceFilterMixin, viewsets.ModelViewSet):
     serializer_class = ActivityCategorySerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -709,7 +739,7 @@ class ActivityCategoryViewSet(viewsets.ModelViewSet):
         serializer.save(user=self.request.user)
 
 
-class ActivityViewSet(viewsets.ModelViewSet):
+class ActivityViewSet(SinceFilterMixin, viewsets.ModelViewSet):
     serializer_class = ActivitySerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -723,7 +753,7 @@ class ActivityViewSet(viewsets.ModelViewSet):
         serializer.save(user=self.request.user)
 
 
-class StatusViewSet(viewsets.ModelViewSet):
+class StatusViewSet(SinceFilterMixin, viewsets.ModelViewSet):
     serializer_class = StatusSerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -814,7 +844,7 @@ class CustomPropertyViewSet(viewsets.ModelViewSet):
         serializer.save(user=self.request.user)
 
 
-class HabitViewSet(viewsets.ModelViewSet):
+class HabitViewSet(SinceFilterMixin, viewsets.ModelViewSet):
     serializer_class = HabitSerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -825,7 +855,7 @@ class HabitViewSet(viewsets.ModelViewSet):
         serializer.save(user=self.request.user)
 
 
-class HabitLogViewSet(viewsets.ModelViewSet):
+class HabitLogViewSet(SinceFilterMixin, viewsets.ModelViewSet):
     serializer_class = HabitLogSerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -848,7 +878,7 @@ class HealthParameterViewSet(viewsets.ModelViewSet):
         serializer.save(user=self.request.user)
 
 
-class HealthLogViewSet(viewsets.ModelViewSet):
+class HealthLogViewSet(SinceFilterMixin, viewsets.ModelViewSet):
     serializer_class = HealthLogSerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -875,7 +905,7 @@ class VaccinationViewSet(viewsets.ModelViewSet):
         serializer.save(user=self.request.user)
 
 
-class CBTRecordViewSet(viewsets.ModelViewSet):
+class CBTRecordViewSet(SinceFilterMixin, viewsets.ModelViewSet):
     serializer_class = CBTRecordSerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -886,7 +916,7 @@ class CBTRecordViewSet(viewsets.ModelViewSet):
         serializer.save(user=self.request.user)
 
 
-class DreamViewSet(viewsets.ModelViewSet):
+class DreamViewSet(SinceFilterMixin, viewsets.ModelViewSet):
     serializer_class = DreamSerializer
     permission_classes = [permissions.IsAuthenticated]
 

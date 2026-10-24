@@ -14,6 +14,7 @@ import { isLoggedIn } from '@/api/auth'
 import { usePluginsStore } from '@/stores/plugins'
 import { useKeystoreStore } from '@/stores/keystore'
 import { usePluginPermissionsStore } from '@/stores/pluginPermissions'
+import { useSyncStore } from '@/stores/sync'
 import { registerCalendarProvider, registerTaskListProvider } from '@/planner/registry'
 import '@/views/health/plannerProviders'
 import '@/views/people/plannerProviders'
@@ -120,6 +121,9 @@ watch(
   async (status) => {
     if (status === 'ready' && !pluginsLoaded) {
       pluginsLoaded = true
+      const syncStore = useSyncStore(pinia)
+      await syncStore.init()
+      syncStore.trigger()
       await loadPlugins()
     }
   }

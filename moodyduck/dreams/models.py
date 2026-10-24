@@ -36,6 +36,7 @@ class Dream(models.Model):
     lucid = models.BooleanField(default=False)
     wet = models.BooleanField(default=False)
     encrypted_payload = models.JSONField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     @property
     def short_text(self):

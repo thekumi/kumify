@@ -74,12 +74,15 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import TopBar from '@/components/TopBar.vue'
 import BottomNav from '@/components/BottomNav.vue'
-import { getDashboard, getStatuses, getMoods, getActivities } from '@/api/mood'
+import { getDashboard } from '@/api/mood'
+import { dbGetAll } from '@/lib/db'
 import { useKeystoreStore } from '@/stores/keystore'
 import { usePluginsStore } from '@/stores/plugins'
+import { useSyncStore } from '@/stores/sync'
 
 const ks = useKeystoreStore()
 const pluginsStore = usePluginsStore()
+const syncStore = useSyncStore()
 const appItems = computed(() => pluginsStore.orderedVisibleNavItems.filter(i => i.to !== '/' && i.to !== '/me'))
 const rawStats = ref(null)
 const stats = ref(null)
@@ -124,21 +127,26 @@ async function applyDecryption() {
   }
 }
 
-watch(() => ks.dataKey, (key) => { if (key) applyDecryption() })
+async function loadFromDB() {
+  const [ss, ms, as] = await Promise.all([
+    dbGetAll('statuses'),
+    dbGetAll('moods'),
+    dbGetAll('activities'),
+  ])
+  rawStatuses.value = ss.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+  rawMoods.value = ms
+  rawActivities.value = as
+  await applyDecryption()
+}
+
+watch(() => ks.dataKey, key => { if (key) applyDecryption() })
+watch(() => syncStore.revision, () => loadFromDB())
 
 onMounted(async () => {
-  const [s, page, moods, activities] = await Promise.all([
-    getDashboard().catch(() => null),
-    getStatuses(1).catch(() => ({ results: [] })),
-    getMoods().catch(() => []),
-    getActivities({ include_hidden: 'true' }).catch(() => []),
+  await Promise.all([
+    loadFromDB().catch(() => {}),
+    getDashboard().then(s => { rawStats.value = s; stats.value = s }).catch(() => {}),
   ])
-  rawStats.value = s
-  stats.value = s
-  rawMoods.value = moods
-  rawActivities.value = activities
-  rawStatuses.value = page.results ?? []
-  await applyDecryption()
 })
 </script>
 <script>

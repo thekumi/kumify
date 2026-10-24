@@ -287,6 +287,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "moodyduck.notifications.tasks.send_scheduled_notifications",
         "schedule": crontab(minute="*/15"),
     },
+    "prune-deletion-log": {
+        "task": "moodyduck.common.tasks.prune_deletion_log",
+        "schedule": crontab(hour="3", minute="0"),
+    },
 }
 
 # Web Push (VAPID)
