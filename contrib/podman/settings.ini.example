@@ -3,6 +3,7 @@ Debug = 0
 TimeZone = Europe/Vienna
 Host = moodyduck.example.org
 StaticRoot = /app/data/static
+MediaRoot = /app/data
 
 [Redis]
 URL = redis://moodyduck-valkey:6379/0

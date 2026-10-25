@@ -198,7 +198,9 @@ STATIC_URL = "/static/"
 STATIC_ROOT = CONFIG_FILE.config.get("MOODYDUCK", "StaticRoot", fallback="static")
 
 MEDIA_URL = "/"
-MEDIA_ROOT = BASE_DIR.parent
+MEDIA_ROOT = CONFIG_FILE.config.get(
+    "MOODYDUCK", "MediaRoot", fallback=str(BASE_DIR.parent)
+)
 
 _SPA_DIST = BASE_DIR / "spa"
 STATICFILES_DIRS = [("spa", _SPA_DIST)] if _SPA_DIST.exists() else []
