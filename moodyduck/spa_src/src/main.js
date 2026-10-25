@@ -23,8 +23,12 @@ import TopBar from '@/components/TopBar.vue'
 import BottomNav from '@/components/BottomNav.vue'
 
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(err => console.warn('SW registration failed:', err))
+  import('@/lib/swUpdate').then(({ watchForUpdate }) => {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js', { scope: '/' })
+        .then(reg => watchForUpdate(reg))
+        .catch(err => console.warn('SW registration failed:', err))
+    })
   })
 }
 

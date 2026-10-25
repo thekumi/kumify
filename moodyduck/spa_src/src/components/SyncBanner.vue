@@ -1,5 +1,16 @@
 <template>
     <div class="fixed bottom-16 inset-x-0 z-40 flex flex-col items-center gap-1 pb-1.5 px-4 pointer-events-none">
+        <!-- App update available -->
+        <Transition name="fade">
+        <button v-if="updateAvailable"
+                type="button"
+                @click.stop="applyUpdate"
+                class="pointer-events-auto bg-sky-600/95 backdrop-blur-sm text-white text-xs font-medium px-3.5 py-1.5 rounded-full shadow flex items-center gap-2">
+            <i class="ph ph-arrow-circle-up text-sm shrink-0"></i>
+            <span>Update available</span>
+            <span class="opacity-70">· Tap to reload</span>
+        </button>
+        </Transition>
         <!-- Active states: download sync or upload sync (pills, pointer-events-none) -->
         <Transition name="fade">
         <div v-if="(sync.syncing && sync.lastSync) || upload.syncing"
@@ -36,6 +47,7 @@
 import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useOfflineStore } from '@/stores/offline'
 import { useSyncStore } from '@/stores/sync'
+import { updateAvailable, applyUpdate } from '@/lib/swUpdate'
 
 const upload = useOfflineStore()
 const sync = useSyncStore()
