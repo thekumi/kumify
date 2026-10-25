@@ -20,4 +20,7 @@
   .pb-nav {
     padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
   }
+  .pb-sheet {
+    padding-bottom: calc(2rem + env(safe-area-inset-bottom, 0px));
+  }
 }

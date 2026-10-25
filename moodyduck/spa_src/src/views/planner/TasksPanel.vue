@@ -105,9 +105,9 @@
         </div>
         <!-- Edit task sheet -->
         <div v-if="editingTask"
-             class="fixed inset-0 z-50 flex items-end justify-center bg-black/40"
+             class="fixed inset-0 z-[60] flex items-end justify-center bg-black/40"
              @click.self="closeEdit">
-            <div class="bg-white w-full max-w-lg rounded-t-2xl px-4 pt-5 pb-8 space-y-3">
+            <div class="bg-white w-full max-w-lg rounded-t-2xl px-4 pt-5 pb-sheet space-y-3">
                 <h3 class="font-semibold text-stone-800">Edit Task</h3>
                 <input v-model="editTaskTitle"
                        type="text"

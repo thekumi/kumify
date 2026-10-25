@@ -54,9 +54,9 @@
             </li>
         </ul>
         <div v-if="sheet"
-             class="fixed inset-0 bg-black/30 z-50 flex items-end"
+             class="fixed inset-0 bg-black/30 z-[60] flex items-end"
              @click.self="sheet = null">
-            <div class="bg-white w-full rounded-t-3xl p-6 space-y-4">
+            <div class="bg-white w-full rounded-t-3xl px-6 pt-6 pb-sheet space-y-4">
                 <h2 class="text-lg font-semibold text-stone-800">{{ sheet.id ? 'Edit Habit' : 'New Habit' }}</h2>
                 <div>
                     <p class="text-xs text-stone-400 mb-2">Activity</p>

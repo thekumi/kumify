@@ -75,9 +75,9 @@
         </div>
         <!-- New / Edit Calendar sheet -->
         <div v-if="showNewCalendar || editingCalendar"
-             class="fixed inset-0 z-50 flex items-end justify-center bg-black/40"
+             class="fixed inset-0 z-[60] flex items-end justify-center bg-black/40"
              @click.self="closeCalendarSheet">
-            <div class="bg-white w-full max-w-lg rounded-t-2xl px-4 pt-5 pb-8 space-y-3">
+            <div class="bg-white w-full max-w-lg rounded-t-2xl px-4 pt-5 pb-sheet space-y-3">
                 <h3 class="font-semibold text-stone-800">{{ editingCalendar ? 'Edit Calendar' : 'New Calendar' }}</h3>
                 <input v-model="calendarForm.name"
                        type="text"
@@ -120,9 +120,9 @@
         </div>
         <!-- New / Edit Task List sheet -->
         <div v-if="showNewTaskList || editingTaskList"
-             class="fixed inset-0 z-50 flex items-end justify-center bg-black/40"
+             class="fixed inset-0 z-[60] flex items-end justify-center bg-black/40"
              @click.self="closeTaskListSheet">
-            <div class="bg-white w-full max-w-lg rounded-t-2xl px-4 pt-5 pb-8 space-y-3">
+            <div class="bg-white w-full max-w-lg rounded-t-2xl px-4 pt-5 pb-sheet space-y-3">
                 <h3 class="font-semibold text-stone-800">{{ editingTaskList ? 'Edit Task List' : 'New Task List' }}</h3>
                 <input v-model="taskListForm.name"
                        type="text"
