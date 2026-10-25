@@ -40,14 +40,6 @@
                 </div>
             </li>
         </ul>
-        <div v-if="hasMore" class="px-4 py-4">
-            <button type="button"
-                    @click="loadMore"
-                    :disabled="loadingMore"
-                    class="w-full py-3 rounded-xl border border-stone-200 text-stone-600 text-sm font-medium hover:bg-stone-50 transition-colors disabled:opacity-50">
-                {{ loadingMore ? 'Loading…' : 'Load more' }}
-            </button>
-        </div>
         <BottomNav />
     </div>
 </template>
@@ -55,17 +47,14 @@
 import { ref, onMounted, watch } from 'vue'
 import TopBar from '@/components/TopBar.vue'
 import BottomNav from '@/components/BottomNav.vue'
-import { getLogs } from '@/api/health'
 import { useKeystoreStore } from '@/stores/keystore'
 import { decryptPayload } from '@/keystore/fields'
+import { dbGetAll } from '@/lib/db'
 
 const ks = useKeystoreStore()
 const logs = ref([])
 const rawLogs = ref([])
 const loading = ref(true)
-const loadingMore = ref(false)
-const page = ref(1)
-const hasMore = ref(false)
 
 const fmtDate = (ts) => new Date(ts).toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 
@@ -86,15 +75,6 @@ async function applyDecryption() {
   }))
 }
 
-async function load(p = 1) {
-  const res = await getLogs(p)
-  rawLogs.value.push(...(res.results ?? []))
-  hasMore.value = !!res.next
-  page.value = p
-  await applyDecryption()
-}
-
 watch(() => ks.dataKey, (key) => { if (key) applyDecryption() })
-async function loadMore() { loadingMore.value = true; await load(page.value + 1).catch(() => {}); loadingMore.value = false }
-onMounted(async () => { await load().catch(() => {}); loading.value = false })
+onMounted(async () => { rawLogs.value = await dbGetAll('health_logs'); await applyDecryption(); loading.value = false })
 </script>

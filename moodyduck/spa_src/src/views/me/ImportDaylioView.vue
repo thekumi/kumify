@@ -199,15 +199,16 @@ import { ref, computed } from 'vue'
 import TopBar from '@/components/TopBar.vue'
 import BottomNav from '@/components/BottomNav.vue'
 import {
-  getMoods, createMood,
-  getActivityCategories, createActivityCategory,
-  getActivities, createActivity,
+  createMood,
+  createActivityCategory,
+  createActivity,
   createStatus, updateStatus, getStatusSources,
 } from '@/api/mood'
-import { getProperties, createProperty } from '@/api/properties'
-import { getHabits, createHabit } from '@/api/habits'
+import { createProperty } from '@/api/properties'
+import { createHabit } from '@/api/habits'
 import { uploadAttachment } from '@/api/mood'
 import { useKeystoreStore } from '@/stores/keystore'
+import { dbGetAll, dbPut } from '@/lib/db'
 
 const PREDEFINED_MOODS = {
   1: { name: 'Rad',     color: '#5ebe6c', value: '255' },
@@ -387,7 +388,7 @@ async function onFileChange(e) {
     zipBuffer.value = buffer
     zipIdx.value    = index
 
-    const [rawM, rawA] = await Promise.all([getMoods(), getActivities({ include_hidden: 'true' })])
+    const [rawM, rawA] = await Promise.all([dbGetAll('moods'), dbGetAll('activities')])
     const [exMoods, exActs] = await Promise.all([ks.decryptAll(rawM), ks.decryptAll(rawA)])
     existingMoods.value      = exMoods
     existingActivities.value = exActs
@@ -444,9 +445,9 @@ async function startImport() {
 
   try {
     const [rawC, rawP, rawH] = await Promise.all([
-      getActivityCategories(),
-      getProperties(),
-      getHabits(),
+      dbGetAll('activity_categories'),
+      dbGetAll('properties'),
+      dbGetAll('habits'),
     ])
     const [exCats, exProps, exHabits] = await Promise.all([
       ks.decryptAll(rawC),
@@ -462,6 +463,7 @@ async function startImport() {
         skipped.moods++
       } else {
         const nm = await createMood({ encrypted_payload: await ks.encryptPayload({ name: m.daylio.name, icon: 'ph ph-smiley', color: m.daylio.color, value: m.daylio.value }) })
+        await dbPut('moods', nm)
         moodIdMap[m.daylio.id] = nm.id
         created.moods++
       }
@@ -476,6 +478,7 @@ async function startImport() {
         categoryIdMap[tg.id] = ex.id; skipped.categories++
       } else {
         const c = await createActivityCategory({ encrypted_payload: await ks.encryptPayload({ name: tg.name, icon: 'ph ph-tag' }) })
+        await dbPut('activity_categories', c)
         categoryIdMap[tg.id] = c.id; created.categories++
       }
       progress.value.categories++
@@ -492,6 +495,7 @@ async function startImport() {
         const catId = categoryIdMap[a.daylio.groupId] ?? null
         if (catId != null) payload.category = catId
         const act = await createActivity(payload)
+        await dbPut('activities', act)
         activityIdMap[a.daylio.id] = act.id
         created.activities++
       }
@@ -509,6 +513,7 @@ async function startImport() {
         const minVal = scale.min_value ?? scale.min_val ?? 0
         const maxVal = scale.max_value ?? scale.max_val ?? 10
         const prop = await createProperty({ encrypted_payload: await ks.encryptPayload({ name: scale.name, type: 'scale', min_val: minVal, max_val: maxVal }) })
+        await dbPut('properties', prop)
         scaleIdMap[scale.id] = prop.id; created.scales++
       }
       progress.value.scales++
@@ -524,7 +529,8 @@ async function startImport() {
         skipped.goals++
       } else {
         const { period, target_count } = mapGoalPeriod(goal.repeat_type, goal.repeat_value)
-        await createHabit({ encrypted_payload: await ks.encryptPayload({ activity_id: actId, goal: { target_count, period } }) })
+        const habit = await createHabit({ encrypted_payload: await ks.encryptPayload({ activity_id: actId, goal: { target_count, period } }) })
+        await dbPut('habits', habit)
         created.goals++
       }
       progress.value.goals++

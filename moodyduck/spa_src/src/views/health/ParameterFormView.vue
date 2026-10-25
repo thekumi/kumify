@@ -52,9 +52,9 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import TopBar from '@/components/TopBar.vue'
 import BottomNav from '@/components/BottomNav.vue'
-import { getParameters, createParameter, updateParameter, deleteParameter } from '@/api/health'
 import { useKeystoreStore } from '@/stores/keystore'
-import { saveEncrypted } from '@/keystore/saveEncrypted'
+import { createOrQueue, saveEncryptedOrQueue, deleteOrQueue } from '@/lib/offlineMutation'
+import { dbGetAll } from '@/lib/db'
 
 const ks = useKeystoreStore()
 const route = useRoute()
@@ -71,14 +71,13 @@ async function save() {
   saving.value = true; error.value = ''
   try {
     if (id) {
-      await saveEncrypted(updateParameter, id,
+      await saveEncryptedOrQueue('/health/parameters/', id,
         { name: form.value.name, unit: form.value.unit || null, icon: form.value.icon || 'ph ph-heart' },
-        ENCRYPTED_FIELDS, rawParam, ks)
+        ENCRYPTED_FIELDS, rawParam, ks, 'health_parameters')
     } else {
       const toEncrypt = { name: form.value.name, icon: form.value.icon || 'ph ph-heart' }
       if (form.value.unit) toEncrypt.unit = form.value.unit
-      const encrypted_payload = await ks.encryptPayload(toEncrypt)
-      await createParameter({ encrypted_payload })
+      await createOrQueue('/health/parameters/', { encrypted_payload: await ks.encryptPayload(toEncrypt) }, 'health_parameters')
     }
     router.push('/health/parameters')
   } catch { error.value = 'Could not save.' }
@@ -87,13 +86,13 @@ async function save() {
 
 async function remove() {
   if (!confirm('Delete this parameter? Existing log records for it will also be removed.')) return
-  await deleteParameter(id)
+  await deleteOrQueue('/health/parameters/', id, 'health_parameters')
   router.push('/health/parameters')
 }
 
 onMounted(async () => {
   if (id) {
-    const all = await getParameters()
+    const all = await dbGetAll('health_parameters')
     const p = all.find(p => String(p.id) === String(id))
     if (p) {
       rawParam = p

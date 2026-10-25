@@ -145,15 +145,12 @@ import { useRoute, useRouter } from 'vue-router'
 import TopBar from '@/components/TopBar.vue'
 import BottomNav from '@/components/BottomNav.vue'
 import MediaGallery from '@/components/MediaGallery.vue'
-import { getDream, createDream, updateDream, getThemes, uploadDreamAttachment, deleteDreamAttachment } from '@/api/dreams'
-import { getMoods } from '@/api/mood'
+import { getDream, getThemes, uploadDreamAttachment, deleteDreamAttachment } from '@/api/dreams'
+import { dbGet, dbGetAll } from '@/lib/db'
 import { useKeystoreStore } from '@/stores/keystore'
-import { useOfflineStore } from '@/stores/offline'
-import { saveEncrypted } from '@/keystore/saveEncrypted'
-import { dbPut } from '@/lib/db'
+import { createOrQueue, saveEncryptedOrQueue } from '@/lib/offlineMutation'
 
 const ks = useKeystoreStore()
-const offline = useOfflineStore()
 const route = useRoute()
 const router = useRouter()
 const id = route.params.id
@@ -250,9 +247,8 @@ async function save() {
     const isoTimestamp = new Date(form.value.timestamp).toISOString()
 
     if (id) {
-      const result = await saveEncrypted(updateDream, id, { ...form.value, theme_ids: [...selectedThemes.value], timestamp: isoTimestamp }, ['title', 'content'], rawDream, ks)
-      await dbPut('dreams', result)
-      await uploadPending(result.id)
+      const result = await saveEncryptedOrQueue('/dreams/', id, { ...form.value, theme_ids: [...selectedThemes.value], timestamp: isoTimestamp }, ['title', 'content'], rawDream, ks, 'dreams')
+      if (!result._pending) await uploadPending(result.id)
       router.push(`/journal/dreams/${result.id}`)
     } else {
       const toEncrypt = {}
@@ -267,36 +263,26 @@ async function save() {
         timestamp: isoTimestamp,
         ...(Object.keys(toEncrypt).length ? { encrypted_payload: await ks.encryptPayload(toEncrypt) } : {}),
       }
-      if (!navigator.onLine) {
-        await offline.enqueue({ endpoint: '/dreams/', payload: createPayload })
-        router.push('/journal/dreams')
-      } else {
-        try {
-          const result = await createDream(createPayload)
-          await dbPut('dreams', result)
-          await uploadPending(result.id)
-          router.push(`/journal/dreams/${result.id}`)
-        } catch (e) {
-          if (!(e instanceof TypeError)) throw e
-          await offline.enqueue({ endpoint: '/dreams/', payload: createPayload })
-          router.push('/journal/dreams')
-        }
-      }
+      const result = await createOrQueue('/dreams/', createPayload, 'dreams')
+      if (!result._pending) await uploadPending(result.id)
+      router.push(result._pending ? '/journal/dreams' : `/journal/dreams/${result.id}`)
     }
   } catch { error.value = 'Could not save.' }
   finally { saving.value = false }
 }
 
 onMounted(async () => {
-  const [m, t] = await Promise.all([getMoods().catch(() => []), getThemes().catch(() => [])])
+  const [m, t] = await Promise.all([dbGetAll('moods'), getThemes().catch(() => [])])
   rawMoods.value = m
   themes.value = t
   await applyDecryption()
 
   if (id) {
-    rawDream = await getDream(id)
-    existingAttachments.value = rawDream.attachments ?? []
-    await fillForm(rawDream)
+    rawDream = await getDream(id).catch(() => null) ?? await dbGet('dreams', Number(id))
+    if (rawDream) {
+      existingAttachments.value = rawDream.attachments ?? []
+      await fillForm(rawDream)
+    }
   }
 })
 </script>

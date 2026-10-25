@@ -71,10 +71,10 @@ import { useRoute, useRouter } from 'vue-router'
 import TopBar from '@/components/TopBar.vue'
 import BottomNav from '@/components/BottomNav.vue'
 import MediaGallery from '@/components/MediaGallery.vue'
-import { getDream, deleteDream } from '@/api/dreams'
-import { getMoods } from '@/api/mood'
+import { getDream } from '@/api/dreams'
 import { useKeystoreStore } from '@/stores/keystore'
-import { dbDelete as dbDeleteRecord } from '@/lib/db'
+import { dbGetAll } from '@/lib/db'
+import { deleteOrQueue } from '@/lib/offlineMutation'
 
 const ks = useKeystoreStore()
 const route = useRoute()
@@ -100,14 +100,13 @@ async function applyDecryption() {
 
 async function remove() {
   if (!confirm('Delete this dream?')) return
-  await deleteDream(id)
-  await dbDeleteRecord('dreams', Number(id))
+  await deleteOrQueue('/dreams/', id, 'dreams')
   router.push('/journal/dreams')
 }
 
 watch(() => ks.dataKey, (key) => { if (key) applyDecryption() })
 onMounted(async () => {
-  const [d, m] = await Promise.all([getDream(id).catch(() => null), getMoods().catch(() => [])])
+  const [d, m] = await Promise.all([getDream(id).catch(() => null), dbGetAll('moods')])
   raw.value = d
   rawMoods.value = m
   await applyDecryption()

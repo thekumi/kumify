@@ -192,8 +192,9 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import TopBar from '@/components/TopBar.vue'
 import BottomNav from '@/components/BottomNav.vue'
-import { getMedications, createMedication, updateMedication, deleteMedication } from '@/api/health'
 import { useKeystoreStore } from '@/stores/keystore'
+import { createOrQueue, updateOrQueue, deleteOrQueue } from '@/lib/offlineMutation'
+import { dbGetAll } from '@/lib/db'
 
 const ICONS = [
   { cls: 'ph ph-pill' },
@@ -249,6 +250,7 @@ const form = ref({
 })
 const saving = ref(false)
 const error = ref('')
+let rawMedication = null
 
 const freqUnit = computed(() => {
   const map = { DAILY: 'day(s)', WEEKLY: 'week(s)', MONTHLY: 'month(s)', YEARLY: 'year(s)' }
@@ -343,9 +345,9 @@ async function save() {
     const payload = buildPayload()
     const encrypted_payload = await ks.encryptPayload(payload)
     if (id) {
-      await updateMedication(id, { encrypted_payload })
+      await updateOrQueue('/health/medications/', id, { encrypted_payload }, 'medications', rawMedication)
     } else {
-      await createMedication({ encrypted_payload })
+      await createOrQueue('/health/medications/', { encrypted_payload }, 'medications')
     }
     router.push('/health/medications')
   } catch {
@@ -357,16 +359,16 @@ async function save() {
 
 async function remove() {
   if (!confirm('Delete this medication?')) return
-  await deleteMedication(id)
+  await deleteOrQueue('/health/medications/', id, 'medications')
   router.push('/health/medications')
 }
 
 onMounted(async () => {
   if (id) {
-    const all = await getMedications()
-    const raw = all.find(m => String(m.id) === String(id))
-    if (raw) {
-      const dec = await ks.decrypt(raw)
+    const all = await dbGetAll('medications')
+    rawMedication = all.find(m => String(m.id) === String(id)) ?? null
+    if (rawMedication) {
+      const dec = await ks.decrypt(rawMedication)
       fillFromDecrypted(dec)
     }
   }

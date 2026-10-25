@@ -68,9 +68,9 @@ import { ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import TopBar from '@/components/TopBar.vue'
 import BottomNav from '@/components/BottomNav.vue'
-import { getVaccinations, createVaccination, updateVaccination, deleteVaccination } from '@/api/health'
 import { useKeystoreStore } from '@/stores/keystore'
-import { saveEncrypted } from '@/keystore/saveEncrypted'
+import { createOrQueue, saveEncryptedOrQueue, deleteOrQueue } from '@/lib/offlineMutation'
+import { dbGetAll } from '@/lib/db'
 
 const ks = useKeystoreStore()
 const route = useRoute()
@@ -105,15 +105,14 @@ async function save() {
     if (id) {
       const payload = { ...form.value, notes: hiddenNotes }
       if (!payload.next_due) payload.next_due = null
-      await saveEncrypted(updateVaccination, id, payload, ENCRYPTED_FIELDS, rawVaccination, ks)
+      await saveEncryptedOrQueue('/health/vaccinations/', id, payload, ENCRYPTED_FIELDS, rawVaccination, ks, 'vaccinations')
     } else {
       const toEncrypt = {}
       for (const field of ENCRYPTED_FIELDS) {
         const v = form.value[field] ?? (field === 'notes' ? hiddenNotes : null)
         if (v !== null && v !== undefined && v !== '') toEncrypt[field] = String(v)
       }
-      const encrypted_payload = await ks.encryptPayload(toEncrypt)
-      await createVaccination({ encrypted_payload })
+      await createOrQueue('/health/vaccinations/', { encrypted_payload: await ks.encryptPayload(toEncrypt) }, 'vaccinations')
     }
     router.push('/health/vaccinations')
   } catch { error.value = 'Could not save.' }
@@ -122,14 +121,14 @@ async function save() {
 
 async function remove() {
   if (!confirm('Delete this vaccination?')) return
-  await deleteVaccination(id)
+  await deleteOrQueue('/health/vaccinations/', id, 'vaccinations')
   router.push('/health/vaccinations')
 }
 
 onMounted(async () => {
   if (id) {
-    const all = await getVaccinations()
-    rawVaccination = all.find(v => String(v.id) === String(id))
+    const all = await dbGetAll('vaccinations')
+    rawVaccination = all.find(v => String(v.id) === String(id)) ?? null
     if (rawVaccination) await fillForm(rawVaccination)
   }
 })

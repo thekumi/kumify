@@ -1,8 +1,8 @@
 import { registerCalendarProvider } from '@/planner/registry'
-import { getPeople } from '@/api/people'
+import { dbGetAll } from '@/lib/db'
 
 registerCalendarProvider('friends.birthdays', async (ks, fromDate, toDate) => {
-  const raw = await getPeople().catch(() => [])
+  const raw = await dbGetAll('people')
   const people = await ks.decryptAll(raw)
 
   const fromYear = new Date(fromDate).getFullYear()

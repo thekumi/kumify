@@ -12,17 +12,29 @@ class HealthConfig(AppConfig):
             register_virtual_calendar,
         )
 
-        from .models import HealthLog  # noqa: PLC0415
+        from .models import (  # noqa: PLC0415
+            HealthLog,
+            HealthParameter,
+            Medication,
+            Vaccination,
+        )
 
         register_virtual_calendar("health.medications", color="#059669")
         register_virtual_calendar("health.vaccinations", color="#DC2626")
 
-        def _log_health_log(sender, instance, **kwargs):
-            if instance.user_id:
-                DeletionLog.objects.create(
-                    user_id=instance.user_id,
-                    resource_type="health_logs",
-                    resource_id=instance.pk,
-                )
+        def _log(resource_type):
+            def handler(sender, instance, **kwargs):
+                user_id = getattr(instance, "user_id", None)
+                if user_id:
+                    DeletionLog.objects.create(
+                        user_id=user_id,
+                        resource_type=resource_type,
+                        resource_id=instance.pk,
+                    )
 
-        pre_delete.connect(_log_health_log, sender=HealthLog)
+            return handler
+
+        pre_delete.connect(_log("health_logs"), sender=HealthLog)
+        pre_delete.connect(_log("health_parameters"), sender=HealthParameter)
+        pre_delete.connect(_log("medications"), sender=Medication)
+        pre_delete.connect(_log("vaccinations"), sender=Vaccination)

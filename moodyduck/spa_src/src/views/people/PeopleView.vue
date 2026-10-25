@@ -63,8 +63,8 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import TopBar from '@/components/TopBar.vue'
 import BottomNav from '@/components/BottomNav.vue'
-import { getPeople } from '@/api/people'
 import { useKeystoreStore } from '@/stores/keystore'
+import { dbGetAll } from '@/lib/db'
 
 const ks = useKeystoreStore()
 const people = ref([])
@@ -80,7 +80,7 @@ async function applyDecryption() { people.value = await ks.decryptAll(raw.value)
 watch(() => ks.dataKey, (key) => { if (key) applyDecryption() })
 
 onMounted(async () => {
-  raw.value = await getPeople().catch(() => [])
+  raw.value = await dbGetAll('people')
   await applyDecryption()
   loading.value = false
 })

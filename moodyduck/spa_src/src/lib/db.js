@@ -1,5 +1,5 @@
 const DB_NAME = 'moodyduck-data'
-const DB_VERSION = 1
+const DB_VERSION = 2
 
 const STORES = [
   'statuses',
@@ -11,6 +11,11 @@ const STORES = [
   'habit_logs',
   'health_logs',
   'cbt_records',
+  'health_parameters',
+  'medications',
+  'vaccinations',
+  'people',
+  'properties',
   'sync_meta',
 ]
 

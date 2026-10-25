@@ -41,13 +41,12 @@ import { ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import TopBar from '@/components/TopBar.vue'
 import BottomNav from '@/components/BottomNav.vue'
-import { getRecord, createRecord, updateRecord } from '@/api/cbt'
+import { getRecord } from '@/api/cbt'
 import { useKeystoreStore } from '@/stores/keystore'
-import { useOfflineStore } from '@/stores/offline'
-import { saveEncrypted } from '@/keystore/saveEncrypted'
+import { createOrQueue, saveEncryptedOrQueue } from '@/lib/offlineMutation'
+import { dbGet } from '@/lib/db'
 
 const ks = useKeystoreStore()
-const offline = useOfflineStore()
 const route = useRoute()
 const router = useRouter()
 const id = route.params.id
@@ -71,7 +70,7 @@ async function save() {
   saving.value = true; error.value = ''
   try {
     if (id) {
-      const result = await saveEncrypted(updateRecord, id, { ...form.value, ...hiddenFields }, ALL_ENCRYPTED_FIELDS, rawRecord, ks)
+      const result = await saveEncryptedOrQueue('/cbt/records/', id, { ...form.value, ...hiddenFields }, ALL_ENCRYPTED_FIELDS, rawRecord, ks, 'cbt_records')
       router.push(`/journal/cbt/${result.id}`)
     } else {
       const toEncrypt = {}
@@ -81,19 +80,8 @@ async function save() {
       const createPayload = Object.keys(toEncrypt).length
         ? { encrypted_payload: await ks.encryptPayload(toEncrypt) }
         : {}
-      if (!navigator.onLine) {
-        await offline.enqueue({ endpoint: '/cbt/records/', payload: createPayload })
-        router.push('/journal/cbt')
-      } else {
-        try {
-          const result = await createRecord(createPayload)
-          router.push(`/journal/cbt/${result.id}`)
-        } catch (e) {
-          if (!(e instanceof TypeError)) throw e
-          await offline.enqueue({ endpoint: '/cbt/records/', payload: createPayload })
-          router.push('/journal/cbt')
-        }
-      }
+      const result = await createOrQueue('/cbt/records/', createPayload, 'cbt_records')
+      router.push(result._pending ? '/journal/cbt' : `/journal/cbt/${result.id}`)
     }
   } catch { error.value = 'Could not save.' }
   finally { saving.value = false }
@@ -101,8 +89,8 @@ async function save() {
 
 onMounted(async () => {
   if (id) {
-    rawRecord = await getRecord(id)
-    await fillForm(rawRecord)
+    rawRecord = await getRecord(id).catch(() => null) ?? await dbGet('cbt_records', Number(id))
+    if (rawRecord) await fillForm(rawRecord)
   }
 })
 </script>

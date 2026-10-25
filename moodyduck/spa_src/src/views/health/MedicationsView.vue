@@ -48,8 +48,8 @@
 import { ref, onMounted, watch } from 'vue'
 import TopBar from '@/components/TopBar.vue'
 import BottomNav from '@/components/BottomNav.vue'
-import { getMedications } from '@/api/health'
 import { useKeystoreStore } from '@/stores/keystore'
+import { dbGetAll } from '@/lib/db'
 
 const DAY_NAMES = { MO: 'Mon', TU: 'Tue', WE: 'Wed', TH: 'Thu', FR: 'Fri', SA: 'Sat', SU: 'Sun' }
 
@@ -79,7 +79,7 @@ async function applyDecryption() { meds.value = await ks.decryptAll(raw.value) }
 watch(() => ks.dataKey, (key) => { if (key) applyDecryption() })
 
 onMounted(async () => {
-  raw.value = await getMedications().catch(() => [])
+  raw.value = await dbGetAll('medications')
   await applyDecryption()
   loading.value = false
 })

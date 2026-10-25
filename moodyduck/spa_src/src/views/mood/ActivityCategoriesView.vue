@@ -33,8 +33,8 @@
 import { ref, onMounted, watch } from 'vue'
 import TopBar from '@/components/TopBar.vue'
 import BottomNav from '@/components/BottomNav.vue'
-import { getActivityCategories } from '@/api/mood'
 import { useKeystoreStore } from '@/stores/keystore'
+import { dbGetAll } from '@/lib/db'
 
 const ks = useKeystoreStore()
 const categories = ref([])
@@ -45,7 +45,7 @@ async function applyDecryption() { categories.value = await ks.decryptAll(raw.va
 watch(() => ks.dataKey, (key) => { if (key) applyDecryption() })
 
 onMounted(async () => {
-  raw.value = await getActivityCategories().catch(() => [])
+  raw.value = await dbGetAll('activity_categories')
   await applyDecryption()
   loading.value = false
 })

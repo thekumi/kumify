@@ -253,7 +253,6 @@ import BottomNav from '@/components/BottomNav.vue'
 import { useKeystoreStore } from '@/stores/keystore'
 import { useSyncStore } from '@/stores/sync'
 import { dbGetAll } from '@/lib/db'
-import { getProperties } from '@/api/properties'
 import {
   filterByDays,
   moodOverTime, moodDistribution, activityFrequency,
@@ -556,7 +555,7 @@ async function load() {
       dbGetAll('dreams'),
       dbGetAll('habit_logs'),
       dbGetAll('habits'),
-      getProperties().catch(() => []),
+      dbGetAll('properties'),
     ])
     const [statuses, moods, activities, dreams, habits, props] = await Promise.all([
       ks.decryptAll(rawSt),

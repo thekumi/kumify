@@ -9,7 +9,13 @@ class MoodConfig(AppConfig):
 
         from moodyduck.common.models import DeletionLog  # noqa: PLC0415
 
-        from .models import Activity, ActivityCategory, Mood, Status  # noqa: PLC0415
+        from .models import (  # noqa: PLC0415
+            Activity,
+            ActivityCategory,
+            CustomProperty,
+            Mood,
+            Status,
+        )
 
         def _log(resource_type):
             def handler(sender, instance, **kwargs):
@@ -26,3 +32,4 @@ class MoodConfig(AppConfig):
         pre_delete.connect(_log("activity_categories"), sender=ActivityCategory)
         pre_delete.connect(_log("activities"), sender=Activity)
         pre_delete.connect(_log("statuses"), sender=Status)
+        pre_delete.connect(_log("properties"), sender=CustomProperty)

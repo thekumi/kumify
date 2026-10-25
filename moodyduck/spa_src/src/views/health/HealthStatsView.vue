@@ -111,7 +111,7 @@ import TopBar from '@/components/TopBar.vue'
 import BottomNav from '@/components/BottomNav.vue'
 import { useKeystoreStore } from '@/stores/keystore'
 import { decryptPayload } from '@/keystore/fields'
-import { getAllLogs, getParameters } from '@/api/health'
+import { dbGetAll } from '@/lib/db'
 import { filterByDays, healthParameterOverTime } from '@/history/stats.js'
 
 ChartJS.register(CategoryScale, LinearScale, TimeScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, Filler)
@@ -279,7 +279,7 @@ async function load() {
   if (!ks.dataKey) return
   loading.value = true
   try {
-    const [rawLogs, rawParams] = await Promise.all([getAllLogs(), getParameters()])
+    const [rawLogs, rawParams] = await Promise.all([dbGetAll('health_logs'), dbGetAll('health_parameters')])
     const [decryptedParams, decryptedLogs] = await Promise.all([
       ks.decryptAll(rawParams),
       decryptLogs(rawLogs),

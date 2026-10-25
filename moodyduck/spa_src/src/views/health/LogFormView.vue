@@ -66,14 +66,13 @@ import { ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import TopBar from '@/components/TopBar.vue'
 import BottomNav from '@/components/BottomNav.vue'
-import { getLog, createLog, updateLog, deleteLog, getParameters } from '@/api/health'
+import { getLog } from '@/api/health'
 import { useKeystoreStore } from '@/stores/keystore'
-import { useOfflineStore } from '@/stores/offline'
-import { saveEncrypted } from '@/keystore/saveEncrypted'
+import { createOrQueue, saveEncryptedOrQueue, deleteOrQueue } from '@/lib/offlineMutation'
 import { decryptPayload } from '@/keystore/fields'
+import { dbGet, dbGetAll } from '@/lib/db'
 
 const ks = useKeystoreStore()
-const offline = useOfflineStore()
 const route = useRoute()
 const router = useRouter()
 const id = route.params.id
@@ -128,20 +127,11 @@ async function save() {
     const isoRecordedAt = new Date(form.value.recorded_at).toISOString()
 
     if (id) {
-      await saveEncrypted(updateLog, id, { notes: form.value.notes || null, records: encryptedRecords, recorded_at: isoRecordedAt }, ['notes'], rawLog, ks)
+      await saveEncryptedOrQueue('/health/logs/', id, { notes: form.value.notes || null, records: encryptedRecords, recorded_at: isoRecordedAt }, ['notes'], rawLog, ks, 'health_logs')
     } else {
       const createPayload = { records: encryptedRecords, recorded_at: isoRecordedAt }
       if (form.value.notes) createPayload.encrypted_payload = await ks.encryptPayload({ notes: form.value.notes })
-      if (!navigator.onLine) {
-        await offline.enqueue({ endpoint: '/health/logs/', payload: createPayload })
-      } else {
-        try {
-          await createLog(createPayload)
-        } catch (e) {
-          if (!(e instanceof TypeError)) throw e
-          await offline.enqueue({ endpoint: '/health/logs/', payload: createPayload })
-        }
-      }
+      await createOrQueue('/health/logs/', createPayload, 'health_logs')
     }
     router.push('/health/logs')
   } catch { error.value = 'Could not save.' }
@@ -150,16 +140,16 @@ async function save() {
 
 async function remove() {
   if (!confirm('Delete this log?')) return
-  await deleteLog(id)
+  await deleteOrQueue('/health/logs/', id, 'health_logs')
   router.push('/health/logs')
 }
 
 onMounted(async () => {
   try {
-    rawParams = await getParameters().catch(() => [])
+    rawParams = await dbGetAll('health_parameters')
     await applyParamDecryption()
     if (id) {
-      rawLog = await getLog(id).catch(() => null)
+      rawLog = await getLog(id).catch(() => null) ?? await dbGet('health_logs', Number(id))
       if (rawLog) {
         await fillNotes(rawLog)
         for (const r of rawLog.records ?? []) {

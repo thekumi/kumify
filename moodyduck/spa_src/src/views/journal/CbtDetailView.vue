@@ -42,7 +42,9 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import TopBar from '@/components/TopBar.vue'
 import BottomNav from '@/components/BottomNav.vue'
-import { getRecord, deleteRecord } from '@/api/cbt'
+import { getRecord } from '@/api/cbt'
+import { dbGet } from '@/lib/db'
+import { deleteOrQueue } from '@/lib/offlineMutation'
 
 const route = useRoute()
 const router = useRouter()
@@ -52,9 +54,12 @@ const loading = ref(true)
 
 async function remove() {
   if (!confirm('Delete this record?')) return
-  await deleteRecord(id)
+  await deleteOrQueue('/cbt/records/', id, 'cbt_records')
   router.push('/journal/cbt')
 }
 
-onMounted(async () => { record.value = await getRecord(id).catch(() => null); loading.value = false })
+onMounted(async () => {
+  record.value = await getRecord(id).catch(() => null) ?? await dbGet('cbt_records', Number(id))
+  loading.value = false
+})
 </script>

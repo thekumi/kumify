@@ -106,9 +106,9 @@
 import { ref, onMounted, watch } from 'vue'
 import TopBar from '@/components/TopBar.vue'
 import BottomNav from '@/components/BottomNav.vue'
-import { getProperties, createProperty, updateProperty, deleteProperty } from '@/api/properties'
 import { useKeystoreStore } from '@/stores/keystore'
-import { saveEncrypted } from '@/keystore/saveEncrypted'
+import { createOrQueue, saveEncryptedOrQueue, deleteOrQueue } from '@/lib/offlineMutation'
+import { dbGetAll } from '@/lib/db'
 
 const ks = useKeystoreStore()
 const properties = ref([])
@@ -148,12 +148,12 @@ async function saveProperty() {
       payload.max_val = sheet.value.maxVal
     }
     if (sheet.value.id) {
-      await saveEncrypted(updateProperty, sheet.value.id, payload, Object.keys(payload), sheet.value._raw, ks)
+      await saveEncryptedOrQueue('/properties/', sheet.value.id, payload, Object.keys(payload), sheet.value._raw, ks, 'properties')
     } else {
-      await createProperty({ encrypted_payload: await ks.encryptPayload(payload) })
+      await createOrQueue('/properties/', { encrypted_payload: await ks.encryptPayload(payload) }, 'properties')
     }
     sheet.value = null
-    raw.value = await getProperties()
+    raw.value = await dbGetAll('properties')
     await applyDecryption()
   } catch { sheetError.value = 'Could not save.' }
   finally { sheetSaving.value = false }
@@ -161,14 +161,14 @@ async function saveProperty() {
 
 async function removeProperty(p) {
   if (!confirm('Delete this property?')) return
-  await deleteProperty(p.id)
+  await deleteOrQueue('/properties/', p.id, 'properties')
   sheet.value = null
-  raw.value = await getProperties()
+  raw.value = await dbGetAll('properties')
   await applyDecryption()
 }
 
 onMounted(async () => {
-  raw.value = await getProperties()
+  raw.value = await dbGetAll('properties')
   await applyDecryption()
   loading.value = false
 })

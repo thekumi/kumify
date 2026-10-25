@@ -77,10 +77,10 @@ import { useRoute, useRouter } from 'vue-router'
 import TopBar from '@/components/TopBar.vue'
 import BottomNav from '@/components/BottomNav.vue'
 import MediaGallery from '@/components/MediaGallery.vue'
-import { getStatus, deleteStatus, getMoods, getActivities } from '@/api/mood'
-import { getProperties } from '@/api/properties'
+import { getStatus } from '@/api/mood'
 import { useKeystoreStore } from '@/stores/keystore'
-import { dbDelete as dbDeleteRecord } from '@/lib/db'
+import { dbGet, dbGetAll } from '@/lib/db'
+import { deleteOrQueue } from '@/lib/offlineMutation'
 
 const ks = useKeystoreStore()
 const route = useRoute()
@@ -137,15 +137,19 @@ async function applyDecryption() {
 
 async function remove() {
   if (!confirm('Delete this entry?')) return
-  await deleteStatus(id)
-  await dbDeleteRecord('statuses', Number(id))
+  await deleteOrQueue('/statuses/', id, 'statuses')
   router.push('/mood')
 }
 
 watch(() => ks.dataKey, (key) => { if (key) applyDecryption() })
 
 onMounted(async () => {
-  const [s, m, a, p] = await Promise.all([getStatus(id).catch(() => null), getMoods().catch(() => []), getActivities({ include_hidden: 'true' }).catch(() => []), getProperties().catch(() => [])])
+  const [s, m, a, p] = await Promise.all([
+    getStatus(id).catch(() => null).then(v => v ?? dbGet('statuses', Number(id))),
+    dbGetAll('moods'),
+    dbGetAll('activities'),
+    dbGetAll('properties'),
+  ])
   status.value = s
   rawMoods.value = m
   rawActivities.value = a

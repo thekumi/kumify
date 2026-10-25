@@ -48,14 +48,9 @@ import { useRoute, useRouter } from 'vue-router'
 import TopBar from '@/components/TopBar.vue'
 import BottomNav from '@/components/BottomNav.vue'
 import IconPicker from '@/components/IconPicker.vue'
-import {
-  getActivityCategories,
-  createActivityCategory,
-  updateActivityCategory,
-  deleteActivityCategory,
-} from '@/api/mood'
 import { useKeystoreStore } from '@/stores/keystore'
-import { saveEncrypted } from '@/keystore/saveEncrypted'
+import { createOrQueue, saveEncryptedOrQueue, deleteOrQueue } from '@/lib/offlineMutation'
+import { dbGetAll } from '@/lib/db'
 
 const ks = useKeystoreStore()
 const route = useRoute()
@@ -77,11 +72,11 @@ async function save() {
   saving.value = true; error.value = ''
   try {
     if (id) {
-      await saveEncrypted(updateActivityCategory, id, form.value, ['name', 'icon', 'color'], rawCategory, ks)
+      await saveEncryptedOrQueue('/activity-categories/', id, form.value, ['name', 'icon', 'color'], rawCategory, ks, 'activity_categories')
     } else {
       const toEncrypt = { name: form.value.name, icon: form.value.icon || 'ph ph-tag' }
       if (form.value.color) toEncrypt.color = form.value.color
-      await createActivityCategory({ encrypted_payload: await ks.encryptPayload(toEncrypt) })
+      await createOrQueue('/activity-categories/', { encrypted_payload: await ks.encryptPayload(toEncrypt) }, 'activity_categories')
     }
     router.push('/mood/settings/activities/categories')
   } catch { error.value = 'Could not save.' }
@@ -90,14 +85,13 @@ async function save() {
 
 async function remove() {
   if (!confirm('Delete this category? Activities in it will become uncategorized.')) return
-  await deleteActivityCategory(id)
+  await deleteOrQueue('/activity-categories/', id, 'activity_categories')
   router.push('/mood/settings/activities/categories')
 }
 
 onMounted(async () => {
   if (id) {
-    const all = await getActivityCategories()
-    rawCategory = all.find(c => String(c.id) === String(id))
+    rawCategory = await dbGetAll('activity_categories').then(all => all.find(c => String(c.id) === String(id)) ?? null)
     if (rawCategory) await fillForm(rawCategory)
   }
 })

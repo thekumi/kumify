@@ -1,12 +1,13 @@
 import { registerTaskListProvider } from '@/planner/registry'
-import { getHabits, getHabitLogsForDate } from '@/api/habits'
+import { dbGetAll } from '@/lib/db'
 
 registerTaskListProvider('habits', async (ks) => {
   const today = new Date().toISOString().slice(0, 10)
-  const [rawHabits, rawLogs] = await Promise.all([
-    getHabits().catch(() => []),
-    getHabitLogsForDate(today).catch(() => []),
+  const [rawHabits, allLogs] = await Promise.all([
+    dbGetAll('habits'),
+    dbGetAll('habit_logs'),
   ])
+  const rawLogs = allLogs.filter(l => l.date === today)
   const habits = await ks.decryptAll(rawHabits)
   const loggedToday = new Set(rawLogs.map(l => String(l.habit)))
 

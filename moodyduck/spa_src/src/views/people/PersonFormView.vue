@@ -197,9 +197,10 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import TopBar from '@/components/TopBar.vue'
 import BottomNav from '@/components/BottomNav.vue'
-import { getPerson, createPerson, updatePerson, deletePerson } from '@/api/people'
+import { getPerson } from '@/api/people'
 import { useKeystoreStore } from '@/stores/keystore'
-import { saveEncrypted } from '@/keystore/saveEncrypted'
+import { createOrQueue, saveEncryptedOrQueue, deleteOrQueue } from '@/lib/offlineMutation'
+import { dbGet } from '@/lib/db'
 
 const ks = useKeystoreStore()
 const route = useRoute()
@@ -258,7 +259,7 @@ async function save() {
   saving.value = true; error.value = ''
   try {
     if (id) {
-      await saveEncrypted(updatePerson, id, { ...form.value }, ENCRYPTED_FIELDS, rawPerson, ks)
+      await saveEncryptedOrQueue('/friends/', id, { ...form.value }, ENCRYPTED_FIELDS, rawPerson, ks, 'people')
     } else {
       const toEncrypt = {}
       for (const field of ENCRYPTED_FIELDS) {
@@ -269,7 +270,7 @@ async function save() {
         }
       }
       const encrypted_payload = await ks.encryptPayload(toEncrypt)
-      await createPerson({ encrypted_payload, emergency_contact: form.value.emergency_contact })
+      await createOrQueue('/friends/', { encrypted_payload, emergency_contact: form.value.emergency_contact }, 'people')
     }
     router.push('/people')
   } catch { error.value = 'Could not save.' }
@@ -278,14 +279,14 @@ async function save() {
 
 async function remove() {
   if (!confirm('Remove this person?')) return
-  await deletePerson(id)
+  await deleteOrQueue('/friends/', id, 'people')
   router.push('/people')
 }
 
 onMounted(async () => {
   if (id) {
-    rawPerson = await getPerson(id)
-    await fillForm(rawPerson)
+    rawPerson = await getPerson(id).catch(() => null) ?? await dbGet('people', Number(id))
+    if (rawPerson) await fillForm(rawPerson)
     loading.value = false
   }
 })

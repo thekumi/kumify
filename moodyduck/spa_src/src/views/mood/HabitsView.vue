@@ -134,14 +134,11 @@
 import { ref, onMounted, watch } from 'vue'
 import TopBar from '@/components/TopBar.vue'
 import BottomNav from '@/components/BottomNav.vue'
-import { getHabits, createHabit, updateHabit, deleteHabit, createHabitLog } from '@/api/habits'
-import { getActivities } from '@/api/mood'
 import { useKeystoreStore } from '@/stores/keystore'
-import { useOfflineStore } from '@/stores/offline'
-import { saveEncrypted } from '@/keystore/saveEncrypted'
+import { createOrQueue, saveEncryptedOrQueue, deleteOrQueue } from '@/lib/offlineMutation'
+import { dbGetAll } from '@/lib/db'
 
 const ks = useKeystoreStore()
-const offline = useOfflineStore()
 const habits = ref([])
 const activities = ref([])
 const raw = ref([])
@@ -188,12 +185,12 @@ async function saveHabit() {
     const payload = { activity_id: sheet.value.activityId }
     if (goal) payload.goal = goal
     if (sheet.value.id) {
-      await saveEncrypted(updateHabit, sheet.value.id, payload, Object.keys(payload), sheet.value._raw, ks)
+      await saveEncryptedOrQueue('/habits/', sheet.value.id, payload, Object.keys(payload), sheet.value._raw, ks, 'habits')
     } else {
-      await createHabit({ encrypted_payload: await ks.encryptPayload(payload) })
+      await createOrQueue('/habits/', { encrypted_payload: await ks.encryptPayload(payload) }, 'habits')
     }
     sheet.value = null
-    raw.value = await getHabits()
+    raw.value = await dbGetAll('habits')
     await applyDecryption()
   } catch { sheetError.value = 'Could not save.' }
   finally { sheetSaving.value = false }
@@ -201,30 +198,18 @@ async function saveHabit() {
 
 async function removeHabit(h) {
   if (!confirm('Delete this habit?')) return
-  await deleteHabit(h.id)
+  await deleteOrQueue('/habits/', h.id, 'habits')
   sheet.value = null
-  raw.value = await getHabits()
+  raw.value = await dbGetAll('habits')
   await applyDecryption()
 }
 
 async function logHabit(h) {
-  const payload = { habit: h.id }
-  if (!navigator.onLine) {
-    await offline.enqueue({ endpoint: '/habit-logs/', payload })
-    return
-  }
-  try {
-    await createHabitLog(payload)
-  } catch (e) {
-    if (!(e instanceof TypeError)) throw e
-    await offline.enqueue({ endpoint: '/habit-logs/', payload })
-  }
+  await createOrQueue('/habit-logs/', { habit: h.id }, 'habit_logs')
 }
 
 onMounted(async () => {
-  const [h, a] = await Promise.all([getHabits(), getActivities().catch(() => [])])
-  raw.value = h
-  rawActivities.value = a
+  ;[raw.value, rawActivities.value] = await Promise.all([dbGetAll('habits'), dbGetAll('activities')])
   await applyDecryption()
   loading.value = false
 })

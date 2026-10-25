@@ -57,9 +57,9 @@ import { useRoute, useRouter } from 'vue-router'
 import TopBar from '@/components/TopBar.vue'
 import BottomNav from '@/components/BottomNav.vue'
 import IconPicker from '@/components/IconPicker.vue'
-import { getMoods, createMood, updateMood, deleteMood } from '@/api/mood'
 import { useKeystoreStore } from '@/stores/keystore'
-import { saveEncrypted } from '@/keystore/saveEncrypted'
+import { createOrQueue, saveEncryptedOrQueue, deleteOrQueue } from '@/lib/offlineMutation'
+import { dbGetAll } from '@/lib/db'
 
 const ks = useKeystoreStore()
 const route = useRoute()
@@ -82,12 +82,12 @@ async function save() {
   error.value = ''
   try {
     if (id) {
-      await saveEncrypted(updateMood, id, form.value, ['name', 'icon', 'color', 'value'], rawMood, ks)
+      await saveEncryptedOrQueue('/moods/', id, form.value, ['name', 'icon', 'color', 'value'], rawMood, ks, 'moods')
     } else {
       const toEncrypt = { name: form.value.name, icon: form.value.icon || 'ph ph-smiley' }
       if (form.value.color) toEncrypt.color = form.value.color
       if (form.value.value != null) toEncrypt.value = String(form.value.value)
-      await createMood({ encrypted_payload: await ks.encryptPayload(toEncrypt) })
+      await createOrQueue('/moods/', { encrypted_payload: await ks.encryptPayload(toEncrypt) }, 'moods')
     }
     router.push('/mood/settings/moods')
   } catch { error.value = 'Could not save.' }
@@ -96,14 +96,14 @@ async function save() {
 
 async function remove() {
   if (!confirm('Delete this mood?')) return
-  await deleteMood(id)
+  await deleteOrQueue('/moods/', id, 'moods')
   router.push('/mood/settings/moods')
 }
 
 onMounted(async () => {
   if (id) {
-    const moods = await getMoods()
-    rawMood = moods.find(m => String(m.id) === String(id))
+    const all = await dbGetAll('moods')
+    rawMood = all.find(m => String(m.id) === String(id)) ?? null
     if (rawMood) await fillForm(rawMood)
   }
 })

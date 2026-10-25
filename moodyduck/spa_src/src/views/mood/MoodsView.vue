@@ -36,8 +36,8 @@
 import { ref, onMounted, watch } from 'vue'
 import TopBar from '@/components/TopBar.vue'
 import BottomNav from '@/components/BottomNav.vue'
-import { getMoods } from '@/api/mood'
 import { useKeystoreStore } from '@/stores/keystore'
+import { dbGetAll } from '@/lib/db'
 
 const ks = useKeystoreStore()
 const moods = ref([])
@@ -48,7 +48,7 @@ async function applyDecryption() { moods.value = await ks.decryptAll(raw.value) 
 watch(() => ks.dataKey, (key) => { if (key) applyDecryption() })
 
 onMounted(async () => {
-  raw.value = await getMoods().catch(() => [])
+  raw.value = await dbGetAll('moods')
   await applyDecryption()
   loading.value = false
 })

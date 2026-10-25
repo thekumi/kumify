@@ -1,4 +1,5 @@
-import { getPeople, createPerson } from '@/api/people'
+import { createPerson } from '@/api/people'
+import { dbGetAll, dbPut } from '@/lib/db'
 
 export const CONTACTS_ENABLED_KEY = 'androidContacts'
 
@@ -14,11 +15,12 @@ export async function syncAndroidContacts(ks) {
       if (Array.isArray(v) ? v.length : v) fields[key] = v
     }
     const encrypted_payload = await ks.encryptPayload(fields)
-    await createPerson({ encrypted_payload }).catch(() => {})
+    const result = await createPerson({ encrypted_payload }).catch(() => null)
+    if (result) await dbPut('people', result)
   }
 
   if (!window.Android?.syncContacts) return
-  const all = await getPeople().catch(() => [])
+  const all = await dbGetAll('people')
   const decrypted = await ks.decryptAll(all)
   const contacts = decrypted
     .filter(p => p.name)

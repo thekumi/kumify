@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { api } from '@/api/client'
+import { dbPut as dataPut, dbDelete as dataDelete } from '@/lib/db'
 
 const DB_NAME = 'moodyduck-offline'
 const STORE_NAME = 'queue'
@@ -67,7 +68,19 @@ export const useOfflineStore = defineStore('offline', () => {
     syncing.value = true
     for (const item of [...queue.value]) {
       try {
-        await api.post(item.endpoint, item.payload)
+        const method = item.method ?? 'POST'
+        if (method === 'POST') {
+          const result = await api.post(item.endpoint, item.payload)
+          if (item.store && result) {
+            await dataPut(item.store, result)
+            if (item.tempId != null) await dataDelete(item.store, item.tempId)
+          }
+        } else if (method === 'PATCH') {
+          const result = await api.patch(item.endpoint, item.payload)
+          if (item.store && result) await dataPut(item.store, result)
+        } else if (method === 'DELETE') {
+          await api.delete(item.endpoint)
+        }
         await dbDelete(item.localId)
         queue.value = queue.value.filter(q => q.localId !== item.localId)
       } catch (e) {

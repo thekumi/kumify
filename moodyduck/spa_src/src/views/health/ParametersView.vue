@@ -43,8 +43,8 @@
 import { ref, onMounted, watch } from 'vue'
 import TopBar from '@/components/TopBar.vue'
 import BottomNav from '@/components/BottomNav.vue'
-import { getParameters } from '@/api/health'
 import { useKeystoreStore } from '@/stores/keystore'
+import { dbGetAll } from '@/lib/db'
 
 const ks = useKeystoreStore()
 const params = ref([])
@@ -55,7 +55,7 @@ async function applyDecryption() { params.value = await ks.decryptAll(raw.value)
 watch(() => ks.dataKey, (key) => { if (key) applyDecryption() })
 
 onMounted(async () => {
-  raw.value = await getParameters().catch(() => [])
+  raw.value = await dbGetAll('health_parameters')
   await applyDecryption()
   loading.value = false
 })

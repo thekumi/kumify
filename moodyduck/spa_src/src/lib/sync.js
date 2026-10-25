@@ -10,15 +10,20 @@ import {
 // Resources included in sync. `store` must match the IndexedDB store name and
 // the `resource_type` values written to DeletionLog on the server.
 const RESOURCES = [
-  { store: 'statuses',           path: '/statuses/',           paginated: true  },
-  { store: 'moods',              path: '/moods/',              paginated: false },
+  { store: 'statuses',           path: '/statuses/',                      paginated: true  },
+  { store: 'moods',              path: '/moods/',                         paginated: false },
   { store: 'activities',         path: '/activities/?include_hidden=true', paginated: false },
-  { store: 'activity_categories',path: '/activity-categories/', paginated: false },
-  { store: 'dreams',             path: '/dreams/',             paginated: true  },
-  { store: 'habits',             path: '/habits/',             paginated: false },
-  { store: 'habit_logs',         path: '/habit-logs/',         paginated: true  },
-  { store: 'health_logs',        path: '/health/logs/',        paginated: true  },
-  { store: 'cbt_records',        path: '/cbt/records/',        paginated: true  },
+  { store: 'activity_categories',path: '/activity-categories/',           paginated: false },
+  { store: 'dreams',             path: '/dreams/',                        paginated: true  },
+  { store: 'habits',             path: '/habits/',                        paginated: false },
+  { store: 'habit_logs',         path: '/habit-logs/',                    paginated: true  },
+  { store: 'health_logs',        path: '/health/logs/',                   paginated: true  },
+  { store: 'cbt_records',        path: '/cbt/records/',                   paginated: true  },
+  { store: 'health_parameters',  path: '/health/parameters/',             paginated: false },
+  { store: 'medications',        path: '/health/medications/',            paginated: false },
+  { store: 'vaccinations',       path: '/health/vaccinations/',           paginated: false },
+  { store: 'people',             path: '/friends/',                       paginated: false },
+  { store: 'properties',         path: '/properties/',                    paginated: false },
 ]
 
 // Subtract 5 seconds as a clock-skew buffer so we never miss a record.

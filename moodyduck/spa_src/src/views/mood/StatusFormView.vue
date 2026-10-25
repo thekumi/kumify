@@ -189,14 +189,12 @@ import { useRoute, useRouter } from 'vue-router'
 import TopBar from '@/components/TopBar.vue'
 import BottomNav from '@/components/BottomNav.vue'
 import MediaGallery from '@/components/MediaGallery.vue'
-import { getMoods, getActivities, getActivityCategories, getStatus, createStatus, updateStatus, uploadAttachment, deleteAttachment } from '@/api/mood'
-import { getProperties } from '@/api/properties'
+import { getStatus, uploadAttachment, deleteAttachment } from '@/api/mood'
 import { useKeystoreStore } from '@/stores/keystore'
-import { useOfflineStore } from '@/stores/offline'
-import { dbPut } from '@/lib/db'
+import { createOrQueue, updateOrQueue } from '@/lib/offlineMutation'
+import { dbGet, dbGetAll } from '@/lib/db'
 
 const ks = useKeystoreStore()
-const offline = useOfflineStore()
 const route = useRoute()
 const router = useRouter()
 const id = route.params.id
@@ -349,30 +347,17 @@ async function save() {
 
     if (isEdit) {
       const encrypted_payload = await ks.encryptPayload(toEncrypt)
-      const result = await updateStatus(id, { encrypted_payload, mood: null, activity_ids: [], timestamp: isoTimestamp })
-      await dbPut('statuses', result)
-      await uploadPending(result.id)
+      const result = await updateOrQueue('/statuses/', id, { encrypted_payload, mood: null, activity_ids: [], timestamp: isoTimestamp }, 'statuses', rawStatus)
+      if (!result._pending) await uploadPending(result.id)
       router.push(`/mood/${result.id}`)
     } else {
       const createPayload = Object.keys(toEncrypt).length
         ? { encrypted_payload: await ks.encryptPayload(toEncrypt) }
         : {}
       createPayload.timestamp = isoTimestamp
-      if (!navigator.onLine) {
-        await offline.enqueue({ endpoint: '/statuses/', payload: createPayload })
-        router.push('/mood')
-      } else {
-        try {
-          const result = await createStatus(createPayload)
-          await dbPut('statuses', result)
-          await uploadPending(result.id)
-          router.push(`/mood/${result.id}`)
-        } catch (e) {
-          if (!(e instanceof TypeError)) throw e
-          await offline.enqueue({ endpoint: '/statuses/', payload: createPayload })
-          router.push('/mood')
-        }
-      }
+      const result = await createOrQueue('/statuses/', createPayload, 'statuses')
+      if (!result._pending) await uploadPending(result.id)
+      router.push(result._pending ? '/mood' : `/mood/${result.id}`)
     }
   } catch {
     error.value = 'Could not save. Please try again.'
@@ -382,7 +367,7 @@ async function save() {
 }
 
 onMounted(async () => {
-  const [m, a, ac, p] = await Promise.all([getMoods().catch(() => []), getActivities().catch(() => []), getActivityCategories().catch(() => []), getProperties().catch(() => [])])
+  const [m, a, ac, p] = await Promise.all([dbGetAll('moods'), dbGetAll('activities'), dbGetAll('activity_categories'), dbGetAll('properties')])
   rawMoods.value = m
   rawActivities.value = a
   rawActivityCategories.value = ac
@@ -390,7 +375,7 @@ onMounted(async () => {
   await applyDecryption()
 
   if (isEdit) {
-    rawStatus = await getStatus(id).catch(() => null)
+    rawStatus = await getStatus(id).catch(() => null) ?? await dbGet('statuses', Number(id))
     if (rawStatus) {
       existingAttachments.value = rawStatus.attachments ?? []
       await applyDecryption()

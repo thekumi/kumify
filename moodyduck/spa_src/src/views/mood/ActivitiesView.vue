@@ -55,8 +55,8 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import TopBar from '@/components/TopBar.vue'
 import BottomNav from '@/components/BottomNav.vue'
-import { getActivities, getActivityCategories } from '@/api/mood'
 import { useKeystoreStore } from '@/stores/keystore'
+import { dbGetAll } from '@/lib/db'
 
 const ks = useKeystoreStore()
 const activities = ref([])
@@ -99,7 +99,7 @@ const grouped = computed(() => {
 })
 
 onMounted(async () => {
-  ;[raw.value, rawCategories.value] = await Promise.all([getActivities({ include_hidden: 'true' }).catch(() => []), getActivityCategories().catch(() => [])])
+  ;[raw.value, rawCategories.value] = await Promise.all([dbGetAll('activities'), dbGetAll('activity_categories')])
   await applyDecryption()
   loading.value = false
 })

@@ -69,9 +69,9 @@ import { useRoute, useRouter } from 'vue-router'
 import TopBar from '@/components/TopBar.vue'
 import BottomNav from '@/components/BottomNav.vue'
 import IconPicker from '@/components/IconPicker.vue'
-import { getActivities, createActivity, updateActivity, deleteActivity, getActivityCategories } from '@/api/mood'
 import { useKeystoreStore } from '@/stores/keystore'
-import { saveEncrypted } from '@/keystore/saveEncrypted'
+import { createOrQueue, saveEncryptedOrQueue, deleteOrQueue } from '@/lib/offlineMutation'
+import { dbGet, dbGetAll } from '@/lib/db'
 
 const ks = useKeystoreStore()
 const route = useRoute()
@@ -94,11 +94,11 @@ async function save() {
   saving.value = true; error.value = ''
   try {
     if (id) {
-      await saveEncrypted(updateActivity, id, form.value, ['name', 'icon', 'color'], rawActivity, ks)
+      await saveEncryptedOrQueue('/activities/', id, form.value, ['name', 'icon', 'color'], rawActivity, ks, 'activities')
     } else {
       const toEncrypt = { name: form.value.name, icon: form.value.icon || 'ph ph-check' }
       if (form.value.color) toEncrypt.color = form.value.color
-      await createActivity({ category: form.value.category, encrypted_payload: await ks.encryptPayload(toEncrypt) })
+      await createOrQueue('/activities/', { category: form.value.category, encrypted_payload: await ks.encryptPayload(toEncrypt) }, 'activities')
     }
     router.push('/mood/settings/activities')
   } catch { error.value = 'Could not save.' }
@@ -107,15 +107,15 @@ async function save() {
 
 async function remove() {
   if (!confirm('Delete this activity?')) return
-  await deleteActivity(id)
+  await deleteOrQueue('/activities/', id, 'activities')
   router.push('/mood/settings/activities')
 }
 
 onMounted(async () => {
-  const [all, rawCats] = await Promise.all([getActivities({ include_hidden: 'true' }), getActivityCategories()])
+  const rawCats = await dbGetAll('activity_categories')
   categories.value = await ks.decryptAll(rawCats)
   if (id) {
-    rawActivity = all.find(a => String(a.id) === String(id))
+    rawActivity = await dbGet('activities', Number(id))
     if (rawActivity) await fillForm(rawActivity)
   }
 })

@@ -1,9 +1,9 @@
 import { registerCalendarProvider } from '@/planner/registry'
-import { getVaccinations, getMedications } from '@/api/health'
 import { expandRRule } from '@/planner/rrule'
+import { dbGetAll } from '@/lib/db'
 
 registerCalendarProvider('health.vaccinations', async (ks, fromDate, toDate) => {
-  const raw = await getVaccinations().catch(() => [])
+  const raw = await dbGetAll('vaccinations')
   const vaccinations = await ks.decryptAll(raw)
   return vaccinations
     .filter(v => v.next_due && v.next_due >= fromDate && v.next_due <= toDate)
@@ -19,7 +19,7 @@ registerCalendarProvider('health.vaccinations', async (ks, fromDate, toDate) => 
 })
 
 registerCalendarProvider('health.medications', async (ks, fromDate, toDate) => {
-  const raw = await getMedications().catch(() => [])
+  const raw = await dbGetAll('medications')
   const meds = await ks.decryptAll(raw)
   const events = []
 
