@@ -122,11 +122,15 @@ const loading = ref(true)
 const selectedDay = ref(null)
 const tasksPanelRef = ref(null)
 
+function toLocalIso(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 const now = new Date()
 const year = ref(now.getFullYear())
 const month = ref(now.getMonth())
 
-const todayIso = new Date().toISOString().slice(0, 10)
+const todayIso = toLocalIso(new Date())
 const weekDays = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']
 
 const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June',
@@ -140,7 +144,7 @@ const monthGrid = computed(() => {
   return Array.from({ length: 42 }, (_, i) => {
     const d = new Date(year.value, month.value, 1 + i - startOffset)
     return {
-      iso: d.toISOString().slice(0, 10),
+      iso: toLocalIso(d),
       day: d.getDate(),
       inMonth: d.getMonth() === month.value,
     }
