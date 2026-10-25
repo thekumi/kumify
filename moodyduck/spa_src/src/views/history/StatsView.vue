@@ -10,15 +10,21 @@
             <!-- Global range selector -->
             <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-1 flex">
                 <button type="button"
-                        v-for="d in [7, 30, 90, 365, 0]"
+                        v-for="d in [7, 30, 90, 0]"
                         :key="d"
-                        @click="isCustom = false; rangeDays = d"
+                        @click="isCustom = false; yearMode = false; rangeDays = d"
                         class="flex-1 text-xs py-2 rounded-xl font-medium transition-colors"
-                        :class="!isCustom && rangeDays === d ? 'bg-violet-100 text-violet-700' : 'text-stone-400 hover:text-stone-600'">
+                        :class="!isCustom && !yearMode && rangeDays === d ? 'bg-violet-100 text-violet-700' : 'text-stone-400 hover:text-stone-600'">
                     {{ d === 0 ? 'All' : d + 'd' }}
                 </button>
                 <button type="button"
-                        @click="isCustom = true"
+                        @click="isCustom = false; yearMode = true"
+                        class="flex-1 text-xs py-2 rounded-xl font-medium transition-colors"
+                        :class="yearMode ? 'bg-violet-100 text-violet-700' : 'text-stone-400 hover:text-stone-600'">
+                    Year
+                </button>
+                <button type="button"
+                        @click="isCustom = true; yearMode = false"
                         class="flex-1 text-xs py-2 rounded-xl font-medium transition-colors"
                         :class="isCustom ? 'bg-violet-100 text-violet-700' : 'text-stone-400 hover:text-stone-600'">
                     Custom
@@ -35,8 +41,24 @@
                        type="date"
                        class="flex-1 text-sm text-stone-700 border border-stone-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-violet-400 bg-stone-50" />
             </div>
+            <!-- Year navigation -->
+            <div v-if="yearMode"
+                 class="bg-white rounded-2xl border border-stone-100 shadow-sm px-3 py-2 flex items-center gap-2">
+                <button type="button"
+                        @click="selectedYear--"
+                        class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-stone-100 transition-colors shrink-0">
+                    <i class="ph ph-caret-left text-stone-500 text-lg"></i>
+                </button>
+                <span class="flex-1 text-center text-sm font-medium text-stone-700">{{ selectedYear }}</span>
+                <button type="button"
+                        @click="selectedYear++"
+                        :disabled="selectedYear >= currentYear"
+                        class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-stone-100 transition-colors disabled:opacity-30 shrink-0">
+                    <i class="ph ph-caret-right text-stone-500 text-lg"></i>
+                </button>
+            </div>
             <!-- Time navigation -->
-            <div v-if="rangeDays && !isCustom"
+            <div v-else-if="rangeDays && !isCustom"
                  class="bg-white rounded-2xl border border-stone-100 shadow-sm px-3 py-2 flex items-center gap-2">
                 <button type="button"
                         @click="goBack"
@@ -70,10 +92,28 @@
                     <p class="text-xs text-stone-400 mt-0.5">Day streak</p>
                 </div>
             </div>
+            <!-- By month (year mode) -->
+            <template v-if="yearMode && totalEntries > 0">
+                <p class="text-xs font-semibold text-stone-400 uppercase tracking-wider pt-1">By month</p>
+                <div v-if="moodByMonthRaw.some(v => v != null)"
+                     class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
+                    <p class="text-sm font-semibold text-stone-700 mb-3">Avg mood</p>
+                    <div class="h-44">
+                        <Bar :data="moodByMonthData" :options="moodMonthOptions" />
+                    </div>
+                </div>
+                <div v-if="activitiesByMonthRaw.length"
+                     class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
+                    <p class="text-sm font-semibold text-stone-700 mb-3">Activities</p>
+                    <div class="h-64">
+                        <Bar :data="activitiesByMonthData" :options="stackedBarOptions" />
+                    </div>
+                </div>
+            </template>
             <!-- Calendar heatmap -->
             <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
                 <div class="flex items-center justify-between mb-3">
-                    <p class="text-sm font-semibold text-stone-700">Calendar <span class="text-xs font-normal text-stone-400">past year</span></p>
+                    <p class="text-sm font-semibold text-stone-700">Calendar <span class="text-xs font-normal text-stone-400">{{ yearMode ? selectedYear : 'past year' }}</span></p>
                     <div class="flex gap-0.5 bg-stone-100 rounded-lg p-0.5">
                         <button type="button"
                                 @click="calMode = 'activity'"
@@ -254,10 +294,11 @@ import { useKeystoreStore } from '@/stores/keystore'
 import { useSyncStore } from '@/stores/sync'
 import { dbGetAll } from '@/lib/db'
 import {
-  filterByDays,
+  filterByDays, filterByYear,
   moodOverTime, moodDistribution, activityFrequency,
   entryCountByTimeOfDay, calendarData, habitCompletionRates,
-  buildCalendarWeeks, dreamFrequency, currentStreak, propertyOverTime, weekdayStats,
+  buildCalendarWeeks, buildYearCalendar, dreamFrequency, currentStreak, propertyOverTime, weekdayStats,
+  moodByMonth, activitiesByMonth,
 } from '@/history/stats.js'
 
 ChartJS.register(CategoryScale, LinearScale, TimeScale, PointElement, LineElement, ArcElement, BarElement, Title, Tooltip, Legend, Filler)
@@ -271,8 +312,12 @@ const isCustom  = ref(false)
 const customFrom = ref('')
 const customTo   = ref(new Date().toISOString().slice(0, 10))
 const calMode = ref('activity')
+const yearMode = ref(false)
+const currentYear = new Date().getFullYear()
+const selectedYear = ref(currentYear)
 
 watch(rangeDays, () => { rangeEnd.value = null })
+watch(yearMode,  () => { rangeEnd.value = null })
 
 function goBack() {
   const base = rangeEnd.value ? new Date(rangeEnd.value + 'T12:00:00') : new Date()
@@ -304,7 +349,9 @@ const allDreams   = ref([])
 const moodMap     = ref({})
 const activityMap = ref({})
 const calData     = ref({})
-const calendarWeeks = buildCalendarWeeks(52)
+const calendarWeeks = computed(() =>
+  yearMode.value ? buildYearCalendar(selectedYear.value) : buildCalendarWeeks(52)
+)
 const rawHabitLogs  = ref([])
 const rawHabits     = ref([])
 const allProperties = ref([])
@@ -314,14 +361,14 @@ const allProperties = ref([])
 const calendarMonthLabels = computed(() => {
   const labels = {}
   const seen = new Set()
-  for (let wi = 0; wi < calendarWeeks.length; wi++) {
-    const m = new Date(calendarWeeks[wi][0]).toLocaleString('default', { month: 'short' })
+  for (let wi = 0; wi < calendarWeeks.value.length; wi++) {
+    const m = new Date(calendarWeeks.value[wi][0]).toLocaleString('default', { month: 'short' })
     if (!seen.has(m)) { seen.add(m); labels[wi] = m }
   }
   return labels
 })
 
-// Summary
+// Filtered data — used as source for all chart computeds
 
 function customFilter(items, getTs) {
   if (!customFrom.value || !customTo.value) return items
@@ -330,16 +377,22 @@ function customFilter(items, getTs) {
   return items.filter(i => { const t = new Date(getTs(i)); return t >= start && t <= end })
 }
 
-const filteredStatuses = computed(() =>
-  isCustom.value
-    ? customFilter(allStatuses.value, s => s.timestamp)
-    : filterByDays(allStatuses.value, rangeDays.value, s => s.timestamp, rangeEnd.value)
-)
-const filteredDreams = computed(() =>
-  isCustom.value
-    ? customFilter(allDreams.value, d => d.timestamp)
-    : filterByDays(allDreams.value, rangeDays.value, d => d.timestamp, rangeEnd.value)
-)
+const filteredStatuses = computed(() => {
+  if (yearMode.value)  return filterByYear(allStatuses.value, selectedYear.value, s => s.timestamp)
+  if (isCustom.value)  return customFilter(allStatuses.value, s => s.timestamp)
+  return filterByDays(allStatuses.value, rangeDays.value, s => s.timestamp, rangeEnd.value)
+})
+const filteredDreams = computed(() => {
+  if (yearMode.value)  return filterByYear(allDreams.value, selectedYear.value, d => d.timestamp)
+  if (isCustom.value)  return customFilter(allDreams.value, d => d.timestamp)
+  return filterByDays(allDreams.value, rangeDays.value, d => d.timestamp, rangeEnd.value)
+})
+const filteredHabitLogs = computed(() => {
+  if (yearMode.value) return filterByYear(rawHabitLogs.value, selectedYear.value, l => l.date)
+  return rawHabitLogs.value
+})
+
+// Summary
 
 const totalEntries = computed(() => filteredStatuses.value.length)
 const totalDreams  = computed(() => filteredDreams.value.length)
@@ -383,9 +436,9 @@ function calDayTitle(day) {
   return `${day}: ${d.count} entr${d.count === 1 ? 'y' : 'ies'}${d.avgMood ? `, avg mood ${d.avgMood.toFixed(1)}` : ''}`
 }
 
-// Mood charts
+// Mood charts — all use pre-filtered data, days=0 so filterByDays inside is a no-op
 
-const moodLinePoints = computed(() => moodOverTime(allStatuses.value, moodMap.value, rangeDays.value, rangeEnd.value))
+const moodLinePoints = computed(() => moodOverTime(filteredStatuses.value, moodMap.value, 0, null))
 const moodLineData   = computed(() => ({
   datasets: [{
     data: moodLinePoints.value,
@@ -398,13 +451,13 @@ const moodLineData   = computed(() => ({
   }],
 }))
 
-const moodDistRaw  = computed(() => moodDistribution(allStatuses.value, moodMap.value, rangeDays.value, rangeEnd.value))
+const moodDistRaw  = computed(() => moodDistribution(filteredStatuses.value, moodMap.value, 0, null))
 const moodDistData = computed(() => ({
   labels: moodDistRaw.value.labels,
   datasets: [{ data: moodDistRaw.value.data, backgroundColor: moodDistRaw.value.colors, borderWidth: 0 }],
 }))
 
-const timeOfDayRaw      = computed(() => entryCountByTimeOfDay(allStatuses.value, rangeDays.value, rangeEnd.value))
+const timeOfDayRaw       = computed(() => entryCountByTimeOfDay(filteredStatuses.value, 0, null))
 const timeOfDayChartData = computed(() => ({
   labels: timeOfDayRaw.value.labels.map(l => l.split(' ')[0]),
   datasets: [{ data: timeOfDayRaw.value.data, backgroundColor: '#7c3aed66', borderRadius: 4 }],
@@ -412,7 +465,7 @@ const timeOfDayChartData = computed(() => ({
 
 // Activity charts
 
-const activityData      = computed(() => activityFrequency(allStatuses.value, activityMap.value, rangeDays.value, rangeEnd.value))
+const activityData      = computed(() => activityFrequency(filteredStatuses.value, activityMap.value, 0, null))
 const activityChartData = computed(() => ({
   labels: activityData.value.labels,
   datasets: [{ data: activityData.value.data, backgroundColor: '#0d9488aa', borderRadius: 4 }],
@@ -420,13 +473,13 @@ const activityChartData = computed(() => ({
 
 // Dream charts
 
-const dreamFreqData      = computed(() => dreamFrequency(allDreams.value, rangeDays.value, rangeEnd.value))
+const dreamFreqData      = computed(() => dreamFrequency(filteredDreams.value, 0, null))
 const dreamFreqChartData = computed(() => ({
   labels: dreamFreqData.value.labels,
   datasets: [{ data: dreamFreqData.value.data, backgroundColor: '#6366f1aa', borderRadius: 4 }],
 }))
 
-const dreamMoodDistRaw  = computed(() => moodDistribution(allDreams.value, moodMap.value, rangeDays.value, rangeEnd.value))
+const dreamMoodDistRaw  = computed(() => moodDistribution(filteredDreams.value, moodMap.value, 0, null))
 const dreamMoodDistData = computed(() => ({
   labels: dreamMoodDistRaw.value.labels,
   datasets: [{ data: dreamMoodDistRaw.value.data, backgroundColor: dreamMoodDistRaw.value.colors, borderWidth: 0 }],
@@ -435,8 +488,8 @@ const dreamMoodDistData = computed(() => ({
 const avgDreamsPerWeek = computed(() => {
   const filtered = filteredDreams.value
   if (!filtered.length) return '0'
-  let spanDays = rangeDays.value
-  if (!spanDays) {
+  let spanDays = yearMode.value ? 365 : rangeDays.value
+  if (!spanDays && !yearMode.value) {
     const endMs = rangeEnd.value ? new Date(rangeEnd.value + 'T23:59:59').getTime() : Date.now()
     const first = new Date(Math.min(...filtered.map(d => new Date(d.timestamp).getTime())))
     spanDays = Math.max(7, Math.ceil((endMs - first.getTime()) / 86400000))
@@ -453,7 +506,7 @@ const avgDreamWords = computed(() => {
 
 // Weekday breakdown
 
-const weekdayRaw = computed(() => weekdayStats(allStatuses.value, moodMap.value, rangeDays.value, rangeEnd.value))
+const weekdayRaw = computed(() => weekdayStats(filteredStatuses.value, moodMap.value, 0, null))
 const weekdayCountData = computed(() => ({
   labels: weekdayRaw.value.labels,
   datasets: [{ data: weekdayRaw.value.counts, backgroundColor: '#7c3aed66', borderRadius: 4 }],
@@ -465,7 +518,10 @@ const weekdayMoodData = computed(() => ({
 
 // Habits
 
-const habitData = computed(() => habitCompletionRates(rawHabitLogs.value, rawHabits.value, rangeDays.value, rangeEnd.value))
+const habitData = computed(() => {
+  if (yearMode.value) return habitCompletionRates(filteredHabitLogs.value, rawHabits.value, 0, null)
+  return habitCompletionRates(rawHabitLogs.value, rawHabits.value, rangeDays.value, rangeEnd.value)
+})
 
 // Properties
 
@@ -475,7 +531,7 @@ const propertyCharts = computed(() =>
     .map(p => ({
       id: p.id,
       name: p.name ?? '?',
-      points: propertyOverTime(allStatuses.value, String(p.id), rangeDays.value, rangeEnd.value),
+      points: propertyOverTime(filteredStatuses.value, String(p.id), 0, null),
     }))
     .filter(pc => pc.points.length > 0)
     .map(pc => ({
@@ -493,6 +549,46 @@ const propertyCharts = computed(() =>
       },
     }))
 )
+
+// Year-mode charts
+
+const ACTIVITY_PALETTE = [
+  '#7c3aed99', '#0d948899', '#f59e0b99', '#ef444499',
+  '#6366f199', '#10b98199', '#f97316aa', '#8b5cf699',
+]
+
+const moodByMonthRaw  = computed(() => moodByMonth(filteredStatuses.value, moodMap.value))
+const moodByMonthData = computed(() => {
+  const vals = moodByMonthRaw.value
+  const valid = vals.filter(v => v != null)
+  const min = valid.length ? Math.min(...valid) : 0
+  const max = valid.length ? Math.max(...valid) : 1
+  const range = max - min
+  const colors = vals.map(v => {
+    if (v == null) return '#e7e5e4'
+    const n = range > 0 ? (v - min) / range : 0.5
+    if (n < 0.2) return '#fca5a5'
+    if (n < 0.4) return '#fde68a'
+    if (n < 0.6) return '#d6d3d1'
+    if (n < 0.8) return '#a7f3d0'
+    return '#6ee7b7'
+  })
+  return {
+    labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+    datasets: [{ data: vals, backgroundColor: colors, borderRadius: 4 }],
+  }
+})
+
+const activitiesByMonthRaw  = computed(() => activitiesByMonth(filteredStatuses.value, activityMap.value))
+const activitiesByMonthData = computed(() => ({
+  labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+  datasets: activitiesByMonthRaw.value.map((act, i) => ({
+    label: act.name,
+    data: act.counts,
+    backgroundColor: ACTIVITY_PALETTE[i % ACTIVITY_PALETTE.length],
+    borderRadius: 2,
+  })),
+}))
 
 // Chart options
 
@@ -539,6 +635,22 @@ const dreamBarOptions = {
   scales: {
     x: { grid: { display: false }, ticks: { font: { size: 10 } } },
     y: { grid: { color: '#f5f5f4' }, ticks: { precision: 0 } },
+  },
+}
+const moodMonthOptions = {
+  responsive: true, maintainAspectRatio: false,
+  plugins: { legend: { display: false } },
+  scales: {
+    x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+    y: { grid: { color: '#f5f5f4' }, ticks: { precision: 1 } },
+  },
+}
+const stackedBarOptions = {
+  responsive: true, maintainAspectRatio: false,
+  plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 6, font: { size: 10 } } } },
+  scales: {
+    x: { stacked: true, grid: { display: false }, ticks: { font: { size: 10 } } },
+    y: { stacked: true, grid: { color: '#f5f5f4' }, ticks: { precision: 0 } },
   },
 }
 

@@ -241,6 +241,75 @@ export function healthParameterOverTime(logs, parameterId, days = 0, end = null)
     .map(([day, vals]) => ({ x: day, y: +(vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(4) }))
 }
 
+export function filterByYear(items, year, getTs = i => i.timestamp) {
+  return items.filter(i => new Date(getTs(i)).getFullYear() === year)
+}
+
+export function moodByMonth(statuses, moodMap) {
+  const byMonth = Array.from({ length: 12 }, () => [])
+  for (const s of statuses) {
+    const m = new Date(s.timestamp).getMonth()
+    const v = moodValue(s, moodMap)
+    if (v != null) byMonth[m].push(v)
+  }
+  return byMonth.map(vals => vals.length ? +(vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(2) : null)
+}
+
+export function activitiesByMonth(statuses, activityMap, topN = 8) {
+  const totalCounts = {}
+  for (const s of statuses) {
+    const ids = s.activity_ids ? tryParseIds(s.activity_ids) : (s.activities ?? []).map(a => a.id)
+    for (const aid of ids) totalCounts[aid] = (totalCounts[aid] || 0) + 1
+  }
+  const topIds = Object.entries(totalCounts)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, topN)
+    .map(([id]) => Number(id))
+
+  const byActivity = {}
+  for (const aid of topIds) byActivity[aid] = new Array(12).fill(0)
+
+  for (const s of statuses) {
+    const m = new Date(s.timestamp).getMonth()
+    const ids = s.activity_ids ? tryParseIds(s.activity_ids) : (s.activities ?? []).map(a => a.id)
+    for (const aid of ids) {
+      if (byActivity[aid] !== undefined) byActivity[aid][m]++
+    }
+  }
+
+  return topIds.map(aid => ({
+    activityId: aid,
+    name: activityMap[aid]?.name ?? '?',
+    counts: byActivity[aid],
+  }))
+}
+
+export function buildYearCalendar(year) {
+  const jan1 = new Date(year, 0, 1)
+  jan1.setHours(0, 0, 0, 0)
+  const startDow = jan1.getDay() === 0 ? 6 : jan1.getDay() - 1
+  const start = new Date(jan1)
+  start.setDate(jan1.getDate() - startDow)
+
+  const dec31 = new Date(year, 11, 31)
+  dec31.setHours(0, 0, 0, 0)
+  const endDow = dec31.getDay() === 0 ? 6 : dec31.getDay() - 1
+  const end = new Date(dec31)
+  end.setDate(dec31.getDate() + (6 - endDow))
+
+  const grid = []
+  const cur = new Date(start)
+  while (cur <= end) {
+    const week = []
+    for (let d = 0; d < 7; d++) {
+      week.push(cur.toISOString().slice(0, 10))
+      cur.setDate(cur.getDate() + 1)
+    }
+    grid.push(week)
+  }
+  return grid
+}
+
 export function buildCalendarWeeks(weeks = 52) {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
