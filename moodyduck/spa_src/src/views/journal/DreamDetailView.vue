@@ -74,6 +74,7 @@ import MediaGallery from '@/components/MediaGallery.vue'
 import { getDream, deleteDream } from '@/api/dreams'
 import { getMoods } from '@/api/mood'
 import { useKeystoreStore } from '@/stores/keystore'
+import { dbDelete as dbDeleteRecord } from '@/lib/db'
 
 const ks = useKeystoreStore()
 const route = useRoute()
@@ -100,6 +101,7 @@ async function applyDecryption() {
 async function remove() {
   if (!confirm('Delete this dream?')) return
   await deleteDream(id)
+  await dbDeleteRecord('dreams', Number(id))
   router.push('/journal/dreams')
 }
 

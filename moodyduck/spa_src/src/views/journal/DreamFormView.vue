@@ -150,6 +150,7 @@ import { getMoods } from '@/api/mood'
 import { useKeystoreStore } from '@/stores/keystore'
 import { useOfflineStore } from '@/stores/offline'
 import { saveEncrypted } from '@/keystore/saveEncrypted'
+import { dbPut } from '@/lib/db'
 
 const ks = useKeystoreStore()
 const offline = useOfflineStore()
@@ -250,6 +251,7 @@ async function save() {
 
     if (id) {
       const result = await saveEncrypted(updateDream, id, { ...form.value, theme_ids: [...selectedThemes.value], timestamp: isoTimestamp }, ['title', 'content'], rawDream, ks)
+      await dbPut('dreams', result)
       await uploadPending(result.id)
       router.push(`/journal/dreams/${result.id}`)
     } else {
@@ -271,6 +273,7 @@ async function save() {
       } else {
         try {
           const result = await createDream(createPayload)
+          await dbPut('dreams', result)
           await uploadPending(result.id)
           router.push(`/journal/dreams/${result.id}`)
         } catch (e) {

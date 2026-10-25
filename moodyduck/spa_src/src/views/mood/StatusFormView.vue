@@ -193,6 +193,7 @@ import { getMoods, getActivities, getActivityCategories, getStatus, createStatus
 import { getProperties } from '@/api/properties'
 import { useKeystoreStore } from '@/stores/keystore'
 import { useOfflineStore } from '@/stores/offline'
+import { dbPut } from '@/lib/db'
 
 const ks = useKeystoreStore()
 const offline = useOfflineStore()
@@ -349,6 +350,7 @@ async function save() {
     if (isEdit) {
       const encrypted_payload = await ks.encryptPayload(toEncrypt)
       const result = await updateStatus(id, { encrypted_payload, mood: null, activity_ids: [], timestamp: isoTimestamp })
+      await dbPut('statuses', result)
       await uploadPending(result.id)
       router.push(`/mood/${result.id}`)
     } else {
@@ -362,6 +364,7 @@ async function save() {
       } else {
         try {
           const result = await createStatus(createPayload)
+          await dbPut('statuses', result)
           await uploadPending(result.id)
           router.push(`/mood/${result.id}`)
         } catch (e) {

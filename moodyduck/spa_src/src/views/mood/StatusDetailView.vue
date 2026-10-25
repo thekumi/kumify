@@ -80,6 +80,7 @@ import MediaGallery from '@/components/MediaGallery.vue'
 import { getStatus, deleteStatus, getMoods, getActivities } from '@/api/mood'
 import { getProperties } from '@/api/properties'
 import { useKeystoreStore } from '@/stores/keystore'
+import { dbDelete as dbDeleteRecord } from '@/lib/db'
 
 const ks = useKeystoreStore()
 const route = useRoute()
@@ -137,6 +138,7 @@ async function applyDecryption() {
 async function remove() {
   if (!confirm('Delete this entry?')) return
   await deleteStatus(id)
+  await dbDeleteRecord('statuses', Number(id))
   router.push('/mood')
 }
 
