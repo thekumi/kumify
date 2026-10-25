@@ -1,8 +1,19 @@
 <template>
     <div class="fixed bottom-16 inset-x-0 z-40 flex flex-col items-center gap-1 pb-1.5 px-4 pointer-events-none">
+        <!-- DB version mismatch: stale app code, hard reload required -->
+        <Transition name="fade">
+        <button v-if="dbVersionError"
+                type="button"
+                @click.stop="hardReload"
+                class="pointer-events-auto bg-red-600/95 backdrop-blur-sm text-white text-xs font-medium px-3.5 py-1.5 rounded-full shadow flex items-center gap-2">
+            <i class="ph ph-warning text-sm shrink-0"></i>
+            <span>App update required</span>
+            <span class="opacity-70">· Tap to reload</span>
+        </button>
+        </Transition>
         <!-- App update available -->
         <Transition name="fade">
-        <button v-if="updateAvailable"
+        <button v-if="updateAvailable && !dbVersionError"
                 type="button"
                 @click.stop="applyUpdate"
                 class="pointer-events-auto bg-sky-600/95 backdrop-blur-sm text-white text-xs font-medium px-3.5 py-1.5 rounded-full shadow flex items-center gap-2">
@@ -48,6 +59,9 @@ import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useOfflineStore } from '@/stores/offline'
 import { useSyncStore } from '@/stores/sync'
 import { updateAvailable, applyUpdate } from '@/lib/swUpdate'
+import { dbVersionError } from '@/lib/db'
+
+function hardReload() { window.location.reload() }
 
 const upload = useOfflineStore()
 const sync = useSyncStore()

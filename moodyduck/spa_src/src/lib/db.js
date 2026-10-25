@@ -1,3 +1,7 @@
+import { ref } from 'vue'
+
+export const dbVersionError = ref(false)
+
 const DB_NAME = 'moodyduck-data'
 const DB_VERSION = 2
 
@@ -36,7 +40,10 @@ function openDB() {
       }
     }
     req.onsuccess = e => { _db = e.target.result; resolve(_db) }
-    req.onerror = e => reject(e.target.error)
+    req.onerror = e => {
+      if (e.target.error?.name === 'VersionError') dbVersionError.value = true
+      reject(e.target.error)
+    }
   })
 }
 
