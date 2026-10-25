@@ -253,9 +253,13 @@
                 <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
                     <div class="space-y-2.5">
                         <div v-for="h in habitData" :key="h.id" class="flex items-center gap-2">
-                            <span class="text-sm text-stone-600 w-28 truncate shrink-0">{{ h.name }}</span>
+                            <span class="text-sm text-stone-600 w-28 truncate shrink-0 flex items-center gap-1">
+                                <i v-if="h.negative" class="ph ph-prohibit text-rose-400 shrink-0"></i>
+                                {{ h.name }}
+                            </span>
                             <div class="flex-1 bg-stone-100 rounded-full h-2">
-                                <div class="bg-emerald-500 h-2 rounded-full transition-all"
+                                <div class="h-2 rounded-full transition-all"
+                                     :class="h.negative ? 'bg-rose-400' : 'bg-emerald-500'"
                                      :style="`width:${Math.min(100, h.count / h.expected * 100)}%`"></div>
                             </div>
                             <span class="text-xs text-stone-400 shrink-0 text-right w-16">{{ h.count }}/{{ h.expected }}</span>
@@ -519,8 +523,8 @@ const weekdayMoodData = computed(() => ({
 // Habits
 
 const habitData = computed(() => {
-  if (yearMode.value) return habitCompletionRates(filteredHabitLogs.value, rawHabits.value, 0, null)
-  return habitCompletionRates(rawHabitLogs.value, rawHabits.value, rangeDays.value, rangeEnd.value)
+  if (yearMode.value) return habitCompletionRates(filteredHabitLogs.value, rawHabits.value, 0, null, filteredStatuses.value)
+  return habitCompletionRates(rawHabitLogs.value, rawHabits.value, rangeDays.value, rangeEnd.value, allStatuses.value)
 })
 
 // Properties

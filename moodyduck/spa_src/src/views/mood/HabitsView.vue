@@ -34,8 +34,10 @@
                 </div>
                 <div class="flex-1 min-w-0">
                     <p class="font-medium text-stone-800 truncate">{{ activityOf(h)?.name ?? '—' }}</p>
-                    <p v-if="h.goal && typeof h.goal === 'object'"
-                       class="text-xs text-stone-300">{{ h.goal.target_count }}× {{ h.goal.period }}</p>
+                    <p class="text-xs text-stone-300">
+                        <span v-if="h.negative" class="text-rose-400">avoid ·</span>
+                        <span v-if="h.goal && typeof h.goal === 'object'">{{ h.goal.target_count }}× {{ h.goal.period }}</span>
+                    </p>
                 </div>
                 <button type="button"
                         @click="logHabit(h)"
@@ -81,6 +83,12 @@
                     </p>
                 </div>
                 <div class="space-y-2">
+                    <label class="flex items-center gap-2 cursor-pointer select-none">
+                        <input type="checkbox"
+                               v-model="sheet.negative"
+                               class="rounded accent-rose-600" />
+                        <span class="text-sm text-stone-600">Negative habit <span class="text-stone-400">(score for <em>not</em> doing it)</span></span>
+                    </label>
                     <label class="flex items-center gap-2 cursor-pointer select-none">
                         <input type="checkbox"
                                v-model="sheet.goalEnabled"
@@ -160,7 +168,7 @@ async function applyDecryption() {
 watch(() => ks.dataKey, (key) => { if (key) applyDecryption() })
 
 function openNew() {
-  sheet.value = { activityId: null, goalEnabled: false, goalPeriod: 'weekly', goalCount: 1 }
+  sheet.value = { activityId: null, negative: false, goalEnabled: false, goalPeriod: 'weekly', goalCount: 1 }
   sheetError.value = ''
 }
 
@@ -170,6 +178,7 @@ function openEdit(h) {
   sheet.value = {
     id: h.id, _raw: rawHabit,
     activityId: h.activity_id ?? null,
+    negative: !!h.negative,
     goalEnabled: !!goal,
     goalPeriod: goal?.period ?? 'weekly',
     goalCount: goal?.target_count ?? 1,
@@ -184,6 +193,7 @@ async function saveHabit() {
   try {
     const payload = { activity_id: sheet.value.activityId }
     if (goal) payload.goal = goal
+    if (sheet.value.negative) payload.negative = true
     if (sheet.value.id) {
       await saveEncryptedOrQueue('/habits/', sheet.value.id, payload, Object.keys(payload), sheet.value._raw, ks, 'habits')
     } else {

@@ -99,7 +99,7 @@ export function calendarData(statuses, moodMap) {
   )
 }
 
-export function habitCompletionRates(habitLogs, habits, days = 0, end = null) {
+export function habitCompletionRates(habitLogs, habits, days = 0, end = null, statuses = []) {
   const now = end ? new Date(end + 'T23:59:59.999') : new Date()
   let cutoff = null
   if (days > 0) {
@@ -109,6 +109,9 @@ export function habitCompletionRates(habitLogs, habits, days = 0, end = null) {
   const filtered = cutoff
     ? habitLogs.filter(l => { const d = new Date(l.date); return d >= cutoff && d <= now })
     : habitLogs
+  const filteredSt = cutoff
+    ? statuses.filter(s => { const t = new Date(s.timestamp); return t >= cutoff && t <= now })
+    : statuses
 
   let totalDays
   if (days > 0) {
@@ -123,7 +126,31 @@ export function habitCompletionRates(habitLogs, habits, days = 0, end = null) {
   }
 
   const counts = {}
-  for (const log of filtered) counts[log.habit] = (counts[log.habit] || 0) + 1
+  const loggedDays = {}
+  for (const log of filtered) {
+    counts[log.habit] = (counts[log.habit] || 0) + 1
+    if (!loggedDays[log.habit]) loggedDays[log.habit] = new Set()
+    loggedDays[log.habit].add(log.date)
+  }
+
+  const habitByActivity = {}
+  for (const h of habits) {
+    if (h.activity_id != null) habitByActivity[Number(h.activity_id)] = h.id
+  }
+
+  for (const s of filteredSt) {
+    const day = s.timestamp.slice(0, 10)
+    const ids = s.activity_ids ? tryParseIds(s.activity_ids) : (s.activities ?? []).map(a => a.id)
+    for (const aid of ids) {
+      const habitId = habitByActivity[Number(aid)]
+      if (habitId == null) continue
+      if (!loggedDays[habitId]) loggedDays[habitId] = new Set()
+      if (!loggedDays[habitId].has(day)) {
+        loggedDays[habitId].add(day)
+        counts[habitId] = (counts[habitId] || 0) + 1
+      }
+    }
+  }
 
   function expected(habit) {
     const g = habit.goal
@@ -135,7 +162,13 @@ export function habitCompletionRates(habitLogs, habits, days = 0, end = null) {
   }
 
   return habits
-    .map(h => ({ id: h.id, name: h.name ?? '?', count: counts[h.id] || 0, expected: expected(h), totalDays }))
+    .map(h => {
+      if (h.negative) {
+        const slipDays = loggedDays[h.id]?.size ?? 0
+        return { id: h.id, name: h.name ?? '?', count: totalDays - slipDays, expected: totalDays, totalDays, negative: true }
+      }
+      return { id: h.id, name: h.name ?? '?', count: counts[h.id] || 0, expected: expected(h), totalDays }
+    })
     .filter(h => h.count > 0)
     .sort((a, b) => (b.count / b.expected) - (a.count / a.expected))
 }
