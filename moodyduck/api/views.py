@@ -98,8 +98,8 @@ from .serializers import (
 class SinceFilterMixin:
     """Adds ?since=<iso_datetime> filtering on updated_at to list actions."""
 
-    def get_queryset(self):
-        qs = super().get_queryset()
+    def filter_queryset(self, queryset):
+        qs = super().filter_queryset(queryset)
         since = self.request.query_params.get("since")
         if since and self.action == "list":
             try:
