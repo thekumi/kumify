@@ -12,7 +12,6 @@ const MODEL_FIELDS = {
   people:              ['name', 'nickname', 'birthday', 'email', 'phone', 'relationship', 'address', 'notes', 'last_contact'],
   medications:         ['name', 'remarks'],
   health_parameters:   ['name', 'unit', 'icon'],
-  habit_logs:          ['note'],
 }
 
 const MEDIA_ENDPOINTS = [

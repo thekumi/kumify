@@ -12,7 +12,7 @@ class HabitsConfig(AppConfig):
             register_virtual_task_list,
         )
 
-        from .models import Habit, HabitLog  # noqa: PLC0415
+        from .models import Habit  # noqa: PLC0415
 
         register_virtual_task_list("habits", color="#7C3AED")
 
@@ -24,14 +24,4 @@ class HabitsConfig(AppConfig):
                     resource_id=instance.pk,
                 )
 
-        def _log_habit_log(sender, instance, **kwargs):
-            user_id = instance.habit.user_id if instance.habit_id else None
-            if user_id:
-                DeletionLog.objects.create(
-                    user_id=user_id,
-                    resource_type="habit_logs",
-                    resource_id=instance.pk,
-                )
-
         pre_delete.connect(_log_habit, sender=Habit)
-        pre_delete.connect(_log_habit_log, sender=HabitLog)

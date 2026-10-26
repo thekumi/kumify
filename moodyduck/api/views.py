@@ -26,7 +26,6 @@ from moodyduck.common.models import DeletionLog, ErrorLog
 from moodyduck.dreams.models import Dream, DreamMedia, Theme
 from moodyduck.friends.models import Person
 from moodyduck.gpslog.models import GPSPoint
-from moodyduck.habits.models import HabitLog
 from moodyduck.health.models import (
     BasicMedicalInfo,
     HealthLog,
@@ -70,7 +69,6 @@ from .serializers import (
     EmergencyContactSerializer,
     EmergencyVaccinationSerializer,
     ErrorLogSerializer,
-    HabitLogSerializer,
     HabitSerializer,
     HealthLogSerializer,
     HealthLogWriteSerializer,
@@ -90,7 +88,6 @@ from .serializers import (
     UserKeyPairSerializer,
     UserProfileSerializer,
     VaccinationSerializer,
-    habit_log_queryset_for_request,
     habit_queryset_for_request,
 )
 
@@ -301,7 +298,6 @@ _SCRUB_FIELDS = {
         ],
     ),
     "health_parameters": (HealthParameter, "user", ["name", "unit", "icon"]),
-    "habit_logs": (HabitLog, "habit__user", ["note"]),
     "health_records": (HealthRecord, "log__user", ["value"]),
     "user_profile": (
         UserProfile,
@@ -334,7 +330,6 @@ _STAGING_MODELS = {
     "people": (Person, "user", PersonSerializer),
     "medications": (Medication, "user", MedicationSerializer),
     "health_parameters": (HealthParameter, "user", HealthParameterSerializer),
-    "habit_logs": (HabitLog, "habit__user", HabitLogSerializer),
 }
 
 
@@ -870,18 +865,6 @@ class HabitViewSet(SinceFilterMixin, viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
-
-
-class HabitLogViewSet(SinceFilterMixin, viewsets.ModelViewSet):
-    serializer_class = HabitLogSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_queryset(self):
-        qs = habit_log_queryset_for_request(self.request)
-        date = self.request.query_params.get("date")
-        if date:
-            qs = qs.filter(date=date)
-        return qs
 
 
 class HealthParameterViewSet(viewsets.ModelViewSet):

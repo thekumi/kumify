@@ -4,7 +4,7 @@ from moodyduck.cbt.models import ThoughtRecord
 from moodyduck.common.models import ErrorLog
 from moodyduck.dreams.models import Dream, DreamMedia, DreamTheme, Theme
 from moodyduck.friends.models import Person
-from moodyduck.habits.models import Habit, HabitLog
+from moodyduck.habits.models import Habit
 from moodyduck.health.models import (
     BasicMedicalInfo,
     HealthLog,
@@ -79,10 +79,6 @@ class UserKeyPairSerializer(serializers.ModelSerializer):
 
 def habit_queryset_for_request(request):
     return Habit.objects.filter(user=request.user)
-
-
-def habit_log_queryset_for_request(request):
-    return HabitLog.objects.select_related("habit").filter(habit__user=request.user)
 
 
 class StatusMediaSerializer(serializers.ModelSerializer):
@@ -236,24 +232,6 @@ class HabitSerializer(serializers.ModelSerializer):
         model = Habit
         fields = ["id", "encrypted_payload"]
         read_only_fields = ["id"]
-
-
-class HabitLogSerializer(serializers.ModelSerializer):
-    habit = serializers.PrimaryKeyRelatedField(queryset=Habit.objects.none())
-
-    class Meta:
-        model = HabitLog
-        fields = ["id", "habit", "date", "note", "encrypted_payload"]
-        read_only_fields = ["id"]
-        extra_kwargs = {
-            "note": {"required": False, "allow_null": True, "allow_blank": True},
-        }
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        request = self.context.get("request")
-        if request and hasattr(request, "user") and request.user.is_authenticated:
-            self.fields["habit"].queryset = habit_queryset_for_request(request)
 
 
 class HealthParameterSerializer(serializers.ModelSerializer):

@@ -215,7 +215,7 @@ async function removeHabit(h) {
 }
 
 async function logHabit(h) {
-  await createOrQueue('/habit-logs/', { habit: h.id }, 'habit_logs')
+  await createOrQueue('/statuses/', { activity_ids: [h.activity_id] }, 'statuses')
 }
 
 onMounted(async () => {

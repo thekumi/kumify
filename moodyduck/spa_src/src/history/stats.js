@@ -99,16 +99,13 @@ export function calendarData(statuses, moodMap) {
   )
 }
 
-export function habitCompletionRates(habitLogs, habits, days = 0, end = null, statuses = []) {
+export function habitCompletionRates(habits, days = 0, end = null, statuses = []) {
   const now = end ? new Date(end + 'T23:59:59.999') : new Date()
   let cutoff = null
   if (days > 0) {
     cutoff = new Date(now)
     cutoff.setDate(cutoff.getDate() - days)
   }
-  const filtered = cutoff
-    ? habitLogs.filter(l => { const d = new Date(l.date); return d >= cutoff && d <= now })
-    : habitLogs
   const filteredSt = cutoff
     ? statuses.filter(s => { const t = new Date(s.timestamp); return t >= cutoff && t <= now })
     : statuses
@@ -116,21 +113,13 @@ export function habitCompletionRates(habitLogs, habits, days = 0, end = null, st
   let totalDays
   if (days > 0) {
     totalDays = days
-  } else if (habitLogs.length) {
-    const first = habitLogs.reduce((min, l) => {
-      const d = new Date(l.date); return d < min ? d : min
+  } else if (filteredSt.length) {
+    const first = filteredSt.reduce((min, s) => {
+      const d = new Date(s.timestamp.slice(0, 10)); return d < min ? d : min
     }, now)
     totalDays = Math.max(1, Math.ceil((now - first) / 86400000))
   } else {
     totalDays = 1
-  }
-
-  const counts = {}
-  const loggedDays = {}
-  for (const log of filtered) {
-    counts[log.habit] = (counts[log.habit] || 0) + 1
-    if (!loggedDays[log.habit]) loggedDays[log.habit] = new Set()
-    loggedDays[log.habit].add(log.date)
   }
 
   const habitByActivity = {}
@@ -138,6 +127,8 @@ export function habitCompletionRates(habitLogs, habits, days = 0, end = null, st
     if (h.activity_id != null) habitByActivity[Number(h.activity_id)] = h.id
   }
 
+  const counts = {}
+  const loggedDays = {}
   for (const s of filteredSt) {
     const day = s.timestamp.slice(0, 10)
     const ids = s.activity_ids ? tryParseIds(s.activity_ids) : (s.activities ?? []).map(a => a.id)

@@ -1,5 +1,3 @@
-from datetime import date
-
 from dateutil.relativedelta import relativedelta
 from django.contrib.auth import get_user_model
 from django.db import models
@@ -81,17 +79,3 @@ class DateHabitSchedule(HabitSchedule):
         if self.active and (self.date > now or (today and self.date == now)):
             return self.date
         return None
-
-
-class HabitLog(models.Model):
-    class Meta:
-        ordering = ["-date"]
-
-    habit = models.ForeignKey(Habit, models.CASCADE)
-    date = models.DateField(default=date.today)
-    note = models.TextField(null=True, blank=True)
-    encrypted_payload = models.JSONField(null=True, blank=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    def __str__(self):
-        return f"{self.habit} – {self.date}"

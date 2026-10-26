@@ -1,20 +1,32 @@
 import { registerTaskListProvider } from '@/planner/registry'
 import { dbGetAll } from '@/lib/db'
 
+function tryParseIds(val) {
+  if (Array.isArray(val)) return val.map(Number)
+  try { return JSON.parse(val).map(Number) } catch { return [] }
+}
+
 registerTaskListProvider('habits', async (ks) => {
   const today = new Date().toISOString().slice(0, 10)
-  const [rawHabits, allLogs] = await Promise.all([
+  const [rawHabits, rawStatuses] = await Promise.all([
     dbGetAll('habits'),
-    dbGetAll('habit_logs'),
+    dbGetAll('statuses'),
   ])
-  const rawLogs = allLogs.filter(l => l.date === today)
   const habits = await ks.decryptAll(rawHabits)
-  const loggedToday = new Set(rawLogs.map(l => String(l.habit)))
+
+  const activitiesToday = new Set()
+  for (const s of rawStatuses) {
+    if (!s.timestamp?.startsWith(today)) continue
+    const ids = s.activity_ids ? tryParseIds(s.activity_ids) : (s.activities ?? []).map(a => a.id)
+    for (const id of ids) activitiesToday.add(Number(id))
+  }
 
   return habits.map(h => ({
     id: `virtual:habit:${h.id}`,
     title: h.name || '(habit)',
-    done: loggedToday.has(String(h.id)),
+    done: h.negative
+      ? !activitiesToday.has(Number(h.activity_id))
+      : activitiesToday.has(Number(h.activity_id)),
     due_date: today,
     virtual_key: 'habits',
     virtual: true,

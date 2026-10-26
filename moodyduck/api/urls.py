@@ -14,7 +14,6 @@ from .views import (
     DreamViewSet,
     EmergencyAccessLogViewSet,
     ErrorLogViewSet,
-    HabitLogViewSet,
     HabitViewSet,
     HealthLogViewSet,
     HealthParameterViewSet,
@@ -53,7 +52,6 @@ router.register("activities", ActivityViewSet, basename="activity")
 router.register("friends", PersonViewSet, basename="friend")
 router.register("statuses", StatusViewSet, basename="status")
 router.register("habits", HabitViewSet, basename="habit")
-router.register("habit-logs", HabitLogViewSet, basename="habit-log")
 router.register(
     "health/parameters", HealthParameterViewSet, basename="health-parameter"
 )

@@ -16,7 +16,6 @@ const RESOURCES = [
   { store: 'activity_categories',path: '/activity-categories/',           paginated: false },
   { store: 'dreams',             path: '/dreams/',                        paginated: true  },
   { store: 'habits',             path: '/habits/',                        paginated: false },
-  { store: 'habit_logs',         path: '/habit-logs/',                    paginated: true  },
   { store: 'health_logs',        path: '/health/logs/',                   paginated: true  },
   { store: 'cbt_records',        path: '/cbt/records/',                   paginated: true  },
   { store: 'health_parameters',  path: '/health/parameters/',             paginated: false },

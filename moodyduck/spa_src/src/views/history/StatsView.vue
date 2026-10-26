@@ -356,7 +356,6 @@ const calData     = ref({})
 const calendarWeeks = computed(() =>
   yearMode.value ? buildYearCalendar(selectedYear.value) : buildCalendarWeeks(52)
 )
-const rawHabitLogs  = ref([])
 const rawHabits     = ref([])
 const allProperties = ref([])
 
@@ -390,10 +389,6 @@ const filteredDreams = computed(() => {
   if (yearMode.value)  return filterByYear(allDreams.value, selectedYear.value, d => d.timestamp)
   if (isCustom.value)  return customFilter(allDreams.value, d => d.timestamp)
   return filterByDays(allDreams.value, rangeDays.value, d => d.timestamp, rangeEnd.value)
-})
-const filteredHabitLogs = computed(() => {
-  if (yearMode.value) return filterByYear(rawHabitLogs.value, selectedYear.value, l => l.date)
-  return rawHabitLogs.value
 })
 
 // Summary
@@ -523,8 +518,8 @@ const weekdayMoodData = computed(() => ({
 // Habits
 
 const habitData = computed(() => {
-  if (yearMode.value) return habitCompletionRates(filteredHabitLogs.value, rawHabits.value, 0, null, filteredStatuses.value)
-  return habitCompletionRates(rawHabitLogs.value, rawHabits.value, rangeDays.value, rangeEnd.value, allStatuses.value)
+  if (yearMode.value) return habitCompletionRates(rawHabits.value, 0, null, filteredStatuses.value)
+  return habitCompletionRates(rawHabits.value, rangeDays.value, rangeEnd.value, allStatuses.value)
 })
 
 // Properties
@@ -664,12 +659,11 @@ async function load() {
   if (!ks.dataKey) return
   loading.value = true
   try {
-    const [rawSt, rawMo, rawAc, rawDr, habitLogsRaw, rawHab, rawProps] = await Promise.all([
+    const [rawSt, rawMo, rawAc, rawDr, rawHab, rawProps] = await Promise.all([
       dbGetAll('statuses'),
       dbGetAll('moods'),
       dbGetAll('activities'),
       dbGetAll('dreams'),
-      dbGetAll('habit_logs'),
       dbGetAll('habits'),
       dbGetAll('properties'),
     ])
@@ -687,7 +681,6 @@ async function load() {
     moodMap.value     = Object.fromEntries(moods.map(m => [m.id, m]))
     activityMap.value = Object.fromEntries(activities.map(a => [a.id, a]))
     calData.value     = calendarData(statuses, moodMap.value)
-    rawHabitLogs.value = habitLogsRaw
     rawHabits.value    = habits.map(h => ({
       ...h,
       name: activityMap.value[h.activity_id]?.name ?? h.name ?? '?',
