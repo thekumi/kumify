@@ -42,6 +42,14 @@
                 <i class="ph ph-caret-right text-stone-300"></i>
                 </RouterLink>
             </div>
+            <!-- Resync -->
+            <button type="button"
+                    @click="handleResync"
+                    :disabled="syncing"
+                    class="w-full py-3.5 rounded-2xl border border-stone-200 bg-white text-stone-600 text-sm font-semibold hover:bg-stone-50 transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+                <i class="ph ph-arrows-clockwise" :class="syncing ? 'animate-spin' : ''"></i>
+                {{ syncing ? 'Syncing…' : 'Resync data' }}
+            </button>
             <!-- Logout -->
             <button type="button"
                     @click="handleLogout"
@@ -53,13 +61,17 @@
     </div>
 </template>
 <script setup>
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import TopBar from '@/components/TopBar.vue'
 import BottomNav from '@/components/BottomNav.vue'
 import { useAuthStore } from '@/stores/auth'
+import { useSyncStore } from '@/stores/sync'
 
 const auth = useAuthStore()
 const router = useRouter()
+const sync = useSyncStore()
+const syncing = computed(() => sync.syncing)
 
 const links = [
   { to: '/me/profile',    label: 'Profile',              icon: 'ph ph-identification-card', bg: 'bg-clay-100',   color: 'text-clay-600' },
@@ -74,6 +86,10 @@ const links = [
   { to: '/planner/settings',     label: 'Planner',            icon: 'ph ph-calendar-dots',       bg: 'bg-indigo-100',  color: 'text-indigo-600' },
   { to: '/me/import/daylio',   label: 'Import from Daylio', icon: 'ph ph-download-simple',     bg: 'bg-orange-100',  color: 'text-orange-600' },
 ]
+
+function handleResync() {
+  sync.trigger({ force: true })
+}
 
 function handleLogout() {
   auth.logout()
