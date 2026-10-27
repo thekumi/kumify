@@ -49,13 +49,21 @@ export async function sync({ force = false } = {}) {
     const since = force ? null : lastSync
     const syncTime = new Date().toISOString()
 
-    await Promise.all(RESOURCES.map(r => _syncResource(r, since)))
+    const results = await Promise.allSettled(RESOURCES.map(r => _syncResource(r, since)))
+    const anyFailed = results.some(r => r.status === 'rejected')
+    if (anyFailed) {
+      results.forEach((r, i) => {
+        if (r.status === 'rejected') console.warn(`[sync] failed to sync ${RESOURCES[i].store}:`, r.reason)
+      })
+    }
 
     if (since) {
       await _applyDeletions(since)
     }
 
-    await setSyncMeta('last_sync', syncTime)
+    if (!anyFailed) {
+      await setSyncMeta('last_sync', syncTime)
+    }
     _syncCallbacks.forEach(fn => fn())
   } catch (e) {
     console.warn('[sync] sync failed:', e)
@@ -65,22 +73,18 @@ export async function sync({ force = false } = {}) {
 }
 
 async function _syncResource(resource, since) {
-  try {
-    let path = resource.path
-    if (since) {
-      const sep = path.includes('?') ? '&' : '?'
-      path = `${path}${sep}since=${encodeURIComponent(sinceParam(since))}`
-    }
-    const items = await api.getAll(path)
+  let path = resource.path
+  if (since) {
+    const sep = path.includes('?') ? '&' : '?'
+    path = `${path}${sep}since=${encodeURIComponent(sinceParam(since))}`
+  }
+  const items = await api.getAll(path)
 
-    if (since) {
-      await dbPutMany(resource.store, items)
-    } else {
-      await dbClear(resource.store)
-      await dbPutMany(resource.store, items)
-    }
-  } catch (e) {
-    console.warn(`[sync] failed to sync ${resource.store}:`, e)
+  if (since) {
+    await dbPutMany(resource.store, items)
+  } else {
+    await dbClear(resource.store)
+    await dbPutMany(resource.store, items)
   }
 }
 

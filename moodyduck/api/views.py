@@ -753,7 +753,17 @@ class StatusViewSet(SinceFilterMixin, viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        qs = Status.objects.filter(user=self.request.user).order_by("-timestamp")
+        qs = (
+            Status.objects.filter(user=self.request.user)
+            .order_by("-timestamp")
+            .prefetch_related(
+                Prefetch(
+                    "statusactivity_set",
+                    queryset=StatusActivity.objects.select_related("activity"),
+                ),
+                "statusmedia_set",
+            )
+        )
         after = self.request.query_params.get("timestamp_after")
         if after:
             qs = qs.filter(timestamp__gte=after)
