@@ -176,7 +176,9 @@
 <script setup>
 import { ref, computed, watch, nextTick } from 'vue'
 import { useKeystoreStore } from '@/stores/keystore'
-import { getTasks, createTask, updateTask, deleteTask as apiDeleteTask } from '@/api/planner'
+import { useSyncStore } from '@/stores/sync'
+import { dbGetAll, dbPut, dbDelete } from '@/lib/db'
+import { createTask, updateTask, deleteTask as apiDeleteTask } from '@/api/planner'
 import { getTaskListProvider } from '@/planner/registry'
 import { scheduleReminder, cancelReminder } from '@/planner/reminders'
 
@@ -185,6 +187,7 @@ const props = defineProps({
 })
 
 const ks = useKeystoreStore()
+const syncStore = useSyncStore()
 
 const PRIORITIES = [
   { value: 0, label: 'None',   icon: 'ph ph-minus',     activeClass: 'bg-stone-200 text-stone-600' },
@@ -256,7 +259,8 @@ async function loadTasksForList() {
       const fn = getTaskListProvider(list.virtual_key)
       tasks.value = fn ? await fn(ks).catch(() => []) : []
     } else {
-      const raw = await getTasks({ task_list: list.id })
+      const allStored = await dbGetAll('tasks')
+      const raw = allStored.filter(t => t.task_list === list.id)
       tasks.value = await ks.decryptAll(raw)
     }
   } finally {
@@ -265,13 +269,15 @@ async function loadTasksForList() {
 }
 
 watch(() => ks.dataKey, (key) => { if (key && selectedList.value) loadTasksForList() })
+watch(() => syncStore.revision, () => { if (selectedList.value) loadTasksForList() })
 
 async function toggleDone(task) {
   const done = !task.done
   const done_at = done ? new Date().toISOString() : null
   task.done = done
   task.done_at = done_at
-  await updateTask(task.id, { done, done_at })
+  const result = await updateTask(task.id, { done, done_at })
+  if (result) await dbPut('tasks', result)
 }
 
 async function addTask() {
@@ -286,6 +292,7 @@ async function addTask() {
   const raw = await createTask(body)
   const dec = await ks.decrypt(raw)
   tasks.value = [...tasks.value, dec]
+  await dbPut('tasks', raw)
   if (reminder_at) {
     scheduleReminder(raw, title)
     if (window.Android?.canScheduleExactAlarms?.() === false) {
@@ -330,6 +337,7 @@ async function saveEdit() {
     const raw = await updateTask(editingTask.value.id, body)
     const dec = await ks.decrypt(raw)
     tasks.value = tasks.value.map(t => t.id === editingTask.value.id ? dec : t)
+    await dbPut('tasks', raw)
     if (reminder_at) scheduleReminder(raw, title)
     else cancelReminder(editingTask.value.id)
     closeEdit()
@@ -343,6 +351,7 @@ async function removeTask(task) {
   tasks.value = tasks.value.filter(t => t.id !== task.id)
   cancelReminder(task.id)
   await apiDeleteTask(task.id)
+  await dbDelete('tasks', task.id)
 }
 
 function triggerAddTask() {

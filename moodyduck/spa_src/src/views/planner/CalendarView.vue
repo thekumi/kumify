@@ -109,13 +109,15 @@ import BottomNav from '@/components/BottomNav.vue'
 import TasksPanel from './TasksPanel.vue'
 import { useKeystoreStore } from '@/stores/keystore'
 import { usePlannerStore } from '@/stores/planner'
-import { getEvents } from '@/api/planner'
+import { useSyncStore } from '@/stores/sync'
+import { dbGetAll } from '@/lib/db'
 import { getCalendarProvider } from '@/planner/registry'
 import { expandRRule } from '@/planner/rrule'
 import { syncCalendarsToSystem } from '@/planner/calendarSync'
 
 const ks = useKeystoreStore()
 const plannerStore = usePlannerStore()
+const syncStore = useSyncStore()
 
 const activeTab = ref('calendar')
 const loading = ref(true)
@@ -221,8 +223,8 @@ async function loadEvents() {
   const to = rangeEnd.value
 
   try {
-    const [rawEvents, ...virtualResults] = await Promise.all([
-      getEvents({ from, to }),
+    const [allStored, ...virtualResults] = await Promise.all([
+      dbGetAll('calendar_events'),
       ...plannerStore.calendars
         .filter(c => c.virtual_key)
         .map(c => {
@@ -230,6 +232,9 @@ async function loadEvents() {
           return fn ? fn(ks, from, to).catch(() => []) : Promise.resolve([])
         }),
     ])
+    const rawEvents = allStored.filter(ev =>
+      ev.rrule || (ev.start?.slice(0, 10) >= from && ev.start?.slice(0, 10) <= to)
+    )
     const decrypted = await ks.decryptAll(rawEvents)
     const expanded = decrypted.flatMap(ev => ev.rrule ? expandRRule(ev, from, to) : [ev])
     allEvents.value = [...expanded, ...virtualResults.flat()]
@@ -239,6 +244,7 @@ async function loadEvents() {
 }
 
 watch([year, month], loadEvents)
+watch(() => syncStore.revision, loadEvents)
 watch(() => ks.dataKey, async (key) => {
   if (key) {
     if (!plannerStore.loaded) await plannerStore.load(ks)

@@ -3,7 +3,7 @@ import { ref } from 'vue'
 export const dbVersionError = ref(false)
 
 const DB_NAME = 'moodyduck-data'
-const DB_VERSION = 3
+const DB_VERSION = 4
 
 const STORES = [
   'statuses',
@@ -19,6 +19,8 @@ const STORES = [
   'vaccinations',
   'people',
   'properties',
+  'calendar_events',
+  'tasks',
   'sync_meta',
 ]
 

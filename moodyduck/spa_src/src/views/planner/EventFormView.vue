@@ -100,7 +100,8 @@ import TopBar from '@/components/TopBar.vue'
 import BottomNav from '@/components/BottomNav.vue'
 import { useKeystoreStore } from '@/stores/keystore'
 import { usePlannerStore } from '@/stores/planner'
-import { getEvents, createEvent, updateEvent, deleteEvent } from '@/api/planner'
+import { dbGet, dbPut, dbDelete } from '@/lib/db'
+import { createEvent, updateEvent, deleteEvent } from '@/api/planner'
 
 const ks = useKeystoreStore()
 const plannerStore = usePlannerStore()
@@ -209,8 +210,7 @@ onMounted(async () => {
   if (userCalendars.value.length) form.value.calendar = userCalendars.value[0].id
 
   if (id) {
-    const events = await getEvents()
-    rawEvent = events.find(e => e.id === id)
+    rawEvent = await dbGet('calendar_events', id)
     if (rawEvent && ks.dataKey) await fillForm(rawEvent)
   }
 })
@@ -239,11 +239,13 @@ async function save() {
       rrule: buildRRule(),
     }
 
+    let result
     if (id) {
-      await updateEvent(id, body)
+      result = await updateEvent(id, body)
     } else {
-      await createEvent(body)
+      result = await createEvent(body)
     }
+    if (result) await dbPut('calendar_events', result)
     router.push('/planner')
   } catch (e) {
     error.value = e?.data?.detail ?? 'Failed to save event.'
@@ -255,6 +257,7 @@ async function save() {
 async function remove() {
   if (!confirm('Delete this event?')) return
   await deleteEvent(id)
+  await dbDelete('calendar_events', id)
   router.push('/planner')
 }
 </script>

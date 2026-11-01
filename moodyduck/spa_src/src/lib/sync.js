@@ -23,6 +23,8 @@ const RESOURCES = [
   { store: 'vaccinations',       path: '/health/vaccinations/',           paginated: false },
   { store: 'people',             path: '/friends/',                       paginated: false },
   { store: 'properties',         path: '/properties/',                    paginated: false },
+  { store: 'calendar_events',    path: '/planner/events/',                paginated: true  },
+  { store: 'tasks',              path: '/planner/tasks/',                 paginated: true  },
 ]
 
 // Subtract 5 seconds as a clock-skew buffer so we never miss a record.
