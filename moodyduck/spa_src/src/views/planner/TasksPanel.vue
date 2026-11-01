@@ -21,87 +21,113 @@
             <div v-if="loadingTasks" class="flex justify-center py-12">
                 <div class="w-7 h-7 border-4 border-violet-200 border-t-violet-600 rounded-full animate-spin"></div>
             </div>
-            <div v-else-if="!tasks.length"
-                 class="flex flex-col items-center py-12 text-center px-6">
-                <i class="ph ph-check text-5xl text-stone-300 mb-3"></i>
-                <p class="text-stone-400 text-sm">No tasks</p>
-                <button v-if="!selectedList.virtual_key"
-                        @click="showAddTask = true"
-                        class="mt-4 px-5 py-2 bg-violet-600 text-white rounded-xl text-sm font-medium hover:bg-violet-700 transition-colors">
-                    Add task
-                </button>
-            </div>
-            <ul v-else
-                class="mx-4 bg-white rounded-2xl border border-stone-100 shadow-sm divide-y divide-stone-50 overflow-hidden">
-                <li v-for="task in tasks"
-                    :key="task.id"
-                    class="flex items-center gap-3 px-4 py-3.5">
-                    <button v-if="!task.virtual"
-                            @click="toggleDone(task)"
-                            class="w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors"
-                            :class="task.done ? 'bg-violet-600 border-violet-600' : 'border-stone-300 hover:border-violet-400'">
-                        <i v-if="task.done" class="ph ph-check text-white text-xs"></i>
+            <template v-else>
+                <div v-if="!tasks.length"
+                     class="flex flex-col items-center py-12 text-center px-6">
+                    <i class="ph ph-check text-5xl text-stone-300 mb-3"></i>
+                    <p class="text-stone-400 text-sm">No tasks</p>
+                    <button v-if="!selectedList.virtual_key"
+                            @click="showAddTask = true"
+                            class="mt-4 px-5 py-2 bg-violet-600 text-white rounded-xl text-sm font-medium hover:bg-violet-700 transition-colors">
+                        Add task
                     </button>
-                    <span v-else
-                          class="w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0"
-                          :class="task.done ? 'bg-violet-600 border-violet-600' : 'border-stone-200'">
-                        <i v-if="task.done" class="ph ph-check text-white text-xs"></i>
-                    </span>
-                    <div class="flex-1 min-w-0">
-                        <p class="text-sm text-stone-800 truncate"
-                           :class="task.done ? 'line-through text-stone-400' : ''">{{ task.title || '(task)' }}</p>
-                        <p v-if="task.due_date" class="text-xs text-stone-400 mt-0.5">{{ task.due_date }}</p>
+                </div>
+                <template v-else>
+                    <ul v-if="activeTasks.length"
+                        class="mx-4 bg-white rounded-2xl border border-stone-100 shadow-sm divide-y divide-stone-50 overflow-hidden">
+                        <li v-for="task in activeTasks"
+                            :key="task.id"
+                            class="flex items-center gap-3 px-4 py-3.5">
+                            <button v-if="!task.virtual"
+                                    @click="toggleDone(task)"
+                                    class="w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors border-stone-300 hover:border-violet-400">
+                            </button>
+                            <span v-else
+                                  class="w-5 h-5 rounded-md border-2 border-stone-200 flex items-center justify-center shrink-0">
+                            </span>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm text-stone-800 truncate">{{ task.title || '(task)' }}</p>
+                                <p v-if="task.due_date" class="text-xs text-stone-400 mt-0.5">{{ task.due_date }}</p>
+                            </div>
+                            <i v-if="!task.virtual && PRIORITY_INDICATOR[task.priority]"
+                               :class="[PRIORITY_INDICATOR[task.priority].icon, 'text-sm shrink-0']"
+                               :style="{ color: PRIORITY_INDICATOR[task.priority].color }"></i>
+                            <span v-if="task.virtual" class="text-xs text-stone-300 italic shrink-0">auto</span>
+                            <template v-else>
+                                <button @click="openEdit(task)"
+                                        class="w-7 h-7 flex items-center justify-center rounded-full hover:bg-stone-100 text-stone-400 transition-colors shrink-0">
+                                    <i class="ph ph-pencil-simple text-sm"></i>
+                                </button>
+                                <button @click="removeTask(task)"
+                                        class="w-7 h-7 flex items-center justify-center rounded-full hover:bg-red-50 text-stone-300 hover:text-red-400 transition-colors shrink-0">
+                                    <i class="ph ph-trash text-sm"></i>
+                                </button>
+                            </template>
+                        </li>
+                    </ul>
+                    <div v-if="completedTasks.length" class="mt-4">
+                        <p class="px-4 mb-2 text-xs font-medium text-stone-400 uppercase tracking-wide">Completed</p>
+                        <ul class="mx-4 bg-white rounded-2xl border border-stone-100 shadow-sm divide-y divide-stone-50 overflow-hidden">
+                            <li v-for="task in completedTasks"
+                                :key="task.id"
+                                class="flex items-center gap-3 px-4 py-3.5">
+                                <button v-if="!task.virtual"
+                                        @click="toggleDone(task)"
+                                        class="w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors bg-violet-600 border-violet-600">
+                                    <i class="ph ph-check text-white text-xs"></i>
+                                </button>
+                                <span v-else
+                                      class="w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 bg-violet-600 border-violet-600">
+                                    <i class="ph ph-check text-white text-xs"></i>
+                                </span>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm line-through text-stone-400 truncate">{{ task.title || '(task)' }}</p>
+                                </div>
+                                <template v-if="!task.virtual">
+                                    <button @click="removeTask(task)"
+                                            class="w-7 h-7 flex items-center justify-center rounded-full hover:bg-red-50 text-stone-300 hover:text-red-400 transition-colors shrink-0">
+                                        <i class="ph ph-trash text-sm"></i>
+                                    </button>
+                                </template>
+                            </li>
+                        </ul>
                     </div>
-                    <i v-if="!task.virtual && PRIORITY_INDICATOR[task.priority]"
-                       :class="[PRIORITY_INDICATOR[task.priority].icon, 'text-sm shrink-0']"
-                       :style="{ color: PRIORITY_INDICATOR[task.priority].color }"></i>
-                    <span v-if="task.virtual" class="text-xs text-stone-300 italic shrink-0">auto</span>
-                    <template v-else>
-                        <button @click="openEdit(task)"
-                                class="w-7 h-7 flex items-center justify-center rounded-full hover:bg-stone-100 text-stone-400 transition-colors shrink-0">
-                            <i class="ph ph-pencil-simple text-sm"></i>
-                        </button>
-                        <button @click="removeTask(task)"
-                                class="w-7 h-7 flex items-center justify-center rounded-full hover:bg-red-50 text-stone-300 hover:text-red-400 transition-colors shrink-0">
-                            <i class="ph ph-trash text-sm"></i>
-                        </button>
-                    </template>
-                </li>
-            </ul>
-            <div class="px-4 mt-3">
-                <button v-if="!selectedList.virtual_key && !showAddTask"
-                        @click="showAddTask = true"
-                        class="w-full py-3 rounded-xl border border-dashed border-stone-300 text-stone-400 text-sm hover:border-violet-400 hover:text-violet-500 transition-colors flex items-center justify-center gap-1">
-                    <i class="ph ph-plus"></i> Add task
-                </button>
-                <form v-if="showAddTask" @submit.prevent="addTask" class="space-y-2 mt-2">
-                    <input v-model="newTaskTitle"
-                           ref="newTaskInput"
-                           type="text"
-                           placeholder="Task name"
-                           class="w-full px-3 py-2.5 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-violet-400 text-stone-800 bg-stone-50 text-sm" />
-                    <div class="flex gap-1.5">
-                        <button v-for="p in PRIORITIES"
-                                :key="p.value"
-                                type="button"
-                                @click="newTaskPriority = p.value"
-                                class="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-xs font-medium transition-colors"
-                                :class="newTaskPriority === p.value ? p.activeClass : 'bg-stone-100 text-stone-400'">
-                            <i :class="p.icon" class="text-xs"></i>{{ p.label }}
-                        </button>
-                    </div>
-                    <div class="flex gap-2">
-                        <input v-model="newTaskReminder"
-                               type="datetime-local"
-                               class="flex-1 px-3 py-2 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-violet-400 text-stone-700 bg-stone-50 text-sm" />
-                        <button type="submit"
-                                :disabled="!newTaskTitle.trim()"
-                                class="px-4 py-2.5 bg-violet-600 text-white rounded-xl text-sm font-medium disabled:opacity-50 hover:bg-violet-700 transition-colors shrink-0">
-                            Add
-                        </button>
-                    </div>
-                </form>
-            </div>
+                </template>
+                <div class="px-4 mt-3">
+                    <button v-if="!selectedList.virtual_key && !showAddTask && tasks.length"
+                            @click="showAddTask = true"
+                            class="w-full py-3 rounded-xl border border-dashed border-stone-300 text-stone-400 text-sm hover:border-violet-400 hover:text-violet-500 transition-colors flex items-center justify-center gap-1">
+                        <i class="ph ph-plus"></i> Add task
+                    </button>
+                    <form v-if="showAddTask" @submit.prevent="addTask" class="space-y-2 mt-2">
+                        <input v-model="newTaskTitle"
+                               ref="newTaskInput"
+                               type="text"
+                               placeholder="Task name"
+                               class="w-full px-3 py-2.5 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-violet-400 text-stone-800 bg-stone-50 text-sm" />
+                        <div class="flex gap-1.5">
+                            <button v-for="p in PRIORITIES"
+                                    :key="p.value"
+                                    type="button"
+                                    @click="newTaskPriority = p.value"
+                                    class="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                                    :class="newTaskPriority === p.value ? p.activeClass : 'bg-stone-100 text-stone-400'">
+                                <i :class="p.icon" class="text-xs"></i>{{ p.label }}
+                            </button>
+                        </div>
+                        <div class="flex gap-2">
+                            <input v-model="newTaskReminder"
+                                   type="datetime-local"
+                                   class="flex-1 px-3 py-2 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-violet-400 text-stone-700 bg-stone-50 text-sm" />
+                            <button type="submit"
+                                    :disabled="!newTaskTitle.trim()"
+                                    class="px-4 py-2.5 bg-violet-600 text-white rounded-xl text-sm font-medium disabled:opacity-50 hover:bg-violet-700 transition-colors shrink-0">
+                                Add
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </template>
         </div>
         <!-- Edit task sheet -->
         <div v-if="editingTask"
@@ -172,11 +198,19 @@ const PRIORITY_INDICATOR = {
   3: { icon: 'ph ph-flag-fill', color: '#ef4444' },
 }
 
-function sortedTasks(arr) {
-  return [...arr].sort((a, b) => (b.priority || 0) - (a.priority || 0))
-}
-
 const visibleLists = computed(() => props.taskLists.filter(l => l.is_visible))
+
+const activeTasks = computed(() =>
+  [...tasks.value]
+    .filter(t => !t.done)
+    .sort((a, b) => (b.priority || 0) - (a.priority || 0))
+)
+
+const completedTasks = computed(() =>
+  [...tasks.value]
+    .filter(t => t.done)
+    .sort((a, b) => new Date(b.done_at || 0) - new Date(a.done_at || 0))
+)
 const selectedList = ref(null)
 const tasks = ref([])
 const loadingTasks = ref(false)
@@ -223,7 +257,7 @@ async function loadTasksForList() {
       tasks.value = fn ? await fn(ks).catch(() => []) : []
     } else {
       const raw = await getTasks({ task_list: list.id })
-      tasks.value = sortedTasks(await ks.decryptAll(raw))
+      tasks.value = await ks.decryptAll(raw)
     }
   } finally {
     loadingTasks.value = false
@@ -251,7 +285,7 @@ async function addTask() {
   if (reminder_at) body.reminder_at = reminder_at
   const raw = await createTask(body)
   const dec = await ks.decrypt(raw)
-  tasks.value = sortedTasks([...tasks.value, dec])
+  tasks.value = [...tasks.value, dec]
   if (reminder_at) {
     scheduleReminder(raw, title)
     if (window.Android?.canScheduleExactAlarms?.() === false) {
@@ -295,7 +329,7 @@ async function saveEdit() {
     const body = { encrypted_payload, reminder_at }
     const raw = await updateTask(editingTask.value.id, body)
     const dec = await ks.decrypt(raw)
-    tasks.value = sortedTasks(tasks.value.map(t => t.id === editingTask.value.id ? dec : t))
+    tasks.value = tasks.value.map(t => t.id === editingTask.value.id ? dec : t)
     if (reminder_at) scheduleReminder(raw, title)
     else cancelReminder(editingTask.value.id)
     closeEdit()
@@ -306,9 +340,9 @@ async function saveEdit() {
 
 async function removeTask(task) {
   if (!confirm('Delete this task?')) return
-  await apiDeleteTask(task.id)
-  cancelReminder(task.id)
   tasks.value = tasks.value.filter(t => t.id !== task.id)
+  cancelReminder(task.id)
+  await apiDeleteTask(task.id)
 }
 
 function triggerAddTask() {
