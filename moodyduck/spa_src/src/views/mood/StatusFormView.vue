@@ -298,7 +298,7 @@ async function applyDecryption() {
   const dm = await ks.decryptAll(rawMoods.value)
   dm.sort((a, b) => (Number(b.value) || 0) - (Number(a.value) || 0))
   moods.value = dm
-  activities.value = await ks.decryptAll(rawActivities.value)
+  activities.value = await ks.decryptAll(rawActivities.value.filter(a => !a.hidden))
   activityCategories.value = await ks.decryptAll(rawActivityCategories.value)
   properties.value = await ks.decryptAll(rawProperties.value)
   if (rawStatus && isEdit) {
