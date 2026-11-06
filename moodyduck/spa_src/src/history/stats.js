@@ -1,3 +1,7 @@
+function localDateStr(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 function tryParseIds(val) {
   if (Array.isArray(val)) return val.map(Number)
   try { return JSON.parse(val).map(Number) } catch { return [] }
@@ -85,7 +89,7 @@ export function entryCountByTimeOfDay(statuses, days = 0, end = null) {
 export function calendarData(statuses, moodMap) {
   const days = {}
   for (const s of statuses) {
-    const day = new Date(s.timestamp).toISOString().slice(0, 10)
+    const day = localDateStr(new Date(s.timestamp))
     const v = moodValue(s, moodMap)
     if (!days[day]) days[day] = { count: 0, moods: [] }
     days[day].count++
@@ -195,14 +199,14 @@ export function dreamFrequency(dreams, days = 0, end = null) {
 
 export function currentStreak(statuses) {
   if (!statuses.length) return 0
-  const days = new Set(statuses.map(s => s.timestamp.slice(0, 10)))
+  const days = new Set(statuses.map(s => localDateStr(new Date(s.timestamp))))
   const today = new Date()
   today.setHours(0, 0, 0, 0)
-  const todayStr = today.toISOString().slice(0, 10)
+  const todayStr = localDateStr(today)
   const checkDate = new Date(today)
   if (!days.has(todayStr)) checkDate.setDate(checkDate.getDate() - 1)
   let streak = 0
-  while (days.has(checkDate.toISOString().slice(0, 10))) {
+  while (days.has(localDateStr(checkDate))) {
     streak++
     checkDate.setDate(checkDate.getDate() - 1)
   }
@@ -326,7 +330,7 @@ export function buildYearCalendar(year) {
   while (cur <= end) {
     const week = []
     for (let d = 0; d < 7; d++) {
-      week.push(cur.toISOString().slice(0, 10))
+      week.push(localDateStr(cur))
       cur.setDate(cur.getDate() + 1)
     }
     grid.push(week)
@@ -349,7 +353,7 @@ export function buildCalendarWeeks(weeks = 52) {
     for (let d = 0; d < 7; d++) {
       const day = new Date(start)
       day.setDate(start.getDate() + w * 7 + d)
-      week.push(day.toISOString().slice(0, 10))
+      week.push(localDateStr(day))
     }
     grid.push(week)
   }
