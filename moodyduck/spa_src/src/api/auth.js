@@ -20,7 +20,7 @@ export function isLoggedIn() {
   return !!localStorage.getItem('authToken')
 }
 
-export const getMe = () => api.get('/me/')
+export const getMe = (signal) => api.get('/me/', { signal })
 
 export async function getServerInfo() {
   const res = await fetch('/api/auth/server-info/')

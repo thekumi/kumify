@@ -9,11 +9,17 @@ export const useAuthStore = defineStore('auth', () => {
   async function init() {
     if (!isLoggedIn()) { ready.value = true; return }
     try {
-      user.value = await getMe()
-    } catch (e) {
-      // Network unavailable — treat the stored token as still valid so the
-      // keystore can boot from its IndexedDB-cached key and the app works offline.
-      user.value = e instanceof TypeError ? {} : null
+      const controller = new AbortController()
+      const timer = setTimeout(() => controller.abort(), 10000)
+      try {
+        user.value = await getMe(controller.signal)
+      } finally {
+        clearTimeout(timer)
+      }
+    } catch {
+      // Any failure (network error, server error, timeout) — trust the cached
+      // token so the keystore can boot from IndexedDB and the app works offline.
+      user.value = {}
     }
     if (user.value !== null) {
       window.Android?.notifyLogin?.(localStorage.getItem('authToken') ?? '')

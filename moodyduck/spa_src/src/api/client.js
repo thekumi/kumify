@@ -16,6 +16,7 @@ async function request(method, path, body, opts = {}) {
     method,
     headers: getHeaders(opts.headers),
     body: body != null ? JSON.stringify(body) : undefined,
+    signal: opts.signal,
   })
   if (res.status === 401) {
     localStorage.removeItem('authToken')
@@ -29,7 +30,7 @@ async function request(method, path, body, opts = {}) {
 }
 
 export const api = {
-  get:    (path)         => request('GET',    path),
+  get:    (path, opts)   => request('GET',    path, null, opts),
   post:   (path, body)   => request('POST',   path, body),
   patch:  (path, body)   => request('PATCH',  path, body),
   put:    (path, body)   => request('PUT',    path, body),
